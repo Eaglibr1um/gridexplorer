@@ -4,9 +4,11 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  signInWithPopup,
+  GoogleAuthProvider
 } from 'firebase/auth'
-import { doc, setDoc } from 'firebase/firestore'
+import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../config/firebase'
 
 interface AuthContextType {
@@ -14,6 +16,7 @@ interface AuthContextType {
   loading: boolean
   login: (email: string, password: string) => Promise<void>
   signup: (email: string, password: string) => Promise<void>
+  loginWithGoogle: () => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -66,6 +69,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
+  const loginWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider()
+      const result = await signInWithPopup(auth, provider)
+      
+      // Check if this is a new user
+      const userDocRef = doc(db, 'users', result.user.uid)
+      const userDoc = await getDoc(userDocRef)
+      
+      if (!userDoc.exists()) {
+        // Create user document for new Google users
+        await setDoc(userDocRef, {
+          email: result.user.email,
+          createdAt: new Date().toISOString(),
+          nickname: result.user.displayName || null,
+          avatarId: 'explorer',
+          backgroundColor: 'gradient'
+        })
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
   const logout = async () => {
     try {
       await signOut(auth)
@@ -79,6 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     login,
     signup,
+    loginWithGoogle,
     logout
   }
 

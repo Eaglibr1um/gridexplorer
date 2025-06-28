@@ -1,158 +1,46 @@
-# Singapore Grid Explorer 🗺️
+# Singapore Grid Explorer
 
-An interactive web application for exploring Singapore's grid system with real-time progress tracking, notes, and analytics.
+An interactive web application for exploring Singapore's grid system with progress tracking and user management.
 
-## Features ✨
+## Features
 
-### 🗺️ Interactive Grid Overlay
-- Real Singapore grid data with 1000+ grid cells
-- Color-coded grid cells (red = unexplored, green = explored)
-- Click to explore functionality
-- Interactive tooltips and popups
+- **Interactive Grid Map**: Real Singapore grid data with 1000+ grid cells
+- **Progress Tracking**: Mark grids as explored, inaccessible, or unexplored
+- **User Profiles**: Custom avatars, nicknames, and profile management
+- **Grid Management**: Add notes, custom names, and exploration dates
+- **Search & Filter**: Search by grid names, numbers, notes, and filter by status
+- **Mobile Optimized**: Collapsible slide-out modal for mobile devices
+- **Authentication**: Email/password and Google OAuth login
+- **Real-time Sync**: Firebase integration for data persistence
 
-### 📊 Progress Tracking
-- Real-time exploration progress
-- Personal notes for each grid cell
-- Exploration date tracking
-- Progress statistics and analytics
+## Tech Stack
 
-### 🔍 Advanced Filtering
-- Filter by exploration status (explored/unexplored)
-- Filter by region
-- Search by location name
-- Real-time filtering updates
+- React 18, TypeScript, Vite
+- Tailwind CSS
+- Leaflet with React-Leaflet
+- Firebase (Authentication, Firestore)
+- Deployed on Vercel
 
-### 📈 Analytics Dashboard
-- Overall progress percentage
-- Region-wise progress breakdown
-- Recent explorations timeline
-- Visual progress bars and charts
+## Getting Started
 
-### 🔐 User Authentication
-- Firebase Authentication
-- Secure user data storage
-- Real-time data synchronization
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up Firebase project and add config to `.env`
+4. Run development server: `npm run dev`
 
-## Tech Stack 🛠️
+## Usage
 
-- **Frontend**: React 18, TypeScript, Vite
-- **Styling**: Tailwind CSS
-- **Maps**: Leaflet with React-Leaflet
-- **Backend**: Firebase (Authentication, Firestore)
-- **Deployment**: Vercel
+- Sign up/login with email or Google account
+- Click on grid cells to mark them as explored
+- Add notes and custom names to grids
+- Use search to find specific grids
+- View progress statistics
+- Manage your profile and avatar
 
-## Getting Started 🚀
+## Development
 
-### Prerequisites
-- Node.js 16+ 
-- npm or yarn
-- Firebase project
+This project was built with the help of Cursor and deployed on Vercel on June 28, 2025.
 
-### Installation
+## License
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd gridexplorer
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Set up Firebase:
-   - Create a Firebase project
-   - Enable Authentication (Email/Password)
-   - Create a Firestore database
-   - Add your Firebase config to `.env`:
-
-```env
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-```
-
-4. Start the development server:
-```bash
-npm run dev
-```
-
-5. Open [http://localhost:5173](http://localhost:5173) in your browser
-
-## Usage Guide 📖
-
-### 1. Authentication
-- Sign up with your email and password
-- Login to access the grid explorer
-
-### 2. Dashboard
-- View your overall exploration progress
-- See recent explorations
-- Check region-wise statistics
-
-### 3. Grid Explorer
-- **Explore Grids**: Click on any red (unexplored) grid cell to mark it as explored
-- **Add Notes**: Click on a grid cell and add personal notes about your visit
-- **Filter**: Use the filters to show only explored/unexplored grids or specific regions
-- **Search**: Search for specific locations by name
-- **Statistics**: Toggle the stats panel to see detailed analytics
-
-### 4. Features
-- **Interactive Map**: Pan and zoom to explore different areas
-- **Color Coding**: Red = unexplored, Green = explored
-- **Tooltips**: Hover over grids for quick info
-- **Popups**: Click for detailed information and actions
-- **Real-time Updates**: Changes sync immediately across devices
-
-## Data Structure 📊
-
-The application uses real Singapore grid data with the following structure:
-
-```typescript
-interface GridCell {
-  id: number
-  bounds: number[][] // Polygon coordinates
-  center: number[]   // Center point
-  status: 'unexplored' | 'explored'
-  regionName: string
-  displayName: string
-  notes?: string
-  exploredDate?: string
-  landmarks?: Landmark[]
-}
-```
-
-## Deployment 🌐
-
-The application is configured for deployment on Vercel:
-
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Add environment variables in Vercel dashboard
-4. Deploy automatically on push
-
-## Contributing 🤝
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License 📄
-
-This project is licensed under the MIT License.
-
-## Acknowledgments 🙏
-
-- Singapore grid data provided by the community
-- Inspired by exploration and discovery apps
-- Built with modern web technologies
-
----
-
-**Happy Exploring! 🗺️✨**
+MIT License
