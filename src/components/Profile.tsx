@@ -127,9 +127,9 @@ const Profile: React.FC = () => {
   const currentBackground = getBackgroundColorById(selectedBackground)
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-primary">
+    <div className="h-screen bg-gray-50 dark:bg-dark-primary overflow-y-auto">
       {/* Header */}
-      <div className="bg-white dark:bg-dark-secondary shadow-sm border-b border-gray-200 dark:border-dark-primary">
+      <div className="bg-white dark:bg-dark-secondary shadow-sm border-b border-gray-200 dark:border-dark-primary sticky top-0 z-10">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">

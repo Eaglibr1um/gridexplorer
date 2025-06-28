@@ -1201,7 +1201,7 @@ const GridExplorer: React.FC = () => {
               onChange={handleSearchChange}
               onFocus={handleSearchFocus}
               onKeyDown={handleSearchKeyDown}
-              className="w-full pl-10 pr-4 py-2 sm:py-3 border border-gray-200 dark:border-dark-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary placeholder-gray-400 dark:placeholder-dark-tertiary transition-all duration-300 shadow-lg hover:shadow-xl focus:shadow-2xl focus:scale-[1.02] text-sm sm:text-base"
+              className="w-full pl-10 pr-4 py-2 sm:py-3 border border-gray-200 dark:border-dark-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary placeholder-gray-400 dark:placeholder-dark-tertiary transition-all duration-300 shadow-lg hover:shadow-xl focus:shadow-2xl focus:scale-[1.02] text-base sm:text-base"
             />
             
             {/* Search Results Dropdown */}
