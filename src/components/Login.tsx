@@ -111,8 +111,8 @@ const Login: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark-primary px-4">
-      <div className="max-w-md w-full space-y-8">
+    <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-dark-primary px-4 overflow-y-auto">
+      <div className="max-w-md w-full space-y-8 py-8">
         {/* Header with progressive reveal */}
         <div className={`text-center transition-all duration-700 ${showHeader ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-8'}`}>
           <div className="flex justify-center mb-6">

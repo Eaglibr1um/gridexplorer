@@ -4,7 +4,7 @@ An interactive web application for exploring Singapore's grid system with progre
 
 ## Features
 
-- **Interactive Grid Map**: Real Singapore grid data with 1000+ grid cells
+- **Interactive Grid Map**: Singapore grid data with 1000+ grid cells
 - **Progress Tracking**: Mark grids as explored, inaccessible, or unexplored
 - **User Profiles**: Custom avatars, nicknames, and profile management
 - **Grid Management**: Add notes, custom names, and exploration dates
@@ -21,13 +21,6 @@ An interactive web application for exploring Singapore's grid system with progre
 - Firebase (Authentication, Firestore)
 - Deployed on Vercel
 
-## Getting Started
-
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Set up Firebase project and add config to `.env`
-4. Run development server: `npm run dev`
-
 ## Usage
 
 - Sign up/login with email or Google account
@@ -40,7 +33,3 @@ An interactive web application for exploring Singapore's grid system with progre
 ## Development
 
 This project was built with the help of Cursor and deployed on Vercel on June 28, 2025.
-
-## License
-
-MIT License
