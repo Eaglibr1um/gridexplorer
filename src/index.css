@@ -6,16 +6,28 @@
   html {
     font-family: 'Inter', system-ui, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    overflow: hidden;
   }
   
   body {
     @apply bg-gray-50 text-gray-900 transition-colors duration-200;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
   }
   
   .dark body {
     @apply bg-dark-primary text-dark-primary;
+  }
+  
+  #root {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
   }
 }
 

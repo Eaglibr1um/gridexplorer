@@ -1052,7 +1052,7 @@ const GridExplorer: React.FC = () => {
   // Error boundary for the main component
   if (!gridData || !gridData.cells) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark-primary">
+      <div className="h-screen w-screen flex items-center justify-center bg-gray-50 dark:bg-dark-primary overflow-hidden">
         <div className="text-center">
           <div className="text-red-500 text-xl mb-4">Error Loading Grid Data</div>
           <p className="text-gray-600 dark:text-dark-secondary">Please refresh the page to try again.</p>
@@ -1062,7 +1062,7 @@ const GridExplorer: React.FC = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen w-screen flex flex-col overflow-hidden">
       {/* Error Display */}
       {error && (
         <div className="absolute top-4 left-4 z-[1001] bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 max-w-md">
@@ -1190,7 +1190,7 @@ const GridExplorer: React.FC = () => {
       {/* Map Container - Fill remaining space */}
       <div className="flex-1 relative">
         {/* Search Box - Top Right */}
-        <div className="absolute top-4 right-4 z-[1000] w-64 sm:w-80">
+        <div className="fixed top-4 right-4 z-[1000] w-64 sm:w-80">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
@@ -1448,7 +1448,7 @@ const GridExplorer: React.FC = () => {
 
         {/* Compact Floating Stats Panel - Bottom */}
         {stats && (
-          <div className="absolute bottom-4 left-4 z-[1000]">
+          <div className="fixed bottom-4 left-4 z-[1000]">
             <div className="bg-white dark:bg-dark-secondary rounded-xl shadow-lg border border-gray-200 dark:border-dark-primary p-2 sm:p-3 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
               <div className="flex items-center space-x-2 sm:space-x-4">
                 {/* Progress Stats */}
@@ -1553,7 +1553,7 @@ const GridExplorer: React.FC = () => {
         )}
 
         {/* Grid Count Display - Bottom Right */}
-        <div className="absolute bottom-4 right-4 z-[1000] hidden lg:block">
+        <div className="fixed bottom-4 right-4 z-[1000] hidden lg:block">
           <div className="bg-white dark:bg-dark-secondary rounded-lg shadow-lg border border-gray-200 dark:border-dark-primary px-2 sm:px-3 py-1.5 sm:py-2 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95 transition-all duration-300 hover:shadow-xl hover:scale-105">
             <div className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
               Showing {filteredCells.length}/{gridData?.cells?.length || 0} grids
