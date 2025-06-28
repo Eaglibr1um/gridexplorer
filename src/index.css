@@ -277,4 +277,8 @@
 
 .animate-fade-in-color {
   animation: fade-in-color 1s ease-out forwards;
+}
+
+.grid-fill-overlay {
+  pointer-events: none;
 } 

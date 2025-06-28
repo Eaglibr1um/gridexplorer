@@ -182,19 +182,19 @@ const Profile: React.FC = () => {
           <div className="bg-white dark:bg-dark-secondary rounded-xl shadow-lg border border-gray-200 dark:border-dark-primary p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-primary mb-4">Choose Avatar</h2>
             
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-3 overflow-x-auto">
               {AVATAR_OPTIONS.map((avatar) => (
                 <button
                   key={avatar.id}
                   onClick={() => handleAvatarSelect(avatar.id)}
-                  className={`relative p-3 rounded-xl border-2 transition-all duration-200 hover:scale-105 ${
+                  className={`relative p-2 sm:p-3 rounded-xl border-2 transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-singapore-blue/50 focus:z-10 flex flex-col items-center justify-center ${
                     selectedAvatar === avatar.id
                       ? 'border-singapore-blue bg-singapore-blue/10 shadow-lg'
                       : 'border-gray-200 dark:border-dark-primary hover:border-singapore-blue/50'
                   }`}
                 >
-                  <div className="text-2xl mb-1">{avatar.emoji}</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400 truncate">{avatar.name}</div>
+                  <div className="text-xl sm:text-2xl mb-0.5 sm:mb-1">{avatar.emoji}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 truncate hidden sm:block">{avatar.name}</div>
                   {selectedAvatar === avatar.id && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 bg-singapore-blue rounded-full flex items-center justify-center">
                       <Check className="w-3 h-3 text-white" />
@@ -217,14 +217,14 @@ const Profile: React.FC = () => {
                 <button
                   key={color.id}
                   onClick={() => handleBackgroundSelect(color.id)}
-                  className={`relative p-4 rounded-xl border-2 transition-all duration-200 hover:scale-105 ${
+                  className={`relative p-4 rounded-xl border-2 transition-all duration-200 hover:scale-105 flex flex-col items-center justify-center ${
                     selectedBackground === color.id
                       ? 'border-singapore-blue shadow-lg'
                       : 'border-gray-200 dark:border-dark-primary hover:border-singapore-blue/50'
                   }`}
                 >
                   <div className={`w-full h-12 rounded-lg ${color.value} mb-2`}></div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400 text-center">{color.name}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 text-center hidden sm:block">{color.name}</div>
                   {selectedBackground === color.id && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 bg-singapore-blue rounded-full flex items-center justify-center">
                       <Check className="w-3 h-3 text-white" />

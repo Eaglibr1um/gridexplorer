@@ -21,7 +21,8 @@ import {
   Shuffle,
   LogOut,
   Moon,
-  Sun
+  Sun,
+  ChevronLeft
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
@@ -230,14 +231,16 @@ const GridCellComponent: React.FC<{
 
   return (
     <>
-      {/* Base grid cell */}
+      {/* Base grid cell with dynamic fill */}
       <Polygon
         positions={cell.bounds as [number, number][]}
         pathOptions={{
           color: borderColor,
           weight: isCelebrating ? 4 : 2,
-          fillColor: 'transparent',
-          fillOpacity: 0
+          fillColor: (isExplored || isInaccessible) ? fillColor : 'transparent',
+          fillOpacity: (isExplored || isInaccessible)
+            ? (isAnimating ? (animationProgress * fillOpacity) : fillOpacity)
+            : 0
         }}
         eventHandlers={{
           click: () => onCellClick(cell),
@@ -271,19 +274,6 @@ const GridCellComponent: React.FC<{
           }
         }}
       />
-      
-      {/* Fill animation overlay */}
-      {(isExplored || isInaccessible) && (
-        <Polygon
-          positions={cell.bounds as [number, number][]}
-          pathOptions={{
-            color: 'transparent',
-            weight: 0,
-            fillColor,
-            fillOpacity: isAnimating ? (animationProgress * fillOpacity) : fillOpacity
-          }}
-        />
-      )}
     </>
   )
 }
@@ -319,13 +309,13 @@ const GridExplorer: React.FC = () => {
     show: boolean
     cell: GridCell | null
   }>({ show: false, cell: null })
+  const [isModalCollapsed, setIsModalCollapsed] = useState(false)
   const [contextMenu, setContextMenu] = useState<{
     show: boolean
     x: number
     y: number
-    cellId: number
-    cell: GridCell
-  } | null>(null)
+    cell: GridCell | null
+  }>({ show: false, x: 0, y: 0, cell: null })
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null)
   const [longPressCell, setLongPressCell] = useState<number | null>(null)
   
@@ -422,7 +412,7 @@ const GridExplorer: React.FC = () => {
       
       // Close context menu if clicking outside
       if (!target.closest('.context-menu')) {
-        setContextMenu(null)
+        setContextMenu({ show: false, x: 0, y: 0, cell: null })
       }
       
       // Close all tooltips by clicking on the map
@@ -438,21 +428,6 @@ const GridExplorer: React.FC = () => {
 
     return () => {
       document.removeEventListener('click', handleGlobalClick)
-    }
-  }, [])
-
-  // Auto-close tooltips every 0.5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const map = mapRef.current?.leafletElement
-      if (map) {
-        // Close any open tooltips
-        map.fire('click')
-      }
-    }, 500) // 0.5 seconds
-
-    return () => {
-      clearInterval(interval)
     }
   }, [])
 
@@ -988,7 +963,6 @@ const GridExplorer: React.FC = () => {
       show: true,
       x: event.clientX,
       y: event.clientY,
-      cellId: cell.id,
       cell: cell
     })
   }, [])
@@ -1001,7 +975,6 @@ const GridExplorer: React.FC = () => {
         show: true,
         x: window.innerWidth / 2,
         y: window.innerHeight / 2,
-        cellId: cell.id,
         cell: cell
       })
       setLongPressCell(null)
@@ -1018,24 +991,24 @@ const GridExplorer: React.FC = () => {
   }, [longPressTimer])
 
   const handleContextMenuAction = useCallback(async (action: 'explored' | 'unexplored' | 'inaccessible') => {
-    if (!contextMenu || !user) return
+    if (!contextMenu.show || !contextMenu.cell || !user) return
 
-    const { cellId } = contextMenu
+    const { cell } = contextMenu
     
     try {
       setSyncStatus('syncing')
       
       if (action === 'explored') {
-        await markCellAsExplored(user.uid, cellId)
+        await markCellAsExplored(user.uid, cell.id)
         // Trigger success animation
-        const cell = gridData?.cells?.find((c: GridCell) => c.id === cellId)
-        if (cell) {
-          triggerSuccessAnimation(cellId, cell.center as [number, number])
+        const gridCell = gridData?.cells?.find((c: GridCell) => c.id === cell.id)
+        if (gridCell) {
+          triggerSuccessAnimation(cell.id, gridCell.center as [number, number])
         }
       } else if (action === 'inaccessible') {
-        await markCellAsInaccessible(user.uid, cellId)
+        await markCellAsInaccessible(user.uid, cell.id)
       } else if (action === 'unexplored') {
-        await markCellAsUnexplored(user.uid, cellId)
+        await markCellAsUnexplored(user.uid, cell.id)
       }
       
       setSyncStatus('synced')
@@ -1044,7 +1017,7 @@ const GridExplorer: React.FC = () => {
       setSyncStatus('unsaved')
     }
     
-    setContextMenu(null)
+    setContextMenu({ show: false, x: 0, y: 0, cell: null })
   }, [contextMenu, user, gridData, triggerSuccessAnimation])
 
   const handleStatsClick = (filterType: 'explored' | 'unexplored' | 'inaccessible') => {
@@ -1060,6 +1033,12 @@ const GridExplorer: React.FC = () => {
     setSelectedGridModal({ show: false, cell: null })
     setShowTopMenu(false)
     setShowSearchResults(false)
+  }
+
+  // Helper function to close modal and reset collapsed state
+  const closeModal = () => {
+    setSelectedGridModal({ show: false, cell: null })
+    setIsModalCollapsed(false)
   }
 
   if (loading) {
@@ -1108,16 +1087,16 @@ const GridExplorer: React.FC = () => {
       )}
 
       {/* Menu Button - Visible on all devices */}
-      <div className="fixed top-4 left-20 z-[1000] top-menu-button">
+      <div className="fixed top-4 left-4 z-[1000] top-menu-button">
         <button
           onClick={() => setShowTopMenu(!showTopMenu)}
-          className="p-3 bg-white dark:bg-dark-secondary rounded-xl shadow-lg border border-gray-200 dark:border-dark-primary transition-all duration-300 hover:bg-gray-50 dark:hover:bg-dark-tertiary hover:scale-105 hover:shadow-xl active:scale-95"
+          className="p-3 sm:p-3 bg-white dark:bg-dark-secondary rounded-xl shadow-lg border border-gray-200 dark:border-dark-primary transition-all duration-300 hover:bg-gray-50 dark:hover:bg-dark-tertiary hover:scale-105 hover:shadow-xl active:scale-95"
         >
           <div className="flex items-center space-x-2">
             <div className="p-1 bg-singapore-red/10 rounded transition-all duration-300 hover:bg-singapore-red/20">
-              <MapPin className="h-4 w-4 text-singapore-red transition-transform duration-300 hover:rotate-12" />
+              <MapPin className="h-4 w-4 sm:h-4 sm:w-4 text-singapore-red transition-transform duration-300 hover:rotate-12" />
             </div>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Menu</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:block">Menu</span>
           </div>
         </button>
       </div>
@@ -1125,22 +1104,22 @@ const GridExplorer: React.FC = () => {
       {/* Dropdown Menu Bar - Top */}
       {showTopMenu && (
         <div className="fixed top-0 left-0 right-0 z-[2000] bg-white dark:bg-dark-secondary border-b border-gray-200 dark:border-dark-primary shadow-lg transition-all duration-500 ease-out top-menu animate-in slide-in-from-top-2">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-between p-3 sm:p-4">
+            <div className="flex items-center space-x-3 sm:space-x-6">
+              <div className="flex items-center space-x-2 sm:space-x-3">
                 <div className="p-2 bg-singapore-red/10 rounded-lg transition-all duration-300 hover:bg-singapore-red/20">
-                  <MapPin className="h-6 w-6 text-singapore-red transition-transform duration-300 hover:rotate-12" />
+                  <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-singapore-red transition-transform duration-300 hover:rotate-12" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-dark-primary">Singapore Grid Explorer</h1>
-                  <p className="text-xs text-gray-600 dark:text-dark-secondary">
+                  <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-dark-primary">Singapore Grid Explorer</h1>
+                  <p className="text-xs text-gray-600 dark:text-dark-secondary hidden sm:block">
                     Explore Singapore's grid system and track your progress
                   </p>
                 </div>
               </div>
               
-              {/* Navigation Links */}
-              <div className="flex items-center space-x-4">
+              {/* Navigation Links - Hidden on mobile */}
+              <div className="hidden sm:flex items-center space-x-4">
                 <button className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-all duration-300 hover:scale-105">
                   Settings
                 </button>
@@ -1151,7 +1130,7 @@ const GridExplorer: React.FC = () => {
             </div>
             
             {/* User Info & Actions */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
@@ -1159,9 +1138,9 @@ const GridExplorer: React.FC = () => {
                 title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
               >
                 {theme === 'light' ? (
-                  <Moon className="h-5 w-5 text-gray-700 dark:text-dark-secondary" />
+                  <Moon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700 dark:text-dark-secondary" />
                 ) : (
-                  <Sun className="h-5 w-5 text-gray-700 dark:text-dark-secondary" />
+                  <Sun className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700 dark:text-dark-secondary" />
                 )}
               </button>
 
@@ -1169,30 +1148,30 @@ const GridExplorer: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => navigate('/profile')}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg cursor-pointer overflow-hidden ${
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg cursor-pointer overflow-hidden ${
                       userProfile?.backgroundColor ? 
                         getBackgroundColorById(userProfile.backgroundColor).value : 
                         'bg-gradient-to-br from-singapore-blue to-singapore-red'
                     }`}
                   >
-                    <span className="text-white text-sm font-medium">
+                    <span className="text-white text-xs sm:text-sm font-medium">
                       {userProfile?.avatarId ? 
                         getAvatarById(userProfile.avatarId).emoji : 
                         (userProfile?.nickname?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U')
                       }
                     </span>
                   </button>
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                  <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 hidden sm:block">
                     {userProfile?.nickname || user.email}
                   </span>
                 </div>
               )}
               <button 
                 onClick={handleLogout}
-                className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-all duration-300 hover:scale-105"
+                className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-all duration-300 hover:scale-105"
               >
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
+                <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:block">Logout</span>
               </button>
               
               {/* Close Button */}
@@ -1201,7 +1180,7 @@ const GridExplorer: React.FC = () => {
                 className="p-2 rounded-lg bg-gray-100 dark:bg-dark-tertiary hover:bg-gray-200 dark:hover:bg-dark-primary transition-all duration-300 hover:scale-110 hover:rotate-90"
                 title="Close Menu"
               >
-                <X className="h-5 w-5 text-gray-700 dark:text-dark-secondary" />
+                <X className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700 dark:text-dark-secondary" />
               </button>
             </div>
           </div>
@@ -1211,30 +1190,30 @@ const GridExplorer: React.FC = () => {
       {/* Map Container - Fill remaining space */}
       <div className="flex-1 relative">
         {/* Search Box - Top Right */}
-        <div className="absolute top-4 right-4 z-[1000] w-80">
+        <div className="absolute top-4 right-4 z-[1000] w-64 sm:w-80">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Press 'S' to search, 'M' for menu • Click avatar for profile • Search grids, names, notes, landmarks, dates, or status (=explored, =unexplored, =inaccessible)..."
+              placeholder="Press 'S' to search • Search grids, names, notes, landmarks, dates, or status (=explored, =unexplored, =inaccessible)..."
               value={searchQuery}
               onChange={handleSearchChange}
               onFocus={handleSearchFocus}
               onKeyDown={handleSearchKeyDown}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-dark-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary placeholder-gray-400 dark:placeholder-dark-tertiary transition-all duration-300 shadow-lg hover:shadow-xl focus:shadow-2xl focus:scale-[1.02]"
+              className="w-full pl-10 pr-4 py-2 sm:py-3 border border-gray-200 dark:border-dark-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary placeholder-gray-400 dark:placeholder-dark-tertiary transition-all duration-300 shadow-lg hover:shadow-xl focus:shadow-2xl focus:scale-[1.02] text-sm sm:text-base"
             />
             
             {/* Search Results Dropdown */}
             {showSearchResults && (
               <div
                 ref={searchResultsRef}
-                className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-dark-secondary border border-gray-200 dark:border-dark-primary rounded-xl shadow-xl z-[9999] max-h-80 overflow-y-auto"
+                className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-dark-secondary border border-gray-200 dark:border-dark-primary rounded-xl shadow-xl z-[9999] max-h-64 sm:max-h-80 overflow-y-auto"
               >
                 {searchQuery.trim().startsWith('=') && (
-                  <div className="px-4 py-3 bg-gray-50 dark:bg-dark-tertiary border-b border-gray-200 dark:border-dark-primary rounded-t-xl">
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Status Filters</p>
-                    <div className="space-y-2">
+                  <div className="px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 dark:bg-dark-tertiary border-b border-gray-200 dark:border-dark-primary rounded-t-xl">
+                    <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 sm:mb-3">Status Filters</p>
+                    <div className="space-y-1 sm:space-y-2">
                       {['explored', 'unexplored', 'inaccessible', 'random', 'all'].filter(option => 
                         option.startsWith(searchQuery.trim().substring(1).toLowerCase())
                       ).map(option => (
@@ -1244,9 +1223,9 @@ const GridExplorer: React.FC = () => {
                             setSearchQuery(`=${option}`)
                             performSearch(`=${option}`)
                           }}
-                          className="w-full flex items-center space-x-3 p-3 text-left hover:bg-white dark:hover:bg-dark-secondary rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-dark-primary transition-all duration-200 group"
+                          className="w-full flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 text-left hover:bg-white dark:hover:bg-dark-secondary rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-dark-primary transition-all duration-200 group"
                         >
-                          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                          <div className={`flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center ${
                             option === 'explored' ? 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400' :
                             option === 'unexplored' ? 'bg-gray-100 text-gray-600 dark:bg-gray-900/20 dark:text-gray-400' :
                             option === 'inaccessible' ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400' :
@@ -1254,27 +1233,27 @@ const GridExplorer: React.FC = () => {
                             'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
                           }`}>
                             {option === 'explored' ? (
-                              <CheckCircle className="h-4 w-4" />
+                              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
                             ) : option === 'unexplored' ? (
-                              <Circle className="h-4 w-4" />
+                              <Circle className="h-3 w-3 sm:h-4 sm:w-4" />
                             ) : option === 'inaccessible' ? (
-                              <Ban className="h-4 w-4" />
+                              <Ban className="h-3 w-3 sm:h-4 sm:w-4" />
                             ) : option === 'random' ? (
-                              <Shuffle className="h-4 w-4" />
+                              <Shuffle className="h-3 w-3 sm:h-4 sm:w-4" />
                             ) : (
-                              <Grid3X3 className="h-4 w-4" />
+                              <Grid3X3 className="h-3 w-3 sm:h-4 sm:w-4" />
                             )}
                           </div>
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900 dark:text-dark-primary">
+                            <div className="font-medium text-gray-900 dark:text-dark-primary text-xs sm:text-sm">
                               ={option}
                             </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
                               {option === 'random' ? 'Go to a random unexplored grid' : `Show all ${option} grids`}
                             </div>
                           </div>
                           <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                            <ArrowRight className="h-4 w-4 text-gray-400" />
+                            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
                           </div>
                         </button>
                       ))}
@@ -1385,60 +1364,68 @@ const GridExplorer: React.FC = () => {
         )}
 
         {/* Context Menu */}
-        {contextMenu && (
+        {contextMenu && contextMenu.show && (
           <div 
-            className="fixed z-[9999] context-menu bg-white dark:bg-dark-secondary rounded-xl shadow-2xl border border-gray-200 dark:border-dark-primary p-2 min-w-[200px]"
+            className="fixed z-[2000] bg-white dark:bg-dark-secondary rounded-xl shadow-xl border border-gray-200 dark:border-dark-primary p-3 sm:p-4 min-w-64 sm:min-w-72"
             style={{
-              left: Math.min(contextMenu.x, window.innerWidth - 220),
-              top: Math.min(contextMenu.y, window.innerHeight - 120)
+              left: contextMenu.x,
+              top: contextMenu.y,
+              transform: 'translate(-50%, -100%) translateY(-8px)'
             }}
           >
-            <div className="px-3 py-2 border-b border-gray-200 dark:border-dark-primary">
-              <h3 className="font-medium text-gray-900 dark:text-dark-primary text-sm">
-                Grid {contextMenu.cellId}
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {contextMenu.cell.regionName}
-              </p>
+            <div className="mb-3 sm:mb-4">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="p-2 bg-singapore-red/10 rounded-lg">
+                  <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-singapore-red" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-dark-primary text-sm sm:text-base">
+                    {contextMenu.cell?.displayName}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {contextMenu.cell?.regionName}
+                  </p>
+                </div>
+              </div>
             </div>
             
             <div className="py-1">
               <button
                 onClick={() => handleContextMenuAction('explored')}
-                className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors duration-200 group"
+                className="w-full flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-2 sm:py-3 text-left hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors duration-200 group"
               >
-                <div className="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
-                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900 dark:text-dark-primary text-sm">Mark as Explored</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Completed this area</div>
+                  <div className="font-medium text-gray-900 dark:text-dark-primary text-xs sm:text-sm">Mark as Explored</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">Completed this area</div>
                 </div>
               </button>
               
               <button
                 onClick={() => handleContextMenuAction('inaccessible')}
-                className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors duration-200 group"
+                className="w-full flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-2 sm:py-3 text-left hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors duration-200 group"
               >
-                <div className="w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
-                  <Ban className="h-4 w-4 text-red-600 dark:text-red-400" />
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+                  <Ban className="h-3 w-3 sm:h-4 sm:w-4 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900 dark:text-dark-primary text-sm">Mark as Inaccessible</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Cannot be explored</div>
+                  <div className="font-medium text-gray-900 dark:text-dark-primary text-xs sm:text-sm">Mark as Inaccessible</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">Cannot be explored</div>
                 </div>
               </button>
               
               <button
                 onClick={() => handleContextMenuAction('unexplored')}
-                className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-900/20 rounded-lg transition-colors duration-200 group"
+                className="w-full flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-2 sm:py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-900/20 rounded-lg transition-colors duration-200 group"
               >
-                <div className="w-8 h-8 bg-gray-100 dark:bg-gray-900/20 rounded-full flex items-center justify-center">
-                  <Circle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 dark:bg-gray-900/20 rounded-full flex items-center justify-center">
+                  <Circle className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600 dark:text-gray-400" />
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900 dark:text-dark-primary text-sm">Mark as Unexplored</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Reset to unvisited</div>
+                  <div className="font-medium text-gray-900 dark:text-dark-primary text-xs sm:text-sm">Mark as Unexplored</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">Reset to unvisited</div>
                 </div>
               </button>
             </div>
@@ -1462,16 +1449,16 @@ const GridExplorer: React.FC = () => {
         {/* Compact Floating Stats Panel - Bottom */}
         {stats && (
           <div className="absolute bottom-4 left-4 z-[1000]">
-            <div className="bg-white dark:bg-dark-secondary rounded-xl shadow-lg border border-gray-200 dark:border-dark-primary p-3 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
-              <div className="flex items-center space-x-4">
+            <div className="bg-white dark:bg-dark-secondary rounded-xl shadow-lg border border-gray-200 dark:border-dark-primary p-2 sm:p-3 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
+              <div className="flex items-center space-x-2 sm:space-x-4">
                 {/* Progress Stats */}
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 sm:space-x-3">
                   <div 
                     className="text-center transition-transform duration-300 hover:scale-110 cursor-pointer"
                     onClick={() => handleStatsClick('explored')}
                     title="Click to show explored grids"
                   >
-                    <div className={`text-lg font-bold text-green-600 transition-all duration-500 ${showPlusOne ? 'animate-number-bounce' : ''}`}>
+                    <div className={`text-sm sm:text-lg font-bold text-green-600 transition-all duration-500 ${showPlusOne ? 'animate-number-bounce' : ''}`}>
                       {pendingExploredCount || stats.exploredCells}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">Explored</div>
@@ -1481,7 +1468,7 @@ const GridExplorer: React.FC = () => {
                     onClick={() => handleStatsClick('inaccessible')}
                     title="Click to show inaccessible grids"
                   >
-                    <div className="text-lg font-bold text-red-600">{stats.inaccessibleCells}</div>
+                    <div className="text-sm sm:text-lg font-bold text-red-600">{stats.inaccessibleCells}</div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">Inaccessible</div>
                   </div>
                   <div 
@@ -1489,14 +1476,14 @@ const GridExplorer: React.FC = () => {
                     onClick={() => handleStatsClick('unexplored')}
                     title="Click to show unexplored grids"
                   >
-                    <div className="text-lg font-bold text-orange-500">{stats.unexploredCells}</div>
+                    <div className="text-sm sm:text-lg font-bold text-orange-500">{stats.unexploredCells}</div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">Unexplored</div>
                   </div>
                 </div>
                 
                 {/* Progress Bar */}
-                <div className="flex items-center space-x-2">
-                  <div className="w-16 bg-gray-200 dark:bg-dark-primary rounded-full h-2 overflow-hidden">
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <div className="w-12 sm:w-16 bg-gray-200 dark:bg-dark-primary rounded-full h-2 overflow-hidden">
                     <div 
                       className="bg-gradient-to-r from-singapore-blue to-singapore-red h-2 rounded-full transition-all duration-700 ease-out relative" 
                       style={{ width: `${stats.progressPercentage}%` }}
@@ -1504,29 +1491,29 @@ const GridExplorer: React.FC = () => {
                       <div className="absolute inset-0 bg-white opacity-20 animate-pulse"></div>
                     </div>
                   </div>
-                  <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 min-w-[3rem] transition-all duration-300 hover:scale-110">
+                  <div className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 min-w-[2rem] sm:min-w-[3rem] transition-all duration-300 hover:scale-110">
                     {Math.round(stats.progressPercentage)}%
                   </div>
                 </div>
 
                 {/* Sync Status */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1 sm:space-x-2">
                   {syncStatus === 'synced' && (
                     <>
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className="text-xs font-medium text-green-600 dark:text-green-400">Saved</span>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs font-medium text-green-600 dark:text-green-400 hidden sm:block">Saved</span>
                     </>
                   )}
                   {syncStatus === 'syncing' && (
                     <>
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                      <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Saving...</span>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs font-medium text-blue-600 dark:text-blue-400 hidden sm:block">Saving...</span>
                     </>
                   )}
                   {syncStatus === 'unsaved' && (
                     <>
-                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-xs font-medium text-red-600 dark:text-red-400">Error</span>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs font-medium text-red-600 dark:text-red-400 hidden sm:block">Error</span>
                     </>
                   )}
                 </div>
@@ -1537,17 +1524,17 @@ const GridExplorer: React.FC = () => {
                   className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-tertiary transition-colors duration-200"
                   title={showStats ? 'Hide details' : 'Show details'}
                 >
-                  <BarChart3 className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                  <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
 
               {/* Expanded Region Details */}
               {showStats && (
-                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-dark-primary">
-                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200 dark:border-dark-primary">
+                  <div className="grid grid-cols-2 gap-1 sm:gap-2 max-h-24 sm:max-h-32 overflow-y-auto">
                     {Object.entries(stats.regionStats).map(([region, data]: [string, any]) => (
-                      <div key={region} className="p-2 bg-gray-50 dark:bg-dark-tertiary rounded-lg">
-                        <div className="flex items-center justify-between mb-1">
+                      <div key={region} className="p-1.5 sm:p-2 bg-gray-50 dark:bg-dark-tertiary rounded-lg">
+                        <div className="flex items-center justify-between mb-0.5 sm:mb-1">
                           <h4 className="font-medium text-gray-900 dark:text-dark-primary text-xs">{region}</h4>
                           <span className="text-xs font-semibold text-singapore-blue">
                             {Math.round((data.explored / data.total) * 100)}%
@@ -1566,9 +1553,9 @@ const GridExplorer: React.FC = () => {
         )}
 
         {/* Grid Count Display - Bottom Right */}
-        <div className="absolute bottom-4 right-4 z-[1000]">
-          <div className="bg-white dark:bg-dark-secondary rounded-lg shadow-lg border border-gray-200 dark:border-dark-primary px-3 py-2 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95 transition-all duration-300 hover:shadow-xl hover:scale-105">
-            <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <div className="absolute bottom-4 right-4 z-[1000] hidden lg:block">
+          <div className="bg-white dark:bg-dark-secondary rounded-lg shadow-lg border border-gray-200 dark:border-dark-primary px-2 sm:px-3 py-1.5 sm:py-2 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95 transition-all duration-300 hover:shadow-xl hover:scale-105">
+            <div className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
               Showing {filteredCells.length}/{gridData?.cells?.length || 0} grids
             </div>
           </div>
@@ -1688,129 +1675,320 @@ const GridExplorer: React.FC = () => {
         }
 
         return (
-          <div className="fixed left-4 top-32 z-[1000] w-80 animate-slide-in">
-            <div className="bg-white dark:bg-dark-secondary rounded-xl shadow-2xl border border-gray-200 dark:border-dark-primary p-6 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95 max-h-[70vh] overflow-y-auto">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-dark-primary text-lg">
-                    {customName || cell.displayName}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Grid #{cell.id} • {cell.regionName}
-                  </p>
-                </div>
+          <>
+            {/* Mobile: Slide-out drawer from left */}
+            <div className={`fixed inset-0 z-[1000] lg:hidden ${
+              isModalCollapsed ? 'pointer-events-none' : ''
+            }`}>
+              {/* Backdrop */}
+              <div 
+                className={`absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-300 ${
+                  isModalCollapsed ? 'opacity-0 pointer-events-none' : ''
+                }`}
+                onClick={() => setIsModalCollapsed(true)}
+              />
+              
+              {/* Floating collapse button when modal is collapsed */}
+              {isModalCollapsed && (
                 <button
-                  onClick={() => setSelectedGridModal({ show: false, cell: null })}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-tertiary transition-colors duration-200"
+                  onClick={() => setIsModalCollapsed(false)}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 z-[1001] p-3 bg-white dark:bg-dark-secondary rounded-full shadow-lg border border-gray-200 dark:border-dark-primary hover:bg-gray-50 dark:hover:bg-dark-tertiary transition-all duration-200 pointer-events-auto"
                 >
-                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  <ChevronLeft className="h-5 w-5 text-gray-500 dark:text-gray-400 rotate-180" />
                 </button>
-              </div>
-
-              {/* Status Actions */}
-              <div className="flex items-center space-x-2 mb-4">
-                {!isExplored && !isInaccessible && (
-                  <button
-                    onClick={() => handleToggleExplored(cell.id, true)}
-                    className="flex items-center space-x-2 px-3 py-2 bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors duration-200"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                    <span className="text-sm font-medium">Mark Explored</span>
-                  </button>
-                )}
-                {!isInaccessible && (
-                  <button
-                    onClick={() => handleMarkInaccessible(cell.id)}
-                    className="flex items-center space-x-2 px-3 py-2 bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors duration-200"
-                  >
-                    <Ban className="h-4 w-4" />
-                    <span className="text-sm font-medium">Mark Inaccessible</span>
-                  </button>
-                )}
-                {(isExplored || isInaccessible) && (
-                  <button
-                    onClick={() => handleToggleExplored(cell.id, false)}
-                    className="flex items-center space-x-2 px-3 py-2 bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-900/40 transition-colors duration-200"
-                  >
-                    <Circle className="h-4 w-4" />
-                    <span className="text-sm font-medium">Mark Unexplored</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Grid Name */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Grid Name
-                </label>
-                {editingName ? (
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      value={editingNameValue}
-                      onChange={(e) => setEditingNameValue(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-dark-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary"
-                      placeholder="Enter custom grid name..."
-                    />
-                    <div className="flex space-x-2">
+              )}
+              
+              {/* Drawer */}
+              <div className={`absolute left-0 top-0 h-full w-80 max-w-[85vw] bg-white dark:bg-dark-secondary shadow-2xl transform transition-transform duration-300 ease-out pointer-events-auto ${
+                isModalCollapsed ? '-translate-x-full' : 'translate-x-0'
+              }`}>
+                <div className="h-full flex flex-col">
+                  {/* Header */}
+                  <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-dark-primary">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 dark:text-dark-primary text-lg truncate">
+                        {customName || cell.displayName}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Grid #{cell.id} • {cell.regionName}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
                       <button
-                        onClick={handleSaveName}
-                        className="px-3 py-1 bg-singapore-blue text-white rounded text-sm"
+                        onClick={() => setIsModalCollapsed(!isModalCollapsed)}
+                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-tertiary transition-colors duration-200"
                       >
-                        Save
+                        <ChevronLeft className={`h-5 w-5 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${
+                          isModalCollapsed ? 'rotate-180' : ''
+                        }`} />
                       </button>
                       <button
-                        onClick={() => {
-                          setEditingName(false)
-                          setEditingNameValue(customName || cell.displayName)
-                        }}
-                        className="px-3 py-1 bg-gray-300 dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm"
+                        onClick={closeModal}
+                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-tertiary transition-colors duration-200"
                       >
-                        Cancel
+                        <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                       </button>
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-900 dark:text-dark-primary">
-                      {customName || cell.displayName}
-                    </span>
-                    <button
-                      onClick={handleStartEditingName}
-                      className="text-singapore-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                )}
-              </div>
 
-              {/* Explored Date */}
-              {(isExplored || isInaccessible) && (
+                  {/* Content */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {/* Status Actions */}
+                    <div className="flex flex-col space-y-2">
+                      {!isExplored && !isInaccessible && (
+                        <button
+                          onClick={() => handleToggleExplored(cell.id, true)}
+                          className="flex items-center justify-center space-x-2 px-3 py-2 bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors duration-200"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="text-sm font-medium">Mark Explored</span>
+                        </button>
+                      )}
+                      {!isInaccessible && (
+                        <button
+                          onClick={() => handleMarkInaccessible(cell.id)}
+                          className="flex items-center justify-center space-x-2 px-3 py-2 bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors duration-200"
+                        >
+                          <Ban className="h-4 w-4" />
+                          <span className="text-sm font-medium">Mark Inaccessible</span>
+                        </button>
+                      )}
+                      {(isExplored || isInaccessible) && (
+                        <button
+                          onClick={() => handleToggleExplored(cell.id, false)}
+                          className="flex items-center justify-center space-x-2 px-3 py-2 bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-900/40 transition-colors duration-200"
+                        >
+                          <Circle className="h-4 w-4" />
+                          <span className="text-sm font-medium">Mark Unexplored</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Grid Name */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Grid Name
+                      </label>
+                      {editingName ? (
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            value={editingNameValue}
+                            onChange={(e) => setEditingNameValue(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-dark-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary"
+                            placeholder="Enter custom grid name..."
+                          />
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={handleSaveName}
+                              className="px-3 py-1 bg-singapore-blue text-white rounded text-sm"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingName(false)
+                                setEditingNameValue(customName || cell.displayName)
+                              }}
+                              className="px-3 py-1 bg-gray-300 dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-900 dark:text-dark-primary truncate flex-1">
+                            {customName || cell.displayName}
+                          </span>
+                          <button
+                            onClick={handleStartEditingName}
+                            className="text-singapore-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm ml-2"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Explored Date */}
+                    {(isExplored || isInaccessible) && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Explored Date
+                        </label>
+                        {editingDate ? (
+                          <div className="space-y-2">
+                            <input
+                              type="date"
+                              value={editingDateValue}
+                              onChange={(e) => setEditingDateValue(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-dark-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary"
+                            />
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={handleSaveDate}
+                                className="px-3 py-1 bg-singapore-blue text-white rounded text-sm"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingDate(false)
+                                  setEditingDateValue(exploredDate ? new Date(exploredDate).toISOString().split('T')[0] : '')
+                                }}
+                                className="px-3 py-1 bg-gray-300 dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-900 dark:text-dark-primary">
+                              {exploredDate ? new Date(exploredDate).toLocaleDateString() : 'Not set'}
+                            </span>
+                            <button
+                              onClick={handleStartEditingDate}
+                              className="text-singapore-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Notes */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Notes
+                      </label>
+                      {editingNotes ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={editingNotesValue}
+                            onChange={(e) => setEditingNotesValue(e.target.value)}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-dark-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary resize-none"
+                            placeholder="Add notes about this grid..."
+                          />
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={handleSaveNotes}
+                              className="px-3 py-1 bg-singapore-blue text-white rounded text-sm"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingNotes(false)
+                                setEditingNotesValue(userNotes || '')
+                              }}
+                              className="px-3 py-1 bg-gray-300 dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="min-h-[60px] p-3 bg-gray-50 dark:bg-dark-tertiary rounded-lg">
+                            <p className="text-gray-900 dark:text-dark-primary text-sm whitespace-pre-wrap">
+                              {userNotes || 'No notes added yet.'}
+                            </p>
+                          </div>
+                          <button
+                            onClick={handleStartEditingNotes}
+                            className="text-singapore-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
+                          >
+                            {userNotes ? 'Edit Notes' : 'Add Notes'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop: Fixed modal (existing behavior) */}
+            <div className="hidden lg:block fixed left-4 top-32 z-[1000] w-80 animate-slide-in">
+              <div className="bg-white dark:bg-dark-secondary rounded-xl shadow-2xl border border-gray-200 dark:border-dark-primary p-6 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95 max-h-[70vh] overflow-y-auto">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-dark-primary text-lg">
+                      {customName || cell.displayName}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Grid #{cell.id} • {cell.regionName}
+                    </p>
+                  </div>
+                  <button
+                    onClick={closeModal}
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-tertiary transition-colors duration-200"
+                  >
+                    <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  </button>
+                </div>
+
+                {/* Status Actions */}
+                <div className="flex items-center space-x-2 mb-4">
+                  {!isExplored && !isInaccessible && (
+                    <button
+                      onClick={() => handleToggleExplored(cell.id, true)}
+                      className="flex items-center space-x-2 px-3 py-2 bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors duration-200"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Mark Explored</span>
+                    </button>
+                  )}
+                  {!isInaccessible && (
+                    <button
+                      onClick={() => handleMarkInaccessible(cell.id)}
+                      className="flex items-center space-x-2 px-3 py-2 bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors duration-200"
+                    >
+                      <Ban className="h-4 w-4" />
+                      <span className="text-sm font-medium">Mark Inaccessible</span>
+                    </button>
+                  )}
+                  {(isExplored || isInaccessible) && (
+                    <button
+                      onClick={() => handleToggleExplored(cell.id, false)}
+                      className="flex items-center space-x-2 px-3 py-2 bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-900/40 transition-colors duration-200"
+                    >
+                      <Circle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Mark Unexplored</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Grid Name */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Explored Date
+                    Grid Name
                   </label>
-                  {editingDate ? (
+                  {editingName ? (
                     <div className="space-y-2">
                       <input
-                        type="date"
-                        value={editingDateValue}
-                        onChange={(e) => setEditingDateValue(e.target.value)}
+                        type="text"
+                        value={editingNameValue}
+                        onChange={(e) => setEditingNameValue(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-dark-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary"
+                        placeholder="Enter custom grid name..."
                       />
                       <div className="flex space-x-2">
                         <button
-                          onClick={handleSaveDate}
+                          onClick={handleSaveName}
                           className="px-3 py-1 bg-singapore-blue text-white rounded text-sm"
                         >
                           Save
                         </button>
                         <button
                           onClick={() => {
-                            setEditingDate(false)
-                            setEditingDateValue(exploredDate ? new Date(exploredDate).toISOString().split('T')[0] : '')
+                            setEditingName(false)
+                            setEditingNameValue(customName || cell.displayName)
                           }}
                           className="px-3 py-1 bg-gray-300 dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm"
                         >
@@ -1821,89 +1999,117 @@ const GridExplorer: React.FC = () => {
                   ) : (
                     <div className="flex items-center justify-between">
                       <span className="text-gray-900 dark:text-dark-primary">
-                        {exploredDate ? (() => {
-                          const date = new Date(exploredDate)
-                          const day = date.getDate().toString().padStart(2, '0')
-                          const month = date.toLocaleDateString('en-GB', { month: 'short' })
-                          const year = date.getFullYear()
-                          const weekday = date.toLocaleDateString('en-GB', { weekday: 'short' })
-                          return `${day} ${month} ${year} (${weekday})`
-                        })() : 'No date set'}
+                        {customName || cell.displayName}
                       </span>
                       <button
-                        onClick={handleStartEditingDate}
+                        onClick={handleStartEditingName}
                         className="text-singapore-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
                       >
-                        {exploredDate ? 'Edit' : 'Set'} Date
+                        Edit
                       </button>
                     </div>
                   )}
                 </div>
-              )}
 
-              {/* Notes */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Notes
-                </label>
-                {editingNotes ? (
-                  <div className="space-y-2">
-                    <textarea
-                      value={editingNotesValue}
-                      onChange={(e) => setEditingNotesValue(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-dark-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary"
-                      rows={3}
-                      placeholder="Add your notes about this area..."
-                    />
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={handleSaveNotes}
-                        className="px-3 py-1 bg-singapore-blue text-white rounded text-sm"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditingNotes(false)
-                          setEditingNotesValue(userNotes || '')
-                        }}
-                        className="px-3 py-1 bg-gray-300 dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-start justify-between">
-                    <span className="text-gray-900 dark:text-dark-primary flex-1">
-                      {userNotes || 'No notes yet'}
-                    </span>
-                    <button
-                      onClick={handleStartEditingNotes}
-                      className="text-singapore-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm ml-2"
-                    >
-                      {userNotes ? 'Edit' : 'Add'} Notes
-                    </button>
+                {/* Explored Date */}
+                {(isExplored || isInaccessible) && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Explored Date
+                    </label>
+                    {editingDate ? (
+                      <div className="space-y-2">
+                        <input
+                          type="date"
+                          value={editingDateValue}
+                          onChange={(e) => setEditingDateValue(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-dark-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary"
+                        />
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={handleSaveDate}
+                            className="px-3 py-1 bg-singapore-blue text-white rounded text-sm"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingDate(false)
+                              setEditingDateValue(exploredDate ? new Date(exploredDate).toISOString().split('T')[0] : '')
+                            }}
+                            className="px-3 py-1 bg-gray-300 dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-900 dark:text-dark-primary">
+                          {exploredDate ? new Date(exploredDate).toLocaleDateString() : 'Not set'}
+                        </span>
+                        <button
+                          onClick={handleStartEditingDate}
+                          className="text-singapore-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
 
-              {/* Landmarks */}
-              {cell.landmarks && cell.landmarks.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-900 dark:text-dark-primary mb-2">Landmarks</h4>
-                  <div className="space-y-2">
-                    {cell.landmarks.map((landmark, index) => (
-                      <div key={index} className="p-3 bg-gray-50 dark:bg-dark-tertiary rounded-lg">
-                        <p className="font-medium text-sm text-gray-900 dark:text-dark-primary">{landmark.name}</p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">{landmark.description}</p>
+                {/* Notes */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Notes
+                  </label>
+                  {editingNotes ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editingNotesValue}
+                        onChange={(e) => setEditingNotesValue(e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-dark-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary resize-none"
+                        placeholder="Add notes about this grid..."
+                      />
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={handleSaveNotes}
+                          className="px-3 py-1 bg-singapore-blue text-white rounded text-sm"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingNotes(false)
+                            setEditingNotesValue(userNotes || '')
+                          }}
+                          className="px-3 py-1 bg-gray-300 dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm"
+                        >
+                          Cancel
+                        </button>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="min-h-[60px] p-3 bg-gray-50 dark:bg-dark-tertiary rounded-lg">
+                        <p className="text-gray-900 dark:text-dark-primary text-sm whitespace-pre-wrap">
+                          {userNotes || 'No notes added yet.'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleStartEditingNotes}
+                        className="text-singapore-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
+                      >
+                        {userNotes ? 'Edit Notes' : 'Add Notes'}
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
-          </div>
+          </>
         )
       })()}
     </div>
