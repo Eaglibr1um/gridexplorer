@@ -6,7 +6,8 @@ import {
   signOut, 
   onAuthStateChanged 
 } from 'firebase/auth'
-import { auth } from '../config/firebase'
+import { doc, setDoc } from 'firebase/firestore'
+import { auth, db } from '../config/firebase'
 
 interface AuthContextType {
   user: User | null
@@ -49,7 +50,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signup = async (email: string, password: string) => {
     try {
-      await createUserWithEmailAndPassword(auth, email, password)
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      
+      // Create user document in Firestore
+      const user = userCredential.user
+      await setDoc(doc(db, 'users', user.uid), {
+        email: user.email,
+        createdAt: new Date().toISOString(),
+        nickname: null,
+        avatarId: 'explorer',
+        backgroundColor: 'gradient'
+      })
     } catch (error) {
       throw error
     }

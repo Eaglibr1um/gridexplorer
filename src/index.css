@@ -147,4 +147,134 @@
 
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #525252;
+}
+
+/* Custom animations for success effects */
+@keyframes plus-one-fly {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.5);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(0, -20px) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, -60px) scale(0.8);
+  }
+}
+
+@keyframes number-bounce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(-10px) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100vh) rotate(720deg);
+  }
+}
+
+@keyframes slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes grid-reveal {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2) rotate(180deg);
+  }
+  100% {
+    opacity: 0.2;
+    transform: scale(1) rotate(360deg);
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-plus-one {
+  animation: plus-one-fly 1.5s ease-out forwards;
+}
+
+.animate-number-bounce {
+  animation: number-bounce 0.6s ease-out;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.animate-grid-reveal {
+  animation: grid-reveal 800ms ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.8s ease-out;
+}
+
+.confetti {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  animation: confetti-fall 3s linear forwards;
+}
+
+/* Grid color fade-in animation */
+@keyframes fade-in-color {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in-color {
+  animation: fade-in-color 1s ease-out forwards;
 } 

@@ -2,9 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import Login from './components/Login'
-import Dashboard from './components/Dashboard'
 import GridExplorer from './components/GridExplorer'
-import Navbar from './components/Navbar'
+import Profile from './components/Profile'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -25,18 +24,9 @@ function AppContent() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50 dark:bg-dark-primary transition-colors duration-200">
-        <Navbar />
         <main className="flex-1">
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
             <Route 
               path="/explorer" 
               element={
@@ -45,7 +35,15 @@ function AppContent() {
                 </ProtectedRoute>
               } 
             />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/" element={<Navigate to="/explorer" replace />} />
           </Routes>
         </main>
       </div>

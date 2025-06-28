@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { MapContainer, TileLayer, useMap, Polygon, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, useMap, Polygon, Polyline, Popup } from 'react-leaflet'
 import { 
   MapPin, 
   Info, 
@@ -18,9 +18,14 @@ import {
   Grid3X3,
   ArrowRight,
   ChevronDown,
-  Shuffle
+  Shuffle,
+  LogOut,
+  Moon,
+  Sun
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
+import { getUserProfile, subscribeToProfile, UserProfile, getAvatarById, getBackgroundColorById } from '../services/profileService'
 import { 
   getGridData, 
   getUserGridProgress, 
@@ -36,6 +41,7 @@ import {
   getEnhancedGridData
 } from '../services/gridService'
 import { GridCell, UserGridProgress } from '../types/grid'
+import { useNavigate } from 'react-router-dom'
 
 // Custom hook to handle map center updates
 const MapUpdater: React.FC<{ center: [number, number]; zoom?: number }> = ({ center, zoom }) => {
@@ -71,7 +77,13 @@ const GridCellComponent: React.FC<{
   onUpdateCustomName: (cellId: number, customName: string) => void
   onRemoveCustomName: (cellId: number) => void
   customName?: string
-}> = ({ cell, isExplored, isInaccessible, userNotes, exploredDate, isDragging, onCellClick, onToggleExplored, onMarkInaccessible, onUpdateNotes, onUpdateExploredDate, onUpdateCustomName, onRemoveCustomName, customName }) => {
+  isCelebrating?: boolean
+  onContextMenu: (event: React.MouseEvent, cell: GridCell) => void
+  onLongPressStart: (cell: GridCell) => void
+  onLongPressEnd: () => void
+  isLongPressing?: boolean
+  isSelected?: boolean
+}> = ({ cell, isExplored, isInaccessible, userNotes, exploredDate, isDragging, onCellClick, onToggleExplored, onMarkInaccessible, onUpdateNotes, onUpdateExploredDate, onUpdateCustomName, onRemoveCustomName, customName, isCelebrating, onContextMenu, onLongPressStart, onLongPressEnd, isLongPressing, isSelected }) => {
   const [editingNotes, setEditingNotes] = useState(false)
   const [notes, setNotes] = useState(userNotes || '')
   const [editingDate, setEditingDate] = useState(false)
@@ -122,6 +134,57 @@ const GridCellComponent: React.FC<{
     fillOpacity = 0.6
   }
 
+  // Add golden border for selected grid
+  if (isSelected) {
+    borderColor = '#F59E0B' // golden
+  }
+
+  // Add celebration animation
+  if (isCelebrating) {
+    fillColor = '#10B981'
+    borderColor = '#059669'
+    fillOpacity = 0.8
+  }
+
+  // Add fill animation for status changes
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [animationProgress, setAnimationProgress] = useState(0)
+  const [previousStatus, setPreviousStatus] = useState<'unexplored' | 'explored' | 'inaccessible'>('unexplored')
+  
+  // Determine current status
+  const currentStatus = isExplored ? 'explored' : isInaccessible ? 'inaccessible' : 'unexplored'
+  
+  useEffect(() => {
+    // Only trigger animation when status changes from unexplored to explored/inaccessible
+    if (previousStatus === 'unexplored' && (currentStatus === 'explored' || currentStatus === 'inaccessible') && !isAnimating) {
+      setIsAnimating(true)
+      setAnimationProgress(0)
+      
+      // Start fill animation from bottom to top
+      const startTime = Date.now()
+      const duration = 1000 // 1 second
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        
+        setAnimationProgress(progress)
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          setIsAnimating(false)
+          setAnimationProgress(1)
+        }
+      }
+      
+      requestAnimationFrame(animate)
+    }
+    
+    // Update previous status
+    setPreviousStatus(currentStatus)
+  }, [currentStatus, previousStatus, isAnimating])
+
   // Create tooltip content
   const getTooltipContent = () => {
     let content = `
@@ -166,260 +229,72 @@ const GridCellComponent: React.FC<{
   }
 
   return (
-    <Polygon
-      positions={cell.bounds as [number, number][]}
-      pathOptions={{
-        color: borderColor,
-        weight: 2,
-        fillColor,
-        fillOpacity
-      }}
-      eventHandlers={{
-        click: () => onCellClick(cell),
-        mouseover: (e) => {
-          // Don't open tooltip if map is being dragged
-          if (isDragging) {
-            return
+    <>
+      {/* Base grid cell */}
+      <Polygon
+        positions={cell.bounds as [number, number][]}
+        pathOptions={{
+          color: borderColor,
+          weight: isCelebrating ? 4 : 2,
+          fillColor: 'transparent',
+          fillOpacity: 0
+        }}
+        eventHandlers={{
+          click: () => onCellClick(cell),
+          contextmenu: (e) => {
+            e.originalEvent.preventDefault()
+            onContextMenu(e.originalEvent as any, cell)
+          },
+          mousedown: (e) => {
+            if (e.originalEvent.button === 0) { // Left click only
+              onLongPressStart(cell)
+            }
+          },
+          mouseup: () => {
+            onLongPressEnd()
+          },
+          mouseout: () => {
+            onLongPressEnd()
+          },
+          mouseover: (e) => {
+            // Don't open tooltip if map is being dragged or long pressing
+            if (isDragging || isLongPressing) {
+              return
+            }
+            
+            const layer = e.target
+            layer.bindTooltip(getTooltipContent(), {
+              permanent: false,
+              direction: 'top',
+              className: 'custom-tooltip'
+            }).openTooltip()
           }
-          
-          const layer = e.target
-          layer.bindTooltip(getTooltipContent(), {
-            permanent: false,
-            direction: 'top',
-            className: 'custom-tooltip'
-          }).openTooltip()
-        },
-        mouseout: (e) => {
-          const layer = e.target
-          // Close tooltip immediately when mouse leaves
-          layer.closeTooltip()
-        }
-      }}
-    >
-      <Popup>
-        <div className="p-3 min-w-[300px] bg-white dark:bg-black text-gray-900 dark:text-white">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">{displayName}</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Grid #{cell.id}</p>
-            </div>
-            <div className="flex space-x-2">
-              {!isExplored && !isInaccessible && (
-                <button
-                  onClick={() => onToggleExplored(cell.id, true)}
-                  className="p-1 rounded-full bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40"
-                  title="Mark as Explored"
-                >
-                  <CheckCircle className="h-4 w-4" />
-                </button>
-              )}
-              {!isInaccessible && (
-                <button
-                  onClick={() => onMarkInaccessible(cell.id)}
-                  className="p-1 rounded-full bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40"
-                  title="Mark as Inaccessible"
-                >
-                  <Ban className="h-4 w-4" />
-                </button>
-              )}
-              {(isExplored || isInaccessible) && (
-                <button
-                  onClick={() => onToggleExplored(cell.id, false)}
-                  className="p-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-black border border-gray-300 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-900"
-                  title="Mark as Unexplored"
-                >
-                  <Circle className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          </div>
-          
-          {/* Editable Grid Name */}
-          <div className="mb-3">
-            {editingName ? (
-              <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-black text-gray-900 dark:text-white"
-                  placeholder="Enter custom grid name..."
-                />
-                <div className="flex space-x-2">
-                  <button
-                    onClick={handleSaveName}
-                    className="px-3 py-1 bg-singapore-blue text-white rounded text-sm"
-                  >
-                    <Save className="h-3 w-3 inline mr-1" />
-                    Save
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingName(false)
-                      setName(customName || cell.displayName)
-                    }}
-                    className="px-3 py-1 bg-gray-300 dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm"
-                  >
-                    <X className="h-3 w-3 inline mr-1" />
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={() => setEditingName(true)}
-                  className="text-singapore-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
-                >
-                  <Edit3 className="h-3 w-3 inline mr-1" />
-                  {customName ? 'Edit' : 'Rename'} Grid
-                </button>
-                {customName && (
-                  <button
-                    onClick={() => onRemoveCustomName(cell.id)}
-                    className="ml-3 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 text-sm"
-                  >
-                    <X className="h-3 w-3 inline mr-1" />
-                    Reset to Default
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Region: {cell.regionName}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Status: {isExplored ? 'Explored' : isInaccessible ? 'Inaccessible' : 'Unexplored'}
-              </p>
-              {(isExplored || isInaccessible) && (
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                    Explored Date:
-                  </p>
-                  {editingDate ? (
-                    <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-black text-gray-900 dark:text-white"
-                      />
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={handleSaveDate}
-                          className="px-3 py-1 bg-singapore-blue text-white rounded text-sm"
-                        >
-                          <Save className="h-3 w-3 inline mr-1" />
-                          Save
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingDate(false)
-                            setDate(exploredDate ? new Date(exploredDate).toISOString().split('T')[0] : '')
-                          }}
-                          className="px-3 py-1 bg-gray-300 dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm"
-                        >
-                          <X className="h-3 w-3 inline mr-1" />
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
-                        {exploredDate ? (() => {
-                          const date = new Date(exploredDate)
-                          const day = date.getDate().toString().padStart(2, '0')
-                          const month = date.toLocaleDateString('en-GB', { month: 'short' })
-                          const year = date.getFullYear()
-                          const weekday = date.toLocaleDateString('en-GB', { weekday: 'short' })
-                          return `${day} ${month} ${year} (${weekday})`
-                        })() : 'No date set'}
-                      </p>
-                      <button
-                        onClick={() => setEditingDate(true)}
-                        className="text-singapore-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
-                      >
-                        <Edit3 className="h-3 w-3 inline mr-1" />
-                        {exploredDate ? 'Edit' : 'Set'} Date
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {cell.landmarks && cell.landmarks.length > 0 && (
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-white mb-2">Landmarks:</h4>
-                {cell.landmarks.map((landmark, index) => (
-                  <div key={index} className="mb-2 p-2 bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-700 rounded">
-                    <p className="font-medium text-sm text-gray-900 dark:text-white">{landmark.name}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{landmark.description}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div>
-              <h4 className="font-medium text-gray-900 dark:text-white mb-2">Notes:</h4>
-              {editingNotes ? (
-                <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-black text-gray-900 dark:text-white"
-                    rows={3}
-                    placeholder="Add your notes about this area..."
-                  />
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={handleSaveNotes}
-                      className="px-3 py-1 bg-singapore-blue text-white rounded text-sm"
-                    >
-                      <Save className="h-3 w-3 inline mr-1" />
-                      Save
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingNotes(false)
-                        setNotes(userNotes || '')
-                      }}
-                      className="px-3 py-1 bg-gray-300 dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm"
-                    >
-                      <X className="h-3 w-3 inline mr-1" />
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div onClick={(e) => e.stopPropagation()}>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
-                    {userNotes || 'No notes yet'}
-                  </p>
-                  <button
-                    onClick={() => setEditingNotes(true)}
-                    className="text-singapore-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
-                  >
-                    <Edit3 className="h-3 w-3 inline mr-1" />
-                    {userNotes ? 'Edit' : 'Add'} Notes
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </Popup>
-    </Polygon>
+        }}
+      />
+      
+      {/* Fill animation overlay */}
+      {(isExplored || isInaccessible) && (
+        <Polygon
+          positions={cell.bounds as [number, number][]}
+          pathOptions={{
+            color: 'transparent',
+            weight: 0,
+            fillColor,
+            fillOpacity: isAnimating ? (animationProgress * fillOpacity) : fillOpacity
+          }}
+        />
+      )}
+    </>
   )
 }
 
 const GridExplorer: React.FC = () => {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
+  const navigate = useNavigate()
   const [gridData, setGridData] = useState<any>(null)
   const [userProgress, setUserProgress] = useState<UserGridProgress | null>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<GridCell[]>([])
   const [showSearchResults, setShowSearchResults] = useState(false)
@@ -434,6 +309,33 @@ const GridExplorer: React.FC = () => {
   const mapRef = useRef<any>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const searchResultsRef = useRef<HTMLDivElement>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [celebratingCell, setCelebratingCell] = useState<number | null>(null)
+  const [showPlusOne, setShowPlusOne] = useState(false)
+  const [plusOnePosition, setPlusOnePosition] = useState({ x: 0, y: 0 })
+  const [pendingExploredCount, setPendingExploredCount] = useState<number | null>(null)
+  const [confetti, setConfetti] = useState<Array<{id: number, x: number, y: number, color: string, delay: number}>>([])
+  const [selectedGridModal, setSelectedGridModal] = useState<{
+    show: boolean
+    cell: GridCell | null
+  }>({ show: false, cell: null })
+  const [contextMenu, setContextMenu] = useState<{
+    show: boolean
+    x: number
+    y: number
+    cellId: number
+    cell: GridCell
+  } | null>(null)
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null)
+  const [longPressCell, setLongPressCell] = useState<number | null>(null)
+  
+  // Floating modal editing state
+  const [editingName, setEditingName] = useState(false)
+  const [editingNameValue, setEditingNameValue] = useState('')
+  const [editingDate, setEditingDate] = useState(false)
+  const [editingDateValue, setEditingDateValue] = useState('')
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [editingNotesValue, setEditingNotesValue] = useState('')
 
   // Track map dragging state
   useEffect(() => {
@@ -461,12 +363,66 @@ const GridExplorer: React.FC = () => {
     }
   }, [])
 
+  // Global ESC key handler
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Don't trigger shortcuts if user is typing in an input field
+      const target = event.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        return
+      }
+
+      if (event.key === 'Escape') {
+        // Close any open popups
+        const map = mapRef.current?.leafletElement
+        if (map) {
+          map.closePopup()
+        }
+        
+        // Close search results
+        setShowSearchResults(false)
+        
+        // Close top menu
+        setShowTopMenu(false)
+      } else if (event.key === 'S' || event.key === 's') {
+        // Focus search box
+        event.preventDefault()
+        searchInputRef.current?.focus()
+      } else if (event.key === 'M' || event.key === 'm') {
+        // Toggle top menu
+        event.preventDefault()
+        setShowTopMenu(!showTopMenu)
+      } else if (event.key === 'C' || event.key === 'c') {
+        // Zoom out and center on Singapore
+        event.preventDefault()
+        setMapCenter([1.3521, 103.8198]) // Singapore center coordinates
+        setTargetZoom(12) // Zoom out to show all of Singapore
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showTopMenu])
+
   // Global mouse click handler to close all tooltips
   useEffect(() => {
     const handleGlobalClick = (event: MouseEvent) => {
       // Close search results if clicking outside
       if (searchResultsRef.current && !searchResultsRef.current.contains(event.target as Node)) {
         setShowSearchResults(false)
+      }
+      
+      // Close top menu if clicking outside
+      const target = event.target as HTMLElement
+      if (!target.closest('.top-menu') && !target.closest('.top-menu-button')) {
+        setShowTopMenu(false)
+      }
+      
+      // Close context menu if clicking outside
+      if (!target.closest('.context-menu')) {
+        setContextMenu(null)
       }
       
       // Close all tooltips by clicking on the map
@@ -482,25 +438,6 @@ const GridExplorer: React.FC = () => {
 
     return () => {
       document.removeEventListener('click', handleGlobalClick)
-    }
-  }, [])
-
-  // Mouse move handler for top menu
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      const y = event.clientY
-      const threshold = 50 // Show menu when mouse is within 50px of top
-      
-      if (y <= threshold) {
-        setShowTopMenu(true)
-      } else {
-        setShowTopMenu(false)
-      }
-    }
-
-    document.addEventListener('mousemove', handleMouseMove)
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
     }
   }, [])
 
@@ -523,15 +460,22 @@ const GridExplorer: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log('Loading grid data and user progress...')
         const data = getEnhancedGridData()
         setGridData(data)
+        console.log('Grid data loaded:', data?.cells?.length, 'cells')
         
         if (user) {
+          console.log('Loading user progress for user:', user.uid)
           const progress = await getUserGridProgress(user.uid)
           setUserProgress(progress)
+          console.log('User progress loaded:', progress)
+        } else {
+          console.log('No user logged in')
         }
       } catch (error) {
         console.error('Error loading data:', error)
+        setError('Failed to load data. Please check your connection and try again.')
       } finally {
         setLoading(false)
       }
@@ -544,19 +488,134 @@ const GridExplorer: React.FC = () => {
   useEffect(() => {
     if (!user) return
 
+    console.log('Setting up user progress subscription for user:', user.uid)
     const unsubscribe = subscribeToUserProgress(user.uid, (progress) => {
+      console.log('Received user progress update:', progress)
       setUserProgress(progress)
       // Reset sync status when we receive updated data from database
       setSyncStatus('synced')
     })
 
-    return () => unsubscribe()
+    return () => {
+      console.log('Cleaning up user progress subscription')
+      unsubscribe()
+    }
+  }, [user])
+
+  // Subscribe to user profile changes
+  useEffect(() => {
+    if (!user) return
+
+    console.log('Setting up user profile subscription for user:', user.uid)
+    const unsubscribe = subscribeToProfile(user.uid, (profile) => {
+      console.log('Received user profile update:', profile)
+      setUserProfile(profile)
+    })
+
+    return () => {
+      console.log('Cleaning up user profile subscription')
+      unsubscribe()
+    }
   }, [user])
 
   const handleCellClick = useCallback((cell: GridCell) => {
-    setMapCenter(cell.center as [number, number])
-    setTargetZoom(15) // Zoom in to make grid clearly visible
+    // Close any existing modal
+    setSelectedGridModal({ show: false, cell: null })
+    
+    // Small delay to allow modal to close before opening new one
+    setTimeout(() => {
+      setMapCenter(cell.center as [number, number])
+      setTargetZoom(18) // Max zoom
+      setSelectedGridModal({ show: true, cell })
+    }, 100)
   }, [])
+
+  // Get exploration statistics
+  const stats = gridData && userProgress ? getExplorationStats(gridData, userProgress) : null
+
+  // Success animation sequence
+  const triggerSuccessAnimation = useCallback(async (cellId: number, cellCenter: [number, number]) => {
+    // Step 1: Close any open modals (popups) with ESC key simulation
+    const map = mapRef.current?.leafletElement
+    if (map) {
+      // Simulate ESC key press to close popup
+      const escEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        code: 'Escape',
+        keyCode: 27,
+        which: 27,
+        bubbles: true
+      })
+      document.dispatchEvent(escEvent)
+    }
+
+    // Step 2: Zoom in and center on the grid
+    setMapCenter(cellCenter)
+    setTargetZoom(18) // Zoom all the way in
+
+    // Step 3: Wait for zoom animation, then start confetti
+    setTimeout(() => {
+      setCelebratingCell(cellId)
+      
+      // Create confetti particles
+      const confettiColors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4']
+      const newConfetti = Array.from({ length: 30 }, (_, i) => ({
+        id: Date.now() + i,
+        x: Math.random() * window.innerWidth,
+        y: -20,
+        color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+        delay: Math.random() * 0.5
+      }))
+      setConfetti(newConfetti)
+    }, 1000) // Wait longer for zoom animation
+
+    // Step 4: Play ding sound and show +1 fly-out animation
+    setTimeout(() => {
+      // Play ding sound
+      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT')
+      audio.volume = 0.3
+      audio.play().catch(() => {
+        // Fallback: create a simple beep sound
+        const context = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const oscillator = context.createOscillator()
+        const gainNode = context.createGain()
+        
+        oscillator.connect(gainNode)
+        gainNode.connect(context.destination)
+        
+        oscillator.frequency.setValueAtTime(800, context.currentTime)
+        oscillator.frequency.setValueAtTime(1000, context.currentTime + 0.1)
+        
+        gainNode.gain.setValueAtTime(0.1, context.currentTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.2)
+        
+        oscillator.start(context.currentTime)
+        oscillator.stop(context.currentTime + 0.2)
+      })
+      
+      setPlusOnePosition({ x: 50, y: 50 }) // Position relative to stats panel
+      setShowPlusOne(true)
+    }, 1800) // Sync with confetti animation
+
+    // Step 5: Update stats count after +1 animation
+    setTimeout(() => {
+      if (stats) {
+        setPendingExploredCount(stats.exploredCells + 1)
+      }
+    }, 3300) // After +1 animation completes
+
+    // Step 6: Hide +1 after animation
+    setTimeout(() => {
+      setShowPlusOne(false)
+    }, 3300)
+
+    // Step 7: Clear confetti and reset celebration state
+    setTimeout(() => {
+      setConfetti([])
+      setCelebratingCell(null)
+      setPendingExploredCount(null)
+    }, 4000)
+  }, [stats])
 
   const handleToggleExplored = useCallback(async (cellId: number, isExplored: boolean) => {
     if (!user) {
@@ -567,6 +626,11 @@ const GridExplorer: React.FC = () => {
       setSyncStatus('syncing')
       if (isExplored) {
         await markCellAsExplored(user.uid, cellId)
+        // Trigger success animation for newly explored cells
+        const cell = gridData?.cells?.find((c: GridCell) => c.id === cellId)
+        if (cell) {
+          triggerSuccessAnimation(cellId, cell.center as [number, number])
+        }
       } else {
         await markCellAsUnexplored(user.uid, cellId)
       }
@@ -575,7 +639,7 @@ const GridExplorer: React.FC = () => {
       console.error('Error toggling cell status:', error)
       setSyncStatus('unsaved')
     }
-  }, [user])
+  }, [user, gridData, triggerSuccessAnimation])
 
   const handleMarkInaccessible = useCallback(async (cellId: number) => {
     if (!user) {
@@ -626,7 +690,7 @@ const GridExplorer: React.FC = () => {
       await updateCustomGridName(user.uid, cellId, customName)
       setSyncStatus('synced')
     } catch (error) {
-      console.error('Error updating custom grid name:', error)
+      console.error('Error updating custom name:', error)
       setSyncStatus('unsaved')
     }
   }, [user])
@@ -639,10 +703,21 @@ const GridExplorer: React.FC = () => {
       await removeCustomGridName(user.uid, cellId)
       setSyncStatus('synced')
     } catch (error) {
-      console.error('Error removing custom grid name:', error)
+      console.error('Error removing custom name:', error)
       setSyncStatus('unsaved')
     }
   }, [user])
+
+  const handleLogout = async () => {
+    try {
+      // Set flag for logout transition animation
+      sessionStorage.setItem('logoutTransition', 'true')
+      await logout()
+      navigate('/login')
+    } catch (error) {
+      console.error('Failed to log out:', error)
+    }
+  }
 
   // Filter cells based on search and filters
   const filteredCells = gridData?.cells?.filter((cell: GridCell) => {
@@ -700,9 +775,6 @@ const GridExplorer: React.FC = () => {
       return false
     }
   }) || []
-
-  // Get exploration statistics
-  const stats = gridData && userProgress ? getExplorationStats(gridData, userProgress) : null
 
   // Perform search and update results
   const performSearch = (query: string) => {
@@ -877,27 +949,118 @@ const GridExplorer: React.FC = () => {
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Only handle 'S' key if not typing in an input field
-      if (event.key.toLowerCase() === 's' && 
-          !event.ctrlKey && 
+      // Only handle shortcuts if not typing in an input field
+      if (!event.ctrlKey && 
           !event.metaKey && 
           !event.altKey &&
           !(event.target instanceof HTMLInputElement) &&
           !(event.target instanceof HTMLTextAreaElement)) {
         
-        event.preventDefault()
+        // 'S' key - Focus search
+        if (event.key.toLowerCase() === 's') {
+          event.preventDefault()
+          
+          // Focus the search input
+          if (searchInputRef.current) {
+            searchInputRef.current.focus()
+            searchInputRef.current.select() // Select existing text for easy replacement
+          }
+        }
         
-        // Focus the search input
-        if (searchInputRef.current) {
-          searchInputRef.current.focus()
-          searchInputRef.current.select() // Select existing text for easy replacement
+        // 'M' key - Toggle menu
+        if (event.key.toLowerCase() === 'm') {
+          event.preventDefault()
+          setShowTopMenu(!showTopMenu)
         }
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [showTopMenu])
+
+  // Context menu handlers
+  const handleContextMenu = useCallback((event: React.MouseEvent, cell: GridCell) => {
+    event.preventDefault()
+    event.stopPropagation()
+    
+    setContextMenu({
+      show: true,
+      x: event.clientX,
+      y: event.clientY,
+      cellId: cell.id,
+      cell: cell
+    })
   }, [])
+
+  const handleLongPressStart = useCallback((cell: GridCell) => {
+    setLongPressCell(cell.id)
+    const timer = setTimeout(() => {
+      // Show context menu at center of screen for long press
+      setContextMenu({
+        show: true,
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+        cellId: cell.id,
+        cell: cell
+      })
+      setLongPressCell(null)
+    }, 500) // 500ms long press
+    setLongPressTimer(timer)
+  }, [])
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+      setLongPressTimer(null)
+    }
+    setLongPressCell(null)
+  }, [longPressTimer])
+
+  const handleContextMenuAction = useCallback(async (action: 'explored' | 'unexplored' | 'inaccessible') => {
+    if (!contextMenu || !user) return
+
+    const { cellId } = contextMenu
+    
+    try {
+      setSyncStatus('syncing')
+      
+      if (action === 'explored') {
+        await markCellAsExplored(user.uid, cellId)
+        // Trigger success animation
+        const cell = gridData?.cells?.find((c: GridCell) => c.id === cellId)
+        if (cell) {
+          triggerSuccessAnimation(cellId, cell.center as [number, number])
+        }
+      } else if (action === 'inaccessible') {
+        await markCellAsInaccessible(user.uid, cellId)
+      } else if (action === 'unexplored') {
+        await markCellAsUnexplored(user.uid, cellId)
+      }
+      
+      setSyncStatus('synced')
+    } catch (error) {
+      console.error('Error updating cell status:', error)
+      setSyncStatus('unsaved')
+    }
+    
+    setContextMenu(null)
+  }, [contextMenu, user, gridData, triggerSuccessAnimation])
+
+  const handleStatsClick = (filterType: 'explored' | 'unexplored' | 'inaccessible') => {
+    // Set the search query to filter the map
+    const searchOperator = `=${filterType}`
+    setSearchQuery(searchOperator)
+    
+    // Zoom out and center on Singapore to show the filtered results
+    setMapCenter([1.3521, 103.8198])
+    setTargetZoom(12)
+    
+    // Close any open modals or menus
+    setSelectedGridModal({ show: false, cell: null })
+    setShowTopMenu(false)
+    setShowSearchResults(false)
+  }
 
   if (loading) {
     return (
@@ -921,27 +1084,67 @@ const GridExplorer: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col">
+      {/* Error Display */}
+      {error && (
+        <div className="absolute top-4 left-4 z-[1001] bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 max-w-md">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0">
+              <div className="w-6 h-6 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+                <span className="text-red-600 dark:text-red-400 text-sm font-bold">!</span>
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Connection Error</h3>
+              <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="flex-shrink-0 text-red-400 hover:text-red-600 dark:hover:text-red-300"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Menu Button - Visible on all devices */}
+      <div className="fixed top-4 left-20 z-[1000] top-menu-button">
+        <button
+          onClick={() => setShowTopMenu(!showTopMenu)}
+          className="p-3 bg-white dark:bg-dark-secondary rounded-xl shadow-lg border border-gray-200 dark:border-dark-primary transition-all duration-300 hover:bg-gray-50 dark:hover:bg-dark-tertiary hover:scale-105 hover:shadow-xl active:scale-95"
+        >
+          <div className="flex items-center space-x-2">
+            <div className="p-1 bg-singapore-red/10 rounded transition-all duration-300 hover:bg-singapore-red/20">
+              <MapPin className="h-4 w-4 text-singapore-red transition-transform duration-300 hover:rotate-12" />
+            </div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Menu</span>
+          </div>
+        </button>
+      </div>
+
       {/* Dropdown Menu Bar - Top */}
       {showTopMenu && (
-        <div className="fixed top-0 left-0 right-0 z-[2000] bg-white dark:bg-dark-secondary border-b border-gray-200 dark:border-dark-primary shadow-lg transition-all duration-300 ease-in-out">
+        <div className="fixed top-0 left-0 right-0 z-[2000] bg-white dark:bg-dark-secondary border-b border-gray-200 dark:border-dark-primary shadow-lg transition-all duration-500 ease-out top-menu animate-in slide-in-from-top-2">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center space-x-6">
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-dark-primary">Singapore Grid Explorer</h1>
-                <p className="text-xs text-gray-600 dark:text-dark-secondary">
-                  Explore Singapore's grid system and track your progress
-                </p>
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-singapore-red/10 rounded-lg transition-all duration-300 hover:bg-singapore-red/20">
+                  <MapPin className="h-6 w-6 text-singapore-red transition-transform duration-300 hover:rotate-12" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900 dark:text-dark-primary">Singapore Grid Explorer</h1>
+                  <p className="text-xs text-gray-600 dark:text-dark-secondary">
+                    Explore Singapore's grid system and track your progress
+                  </p>
+                </div>
               </div>
               
               {/* Navigation Links */}
               <div className="flex items-center space-x-4">
-                <button className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors duration-200">
-                  Dashboard
-                </button>
-                <button className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors duration-200">
+                <button className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-all duration-300 hover:scale-105">
                   Settings
                 </button>
-                <button className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors duration-200">
+                <button className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-all duration-300 hover:scale-105">
                   Help
                 </button>
               </div>
@@ -949,41 +1152,61 @@ const GridExplorer: React.FC = () => {
             
             {/* User Info & Actions */}
             <div className="flex items-center space-x-4">
+              {/* Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-dark-tertiary hover:bg-gray-200 dark:hover:bg-dark-primary transition-all duration-300 hover:scale-110 hover:rotate-12"
+                title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+              >
+                {theme === 'light' ? (
+                  <Moon className="h-5 w-5 text-gray-700 dark:text-dark-secondary" />
+                ) : (
+                  <Sun className="h-5 w-5 text-gray-700 dark:text-dark-secondary" />
+                )}
+              </button>
+
               {user && (
                 <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-singapore-blue rounded-full flex items-center justify-center">
+                  <button
+                    onClick={() => navigate('/profile')}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg cursor-pointer overflow-hidden ${
+                      userProfile?.backgroundColor ? 
+                        getBackgroundColorById(userProfile.backgroundColor).value : 
+                        'bg-gradient-to-br from-singapore-blue to-singapore-red'
+                    }`}
+                  >
                     <span className="text-white text-sm font-medium">
-                      {user.email?.charAt(0).toUpperCase() || 'U'}
+                      {userProfile?.avatarId ? 
+                        getAvatarById(userProfile.avatarId).emoji : 
+                        (userProfile?.nickname?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U')
+                      }
                     </span>
-                  </div>
+                  </button>
                   <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {user.email}
+                    {userProfile?.nickname || user.email}
                   </span>
                 </div>
               )}
-              <button className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors duration-200">
-                Logout
+              <button 
+                onClick={handleLogout}
+                className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-all duration-300 hover:scale-105"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Logout</span>
+              </button>
+              
+              {/* Close Button */}
+              <button
+                onClick={() => setShowTopMenu(false)}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-dark-tertiary hover:bg-gray-200 dark:hover:bg-dark-primary transition-all duration-300 hover:scale-110 hover:rotate-90"
+                title="Close Menu"
+              >
+                <X className="h-5 w-5 text-gray-700 dark:text-dark-secondary" />
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* Header - Fixed at top */}
-      <div className="flex-shrink-0 bg-white dark:bg-dark-secondary border-b border-gray-200 dark:border-dark-primary p-4 z-10">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-primary">Singapore Grid Explorer</h1>
-            <p className="text-gray-600 dark:text-dark-secondary mt-1 text-sm">
-              Explore Singapore's grid system and track your progress
-            </p>
-          </div>
-        </div>
-
-        {/* Filters - Compact */}
-        <div className="flex items-center gap-3 mt-3">
-        </div>
-      </div>
 
       {/* Map Container - Fill remaining space */}
       <div className="flex-1 relative">
@@ -994,12 +1217,12 @@ const GridExplorer: React.FC = () => {
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Press 'S' to search • Search grids, names, notes, landmarks, dates, or status (=explored, =unexplored, =inaccessible)..."
+              placeholder="Press 'S' to search, 'M' for menu • Click avatar for profile • Search grids, names, notes, landmarks, dates, or status (=explored, =unexplored, =inaccessible)..."
               value={searchQuery}
               onChange={handleSearchChange}
               onFocus={handleSearchFocus}
               onKeyDown={handleSearchKeyDown}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-dark-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary placeholder-gray-400 dark:placeholder-dark-tertiary transition-all duration-200 shadow-lg"
+              className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-dark-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary placeholder-gray-400 dark:placeholder-dark-tertiary transition-all duration-300 shadow-lg hover:shadow-xl focus:shadow-2xl focus:scale-[1.02]"
             />
             
             {/* Search Results Dropdown */}
@@ -1143,22 +1366,129 @@ const GridExplorer: React.FC = () => {
           </div>
         </div>
 
+        {/* Confetti Overlay */}
+        {confetti.length > 0 && (
+          <div className="fixed inset-0 pointer-events-none z-[9998]">
+            {confetti.map(particle => (
+              <div
+                key={particle.id}
+                className="confetti"
+                style={{
+                  left: `${particle.x}px`,
+                  top: `${particle.y}px`,
+                  backgroundColor: particle.color,
+                  animationDelay: `${particle.delay}s`
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Context Menu */}
+        {contextMenu && (
+          <div 
+            className="fixed z-[9999] context-menu bg-white dark:bg-dark-secondary rounded-xl shadow-2xl border border-gray-200 dark:border-dark-primary p-2 min-w-[200px]"
+            style={{
+              left: Math.min(contextMenu.x, window.innerWidth - 220),
+              top: Math.min(contextMenu.y, window.innerHeight - 120)
+            }}
+          >
+            <div className="px-3 py-2 border-b border-gray-200 dark:border-dark-primary">
+              <h3 className="font-medium text-gray-900 dark:text-dark-primary text-sm">
+                Grid {contextMenu.cellId}
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {contextMenu.cell.regionName}
+              </p>
+            </div>
+            
+            <div className="py-1">
+              <button
+                onClick={() => handleContextMenuAction('explored')}
+                className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors duration-200 group"
+              >
+                <div className="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-dark-primary text-sm">Mark as Explored</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Completed this area</div>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => handleContextMenuAction('inaccessible')}
+                className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors duration-200 group"
+              >
+                <div className="w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+                  <Ban className="h-4 w-4 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-dark-primary text-sm">Mark as Inaccessible</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Cannot be explored</div>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => handleContextMenuAction('unexplored')}
+                className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-900/20 rounded-lg transition-colors duration-200 group"
+              >
+                <div className="w-8 h-8 bg-gray-100 dark:bg-gray-900/20 rounded-full flex items-center justify-center">
+                  <Circle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-dark-primary text-sm">Mark as Unexplored</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Reset to unvisited</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* +1 Fly-out Animation */}
+        {showPlusOne && (
+          <div className="absolute bottom-4 left-4 z-[1001] pointer-events-none">
+            <div 
+              className="text-green-600 font-bold text-lg animate-plus-one"
+              style={{
+                transform: `translate(${plusOnePosition.x}px, ${plusOnePosition.y}px)`
+              }}
+            >
+              +1
+            </div>
+          </div>
+        )}
+
         {/* Compact Floating Stats Panel - Bottom */}
         {stats && (
           <div className="absolute bottom-4 left-4 z-[1000]">
-            <div className="bg-white dark:bg-dark-secondary rounded-xl shadow-lg border border-gray-200 dark:border-dark-primary p-3 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
+            <div className="bg-white dark:bg-dark-secondary rounded-xl shadow-lg border border-gray-200 dark:border-dark-primary p-3 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
               <div className="flex items-center space-x-4">
                 {/* Progress Stats */}
                 <div className="flex items-center space-x-3">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-green-600">{stats.exploredCells}</div>
+                  <div 
+                    className="text-center transition-transform duration-300 hover:scale-110 cursor-pointer"
+                    onClick={() => handleStatsClick('explored')}
+                    title="Click to show explored grids"
+                  >
+                    <div className={`text-lg font-bold text-green-600 transition-all duration-500 ${showPlusOne ? 'animate-number-bounce' : ''}`}>
+                      {pendingExploredCount || stats.exploredCells}
+                    </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">Explored</div>
                   </div>
-                  <div className="text-center">
+                  <div 
+                    className="text-center transition-transform duration-300 hover:scale-110 cursor-pointer"
+                    onClick={() => handleStatsClick('inaccessible')}
+                    title="Click to show inaccessible grids"
+                  >
                     <div className="text-lg font-bold text-red-600">{stats.inaccessibleCells}</div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">Inaccessible</div>
                   </div>
-                  <div className="text-center">
+                  <div 
+                    className="text-center transition-transform duration-300 hover:scale-110 cursor-pointer"
+                    onClick={() => handleStatsClick('unexplored')}
+                    title="Click to show unexplored grids"
+                  >
                     <div className="text-lg font-bold text-orange-500">{stats.unexploredCells}</div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">Unexplored</div>
                   </div>
@@ -1166,13 +1496,15 @@ const GridExplorer: React.FC = () => {
                 
                 {/* Progress Bar */}
                 <div className="flex items-center space-x-2">
-                  <div className="w-16 bg-gray-200 dark:bg-dark-primary rounded-full h-2">
+                  <div className="w-16 bg-gray-200 dark:bg-dark-primary rounded-full h-2 overflow-hidden">
                     <div 
-                      className="bg-gradient-to-r from-singapore-blue to-singapore-red h-2 rounded-full transition-all duration-500" 
+                      className="bg-gradient-to-r from-singapore-blue to-singapore-red h-2 rounded-full transition-all duration-700 ease-out relative" 
                       style={{ width: `${stats.progressPercentage}%` }}
-                    ></div>
+                    >
+                      <div className="absolute inset-0 bg-white opacity-20 animate-pulse"></div>
+                    </div>
                   </div>
-                  <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 min-w-[3rem]">
+                  <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 min-w-[3rem] transition-all duration-300 hover:scale-110">
                     {Math.round(stats.progressPercentage)}%
                   </div>
                 </div>
@@ -1235,7 +1567,7 @@ const GridExplorer: React.FC = () => {
 
         {/* Grid Count Display - Bottom Right */}
         <div className="absolute bottom-4 right-4 z-[1000]">
-          <div className="bg-white dark:bg-dark-secondary rounded-lg shadow-lg border border-gray-200 dark:border-dark-primary px-3 py-2 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
+          <div className="bg-white dark:bg-dark-secondary rounded-lg shadow-lg border border-gray-200 dark:border-dark-primary px-3 py-2 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95 transition-all duration-300 hover:shadow-xl hover:scale-105">
             <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Showing {filteredCells.length}/{gridData?.cells?.length || 0} grids
             </div>
@@ -1243,12 +1575,15 @@ const GridExplorer: React.FC = () => {
         </div>
 
         <MapContainer
-          ref={mapRef}
           center={mapCenter}
           zoom={targetZoom}
-          style={{ height: '100%', width: '100%' }}
+          style={{ height: '100vh', width: '100%' }}
+          zoomControl={false}
+          attributionControl={false}
+          ref={mapRef}
         >
           <MapUpdater center={mapCenter} zoom={targetZoom} />
+          
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -1278,11 +1613,299 @@ const GridExplorer: React.FC = () => {
                 onUpdateCustomName={handleUpdateCustomName}
                 onRemoveCustomName={handleRemoveCustomName}
                 customName={customName}
+                isCelebrating={cell.id === celebratingCell}
+                onContextMenu={handleContextMenu}
+                onLongPressStart={handleLongPressStart}
+                onLongPressEnd={handleLongPressEnd}
+                isLongPressing={longPressCell === cell.id}
+                isSelected={selectedGridModal.cell?.id === cell.id}
               />
             )
           })}
+
+          {/* Golden Polyline overlay for selected grid */}
+          {selectedGridModal.show && selectedGridModal.cell && (
+            <Polyline
+              positions={selectedGridModal.cell.bounds as [number, number][]}
+              pathOptions={{
+                color: '#F59E0B',
+                weight: 2,
+                opacity: 1
+              }}
+            />
+          )}
         </MapContainer>
       </div>
+
+      {/* Floating Grid Modal */}
+      {selectedGridModal.show && selectedGridModal.cell && (() => {
+        const cell = selectedGridModal.cell
+        const cellProgress = userProgress?.exploredCells?.[cell.id]
+        const isExplored = cellProgress?.status === 'explored'
+        const isInaccessible = cellProgress?.status === 'inaccessible'
+        const userNotes = cellProgress?.notes || ''
+        const exploredDate = cellProgress?.exploredDate || ''
+        const customName = userProgress?.customNames?.[cell.id] || ''
+
+        const handleSaveName = () => {
+          if (editingNameValue.trim()) {
+            if (editingNameValue.trim() === cell.displayName) {
+              // If name is same as default, remove custom name
+              handleRemoveCustomName(cell.id)
+            } else {
+              // Set custom name
+              handleUpdateCustomName(cell.id, editingNameValue.trim())
+            }
+          }
+          setEditingName(false)
+        }
+
+        const handleSaveDate = () => {
+          if (editingDateValue) {
+            handleUpdateExploredDate(cell.id, new Date(editingDateValue).toISOString())
+          }
+          setEditingDate(false)
+        }
+
+        const handleSaveNotes = () => {
+          handleUpdateNotes(cell.id, editingNotesValue)
+          setEditingNotes(false)
+        }
+
+        const handleStartEditingName = () => {
+          setEditingNameValue(customName || cell.displayName)
+          setEditingName(true)
+        }
+
+        const handleStartEditingDate = () => {
+          setEditingDateValue(exploredDate ? new Date(exploredDate).toISOString().split('T')[0] : '')
+          setEditingDate(true)
+        }
+
+        const handleStartEditingNotes = () => {
+          setEditingNotesValue(userNotes || '')
+          setEditingNotes(true)
+        }
+
+        return (
+          <div className="fixed left-4 top-32 z-[1000] w-80 animate-slide-in">
+            <div className="bg-white dark:bg-dark-secondary rounded-xl shadow-2xl border border-gray-200 dark:border-dark-primary p-6 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95 max-h-[70vh] overflow-y-auto">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-dark-primary text-lg">
+                    {customName || cell.displayName}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Grid #{cell.id} • {cell.regionName}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedGridModal({ show: false, cell: null })}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-tertiary transition-colors duration-200"
+                >
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+
+              {/* Status Actions */}
+              <div className="flex items-center space-x-2 mb-4">
+                {!isExplored && !isInaccessible && (
+                  <button
+                    onClick={() => handleToggleExplored(cell.id, true)}
+                    className="flex items-center space-x-2 px-3 py-2 bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors duration-200"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="text-sm font-medium">Mark Explored</span>
+                  </button>
+                )}
+                {!isInaccessible && (
+                  <button
+                    onClick={() => handleMarkInaccessible(cell.id)}
+                    className="flex items-center space-x-2 px-3 py-2 bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors duration-200"
+                  >
+                    <Ban className="h-4 w-4" />
+                    <span className="text-sm font-medium">Mark Inaccessible</span>
+                  </button>
+                )}
+                {(isExplored || isInaccessible) && (
+                  <button
+                    onClick={() => handleToggleExplored(cell.id, false)}
+                    className="flex items-center space-x-2 px-3 py-2 bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-900/40 transition-colors duration-200"
+                  >
+                    <Circle className="h-4 w-4" />
+                    <span className="text-sm font-medium">Mark Unexplored</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Grid Name */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Grid Name
+                </label>
+                {editingName ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={editingNameValue}
+                      onChange={(e) => setEditingNameValue(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-dark-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary"
+                      placeholder="Enter custom grid name..."
+                    />
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={handleSaveName}
+                        className="px-3 py-1 bg-singapore-blue text-white rounded text-sm"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingName(false)
+                          setEditingNameValue(customName || cell.displayName)
+                        }}
+                        className="px-3 py-1 bg-gray-300 dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-900 dark:text-dark-primary">
+                      {customName || cell.displayName}
+                    </span>
+                    <button
+                      onClick={handleStartEditingName}
+                      className="text-singapore-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Explored Date */}
+              {(isExplored || isInaccessible) && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Explored Date
+                  </label>
+                  {editingDate ? (
+                    <div className="space-y-2">
+                      <input
+                        type="date"
+                        value={editingDateValue}
+                        onChange={(e) => setEditingDateValue(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-dark-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary"
+                      />
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={handleSaveDate}
+                          className="px-3 py-1 bg-singapore-blue text-white rounded text-sm"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingDate(false)
+                            setEditingDateValue(exploredDate ? new Date(exploredDate).toISOString().split('T')[0] : '')
+                          }}
+                          className="px-3 py-1 bg-gray-300 dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-900 dark:text-dark-primary">
+                        {exploredDate ? (() => {
+                          const date = new Date(exploredDate)
+                          const day = date.getDate().toString().padStart(2, '0')
+                          const month = date.toLocaleDateString('en-GB', { month: 'short' })
+                          const year = date.getFullYear()
+                          const weekday = date.toLocaleDateString('en-GB', { weekday: 'short' })
+                          return `${day} ${month} ${year} (${weekday})`
+                        })() : 'No date set'}
+                      </span>
+                      <button
+                        onClick={handleStartEditingDate}
+                        className="text-singapore-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
+                      >
+                        {exploredDate ? 'Edit' : 'Set'} Date
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Notes */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Notes
+                </label>
+                {editingNotes ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={editingNotesValue}
+                      onChange={(e) => setEditingNotesValue(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-dark-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent bg-white dark:bg-dark-tertiary text-gray-900 dark:text-dark-primary"
+                      rows={3}
+                      placeholder="Add your notes about this area..."
+                    />
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={handleSaveNotes}
+                        className="px-3 py-1 bg-singapore-blue text-white rounded text-sm"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingNotes(false)
+                          setEditingNotesValue(userNotes || '')
+                        }}
+                        className="px-3 py-1 bg-gray-300 dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-between">
+                    <span className="text-gray-900 dark:text-dark-primary flex-1">
+                      {userNotes || 'No notes yet'}
+                    </span>
+                    <button
+                      onClick={handleStartEditingNotes}
+                      className="text-singapore-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm ml-2"
+                    >
+                      {userNotes ? 'Edit' : 'Add'} Notes
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Landmarks */}
+              {cell.landmarks && cell.landmarks.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-900 dark:text-dark-primary mb-2">Landmarks</h4>
+                  <div className="space-y-2">
+                    {cell.landmarks.map((landmark, index) => (
+                      <div key={index} className="p-3 bg-gray-50 dark:bg-dark-tertiary rounded-lg">
+                        <p className="font-medium text-sm text-gray-900 dark:text-dark-primary">{landmark.name}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{landmark.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
