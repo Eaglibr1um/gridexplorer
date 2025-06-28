@@ -1,10 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import Login from './components/Login'
 import Dashboard from './components/Dashboard'
 import GridExplorer from './components/GridExplorer'
 import Navbar from './components/Navbar'
-import './App.css'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -12,7 +12,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark-primary">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-singapore-red"></div>
       </div>
     )
@@ -24,9 +24,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 function AppContent() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-primary transition-colors duration-200">
         <Navbar />
-        <main className="container mx-auto px-4 py-8">
+        <main className="flex-1">
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route 
@@ -55,9 +55,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 

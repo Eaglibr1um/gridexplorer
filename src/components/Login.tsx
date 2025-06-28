@@ -1,17 +1,16 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Mail, Lock, Eye, EyeOff, MapPin } from 'lucide-react'
+import { MapPin, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [isSignUp, setIsSignUp] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [isSignup, setIsSignup] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  
-  const { login, signup } = useAuth()
+  const { signup, login } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,7 +19,7 @@ const Login: React.FC = () => {
     setLoading(true)
 
     try {
-      if (isSignup) {
+      if (isSignUp) {
         await signup(email, password)
       } else {
         await login(email, password)
@@ -34,94 +33,123 @@ const Login: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-singapore-blue to-singapore-red">
-      <div className="max-w-md w-full space-y-8 p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark-primary px-4">
+      <div className="max-w-md w-full space-y-8">
+        {/* Header */}
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-white rounded-full flex items-center justify-center mb-4">
-            <MapPin className="h-8 w-8 text-singapore-red" />
+          <div className="flex justify-center mb-6">
+            <div className="p-3 bg-singapore-red/10 rounded-xl">
+              <MapPin className="h-10 w-10 text-singapore-red" />
+            </div>
           </div>
-          <h2 className="text-3xl font-bold text-white mb-2">
-            Singapore Grid Explorer
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-dark-primary mb-2">
+            {isSignUp ? 'Create Account' : 'Sign In'}
           </h2>
-          <p className="text-white/80">
-            {isSignup ? 'Create your account' : 'Sign in to your account'}
+          <p className="text-gray-600 dark:text-dark-secondary">
+            {isSignUp 
+              ? 'Start your Singapore exploration journey' 
+              : 'Welcome back to your exploration'
+            }
           </p>
         </div>
 
+        {/* Form */}
         <div className="card">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                {error}
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
               </div>
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-dark-secondary mb-2">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-gray-400" />
+                </div>
                 <input
                   id="email"
+                  name="email"
                   type="email"
+                  autoComplete="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-field pl-10"
+                  className="input-field pl-12"
                   placeholder="Enter your email"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-dark-secondary mb-2">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
                 <input
                   id="password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-field pl-10 pr-10"
+                  className="input-field pl-12 pr-12"
                   placeholder="Enter your password"
                 />
                 <button
                   type="button"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center hover:text-gray-600 transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400" />
+                  )}
                 </button>
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full flex items-center justify-center"
-            >
-              {loading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              ) : (
-                isSignup ? 'Create Account' : 'Sign In'
-              )}
-            </button>
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    {isSignUp ? 'Creating Account...' : 'Signing In...'}
+                  </div>
+                ) : (
+                  isSignUp ? 'Create Account' : 'Sign In'
+                )}
+              </button>
+            </div>
           </form>
 
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setIsSignup(!isSignup)}
-              className="text-singapore-blue hover:text-blue-700 text-sm font-medium"
-            >
-              {isSignup 
-                ? 'Already have an account? Sign in' 
-                : "Don't have an account? Sign up"
-              }
-            </button>
+          {/* Toggle Sign Up/Sign In */}
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-600 dark:text-dark-secondary">
+              {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(!isSignUp)
+                  setError('')
+                }}
+                className="ml-1 text-singapore-blue hover:text-blue-700 dark:hover:text-blue-400 font-medium transition-colors duration-200"
+              >
+                {isSignUp ? 'Sign In' : 'Sign Up'}
+              </button>
+            </p>
           </div>
         </div>
       </div>

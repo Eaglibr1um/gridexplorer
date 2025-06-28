@@ -5,27 +5,146 @@
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
   
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gray-50 text-gray-900 transition-colors duration-200;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .dark body {
+    @apply bg-dark-primary text-dark-primary;
   }
 }
 
 @layer components {
+  /* Minimalist button styles */
   .btn-primary {
-    @apply bg-singapore-red hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply bg-singapore-blue hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:ring-offset-2;
   }
   
   .btn-secondary {
-    @apply bg-singapore-blue hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2;
   }
   
+  .dark .btn-secondary {
+    @apply bg-dark-tertiary hover:bg-dark-secondary text-dark-primary focus:ring-gray-600;
+  }
+  
+  /* Clean card design */
   .card {
-    @apply bg-white rounded-lg shadow-md p-6 border border-gray-200;
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200;
   }
   
-  .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent;
+  .dark .card {
+    @apply bg-dark-secondary border-dark-primary shadow-lg;
   }
+  
+  /* Simplified input styles */
+  .input-field {
+    @apply w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent transition-all duration-200 bg-white;
+  }
+  
+  .dark .input-field {
+    @apply bg-dark-tertiary border-dark-primary text-dark-primary placeholder:text-gray-400 focus:ring-singapore-blue;
+  }
+  
+  /* Clean select styles */
+  .select-field {
+    @apply border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-singapore-blue focus:border-transparent transition-all duration-200 bg-white;
+  }
+  
+  .dark .select-field {
+    @apply bg-dark-tertiary border-dark-primary text-dark-primary focus:ring-singapore-blue;
+  }
+}
+
+/* Leaflet dark mode - simplified */
+.dark .leaflet-container {
+  background-color: #000000 !important;
+}
+
+.dark .leaflet-popup-content-wrapper {
+  background-color: #111111 !important;
+  color: #FFFFFF !important;
+  border-radius: 8px !important;
+}
+
+.dark .leaflet-popup-tip {
+  background-color: #111111 !important;
+}
+
+.dark .leaflet-control-zoom a {
+  background-color: #111111 !important;
+  color: #FFFFFF !important;
+  border-color: #404040 !important;
+}
+
+.dark .leaflet-control-zoom a:hover {
+  background-color: #1a1a1a !important;
+}
+
+.dark .leaflet-control-attribution {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  color: #E5E5E5 !important;
+}
+
+/* Unified tooltip styles */
+.leaflet-tooltip,
+.custom-tooltip {
+  background-color: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  color: #374151 !important;
+  font-size: 13px !important;
+  padding: 12px !important;
+  z-index: 1000 !important;
+  pointer-events: none !important;
+}
+
+.dark .leaflet-tooltip,
+.dark .custom-tooltip {
+  background-color: #111111 !important;
+  border-color: #404040 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
+}
+
+.leaflet-tooltip-top:before,
+.custom-tooltip::before {
+  border-top-color: #e5e7eb !important;
+}
+
+.dark .leaflet-tooltip-top:before,
+.dark .custom-tooltip::before {
+  border-top-color: #404040 !important;
+}
+
+/* Minimalist scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #404040;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #525252;
 } 
