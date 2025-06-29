@@ -275,6 +275,33 @@ const GridCellComponent: React.FC<{
             }
             
             const layer = e.target
+            
+            // Apply the Leaflet fix: override the _openTooltip method
+            if (!layer._originalOpenTooltip) {
+              layer._originalOpenTooltip = layer._openTooltip;
+              layer._openTooltip = function(e: any) {
+                if (!this._tooltip || !this._map) {
+                  return;
+                }
+                
+                // If the map is moving, we will show the tooltip after it's done.
+                if (this._map.dragging && this._map.dragging.moving()) {
+                  if (e.type === 'add' && !this._moveEndOpensTooltip) {
+                    this._moveEndOpensTooltip = true;
+                    var that = this;
+                    this._map.once('moveend', function () {
+                      that._moveEndOpensTooltip = false;
+                      that._openTooltip(e);
+                    });
+                  }
+                  return;
+                }
+                
+                this._tooltip._source = e.layer || e.target;
+                this.openTooltip(this._tooltip.options.sticky ? e.latlng : undefined);
+              };
+            }
+            
             layer.bindTooltip(getTooltipContent(), {
               permanent: false,
               direction: 'top',
