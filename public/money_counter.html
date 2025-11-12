@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💰 Real-Time Money Counter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .background-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%);
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+                gap: 1.5rem;
+                padding-bottom: 2rem;
+            }
+            
+            body {
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .title {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            position: relative;
+            background: linear-gradient(135deg, 
+                #8B6914 0%, 
+                #B8860B 15%, 
+                #FFD700 30%, 
+                #FFFF80 45%, 
+                #FFD700 60%, 
+                #B8860B 85%, 
+                #8B6914 100%
+            );
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            user-select: none;
+            animation: goldFlow 4s ease-in-out infinite;
+        }
+
+
+
+        .title:hover {
+            transform: scale(1.02);
+            filter: brightness(1.1);
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a0a0a0;
+            font-weight: 300;
+        }
+
+        .counter-container {
+            backdrop-filter: blur(20px) saturate(180%);
+            background: linear-gradient(
+                135deg, 
+                rgba(255, 255, 255, 0.1), 
+                rgba(255, 255, 255, 0.05)
+            );
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .counter-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        .money-display {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #00ff88;
+            text-shadow: 
+                2px 2px 4px rgba(0, 0, 0, 0.9),
+                -2px -2px 4px rgba(0, 0, 0, 0.9),
+                2px -2px 4px rgba(0, 0, 0, 0.9),
+                -2px 2px 4px rgba(0, 0, 0, 0.9);
+            cursor: pointer;
+            line-height: 1.1;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            pointer-events: auto;
+            will-change: transform;
+            transform: translateZ(0);
+        }
+
+        .money-display:hover {
+            transform: scale(1.05) translateZ(0);
+            filter: brightness(1.1);
+        }
+
+        .money-display:active {
+            transform: scale(0.98) translateZ(0);
+        }
+
+        .time-display {
+            font-size: 1.8rem;
+            color: #888;
+            margin-bottom: 0.3rem;
+        }
+
+        .date-display {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .earning-since {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .time-remaining {
+            font-size: 0.9rem;
+            color: #00d4ff;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .collect-btn {
+            background: linear-gradient(45deg, #00ff88, #00d4ff);
+            border: none;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.4);
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+            will-change: transform;
+            transform: translateZ(0);
+        }
+
+        .collect-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .collect-btn:hover::before {
+            left: 100%;
+        }
+
+        .collect-btn:hover {
+            transform: translateY(-2px) translateZ(0);
+            box-shadow: 0 6px 20px rgba(0, 255, 136, 0.6);
+        }
+
+        .collect-btn:active {
+            transform: translateY(0) translateZ(0);
+        }
+
+        .collect-btn.collecting {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #333;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .collect-btn.collecting:hover {
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
+        }
+
+        .money-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #333;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            z-index: 2000;
+            text-align: center;
+            min-width: 300px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .money-notification.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .money-notification h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.5rem;
+            color: #333;
+        }
+
+        .money-notification .amount {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 1rem 0;
+            color: #2d5016;
+        }
+
+        .money-notification .duration {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        .close-notification {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .notification-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .share-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .share-btn:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        .close-notification:hover {
+            background: #555;
+            transform: translateY(-1px);
+        }
+
+        .flying-money {
+            position: fixed;
+            font-size: 2rem;
+            pointer-events: none;
+            z-index: 1500;
+            animation: flyMoney 2s ease-out forwards;
+            font-weight: bold;
+        }
+
+        @keyframes flyMoney {
+            0% {
+                transform: translate(0, 0) rotate(0deg) scale(0.5);
+                opacity: 1;
+            }
+            20% {
+                transform: translate(var(--fly-x), var(--fly-y)) rotate(180deg) scale(1.2);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(calc(var(--fly-x) * 1.5), calc(var(--fly-y) * 1.5)) rotate(720deg) scale(0.8);
+                opacity: 0;
+            }
+        }
+
+        /* Screen shake animation */
+        @keyframes screenShake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .screen-shake {
+            animation: screenShake 0.5s ease-in-out;
+        }
+
+        /* Money counter pulse animation */
+        @keyframes moneyPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .money-pulse {
+            animation: moneyPulse 0.3s ease-in-out;
+        }
+
+        /* Particle explosion */
+        .particle-explosion {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: #ffd700;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1600;
+            animation: particleExplosion 1.5s ease-out forwards;
+        }
+
+        @keyframes particleExplosion {
+            0% {
+                transform: translate(0, 0) scale(0);
+                opacity: 1;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--explosion-x), var(--explosion-y)) scale(1);
+                opacity: 0;
+            }
+        }
+
+        /* Success flash */
+        @keyframes successFlash {
+            0%, 100% { 
+                background: rgba(0, 255, 136, 0.1);
+                box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7);
+            }
+            50% { 
+                background: rgba(0, 255, 136, 0.3);
+                box-shadow: 0 0 20px 10px rgba(0, 255, 136, 0.5);
+            }
+        }
+
+        .success-flash {
+            animation: successFlash 0.6s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+            }
+        }
+
+        .pulse {
+            animation: pulse 0.6s ease-in-out;
+        }
+
+        @keyframes goldFlow {
+            0%, 100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+            transform: translateZ(0);
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px) translateZ(0);
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #00d4ff;
+            margin-bottom: 0.3rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            will-change: transform;
+            transform: translateZ(0);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px) translateZ(0);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn.secondary {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        }
+
+        .btn.secondary:hover {
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .input-field {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 0.6rem 0.8rem;
+            color: white;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 150px;
+            will-change: transform;
+            transform: translateZ(0);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: currentColor;
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.3);
+            transform: scale(1.02) translateZ(0);
+        }
+
+        .input-field::placeholder {
+            color: #888;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #888;
+            padding: 0.6rem 1rem;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(45deg, #00ff88, #00d4ff);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .countdown-input {
+            margin-bottom: 1rem;
+        }
+
+
+
+        .achievement {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #00ff88, #00d4ff);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+            transform: translateX(400px);
+            transition: transform 0.5s ease;
+            z-index: 1000;
+        }
+
+        .achievement.show {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: clamp(1.8rem, 4vw, 2.5rem);
+            }
+            
+            .money-display {
+                font-size: clamp(2rem, 6vw, 3rem);
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+            }
+            
+            .counter-container {
+                padding: 1.5rem;
+                margin: 0 1rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .notification-buttons {
+                flex-direction: column;
+                gap: 0.8rem;
+            }
+            
+            .container {
+                padding: 1rem;
+                gap: 1.5rem;
+            }
+        }
+
+        /* Smooth theme transitions */
+        body {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .counter-container, .stat-card {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body>
+    <div class="background-particles" id="particles"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1 class="title" onclick="toggleTheme()" style="cursor: pointer;">💰 Real-Time Money Counter</h1>
+            <p class="subtitle">Watch your earnings grow in real-time</p>
+        </div>
+
+        <div class="counter-container">
+            <div class="money-display" id="moneyDisplay">$0.00</div>
+            <div class="time-display" id="timeDisplay">12:00:00 PM</div>
+            <div class="date-display" id="dateDisplay">5 Jul 2024</div>
+            <div class="earning-since" id="earningSince">Earning since 12:00:00 PM</div>
+            <div class="time-remaining" id="timeRemaining"></div>
+            <button class="collect-btn" id="mainBtn" onclick="toggleMainButton()">▶️ Start</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="hourlyRate">$0.00</div>
+                <div class="stat-label">Per Hour</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="dailyRate">$0.00</div>
+                <div class="stat-label">Per Day</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="weeklyRate">$0.00</div>
+                <div class="stat-label">Per Week</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="monthlyRate">$0.00</div>
+                <div class="stat-label">Per Month</div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <input type="number" class="input-field" id="monthlyIncome" placeholder="Monthly salary" value="5000">
+            <button class="btn" onclick="updateIncome()">Update Salary</button>
+        </div>
+
+        <div class="mode-toggle">
+            <button class="mode-btn active" id="countUpBtn" onclick="switchMode('countUp')">📈 Count Up</button>
+            <button class="mode-btn" id="countDownBtn" onclick="switchMode('countDown')">⏰ Count Down</button>
+        </div>
+
+        <div class="countdown-input" id="countdownInput" style="display: none;">
+            <div class="input-group">
+                <input type="number" class="input-field" id="targetAmount" placeholder="Target amount" step="0.01">
+                <button class="btn" onclick="startCountdown()">🎯 Start Countdown</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <!-- Theme button hidden - now click the title to change themes -->
+        </div>
+    </div>
+
+    <div class="achievement" id="achievement"></div>
+            <div class="money-notification" id="moneyNotification">
+            <h3>💰 Money Collected!</h3>
+            <div class="amount" id="collectedAmount">$0.00</div>
+            <div class="duration" id="collectionDuration">Duration: 0 seconds</div>
+            <div class="notification-buttons">
+                <button class="share-btn" onclick="shareResults()">📤 Share</button>
+                <button class="close-notification" onclick="closeMoneyNotification()">Close</button>
+            </div>
+        </div>
+
+    <script>
+        let monthlyIncome = 5000;
+        let startTime = Date.now();
+        let isPaused = false;
+        let pauseStartTime = 0;
+        let totalPausedTime = 0;
+        let decimalPlaces = 2;
+        let currentTheme = 0;
+        let currentMode = 'countUp';
+        let targetAmount = 0;
+        let countdownStartTime = 0;
+        let countdownDuration = 0;
+        const themes = [
+            {
+                name: 'Midnight Blue',
+                background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
+                moneyColor: '#00ff88',
+                accentColor: '#00d4ff',
+                cardBg: 'rgba(255, 255, 255, 0.05)',
+                cardBorder: 'rgba(255, 255, 255, 0.1)'
+            },
+            {
+                name: 'Sunset Orange',
+                background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 50%, #ff8e53 100%)',
+                moneyColor: '#ffffff',
+                accentColor: '#ffd700',
+                cardBg: 'rgba(255, 255, 255, 0.15)',
+                cardBorder: 'rgba(255, 255, 255, 0.2)'
+            },
+            {
+                name: 'Forest Green',
+                background: 'linear-gradient(135deg, #2d5016 0%, #4a7c59 50%, #6b8e23 100%)',
+                moneyColor: '#90ee90',
+                accentColor: '#98fb98',
+                cardBg: 'rgba(255, 255, 255, 0.08)',
+                cardBorder: 'rgba(255, 255, 255, 0.15)'
+            },
+            {
+                name: 'Purple Haze',
+                background: 'linear-gradient(135deg, #4a148c 0%, #7b1fa2 50%, #9c27b0 100%)',
+                moneyColor: '#e1bee7',
+                accentColor: '#f3e5f5',
+                cardBg: 'rgba(255, 255, 255, 0.1)',
+                cardBorder: 'rgba(255, 255, 255, 0.18)'
+            },
+            {
+                name: 'Ocean Deep',
+                background: 'linear-gradient(135deg, #006064 0%, #00838f 50%, #26c6da 100%)',
+                moneyColor: '#b2ebf2',
+                accentColor: '#e0f7fa',
+                cardBg: 'rgba(255, 255, 255, 0.12)',
+                cardBorder: 'rgba(255, 255, 255, 0.2)'
+            },
+            {
+                name: 'Neon Cyber',
+                background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #2d2d2d 100%)',
+                moneyColor: '#00ff41',
+                accentColor: '#ff00ff',
+                cardBg: 'rgba(0, 255, 65, 0.1)',
+                cardBorder: 'rgba(0, 255, 65, 0.3)'
+            }
+        ];
+        let achievements = [
+            { amount: 100, message: "🎉 First $100 earned!" },
+            { amount: 500, message: "💰 Halfway to $500!" },
+            { amount: 1000, message: "💎 $1,000 milestone reached!" },
+            { amount: 5000, message: "🏆 $5,000 achievement unlocked!" },
+            { amount: 10000, message: "👑 $10,000 - You're a money-making machine!" }
+        ];
+        let shownAchievements = new Set();
+
+        // Initialize particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Format number with current decimal places (for main display)
+        function formatNumber(num) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: decimalPlaces,
+                maximumFractionDigits: decimalPlaces
+            }).format(num);
+        }
+
+        // Format number with fixed 2 decimal places (for stat cards)
+        function formatStatNumber(num) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(num);
+        }
+
+        // Cycle decimal places on click
+        function cycleDecimalPlaces() {
+            decimalPlaces = decimalPlaces >= 5 ? 2 : decimalPlaces + 1;
+            updateDisplay();
+        }
+
+        // Add click event listener with better handling
+        function addMoneyDisplayClickListener() {
+            const moneyDisplay = document.getElementById('moneyDisplay');
+            if (moneyDisplay) {
+                // Remove any existing listeners
+                moneyDisplay.removeEventListener('click', cycleDecimalPlaces);
+                // Add new listener
+                moneyDisplay.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    cycleDecimalPlaces();
+                });
+            }
+        }
+
+        // Update income
+        function updateIncome() {
+            const input = document.getElementById('monthlyIncome');
+            const newIncome = parseFloat(input.value);
+            if (newIncome > 0) {
+                monthlyIncome = newIncome;
+                // Save to local storage
+                localStorage.setItem('moneyCounterSalary', newIncome.toString());
+                updateDisplay();
+                showAchievement('Salary saved: $' + formatStatNumber(monthlyIncome));
+            }
+        }
+
+        // Toggle main button (Start/Collect)
+        function toggleMainButton() {
+            const mainBtn = document.getElementById('mainBtn');
+            
+            if (currentMode === 'countDown') {
+                if (isPaused) {
+                    // Use the existing startCountdown function (same as start countdown button)
+                    startCountdown();
+                } else {
+                    // Collect money and pause countdown
+                    collectMoney();
+                }
+            } else {
+                // Count up mode
+                if (isPaused) {
+                    // Start the counter
+                    isPaused = false;
+                    startTime = Date.now();
+                    totalPausedTime = 0;
+                    pauseStartTime = 0;
+                    mainBtn.textContent = '💰 Collect Money';
+                    mainBtn.classList.add('collecting');
+                } else {
+                    // Collect money and stop
+                    collectMoney();
+                }
+            }
+        }
+
+        // Reset counter
+        function resetCounter() {
+            if (currentMode === 'countDown') {
+                // Reset countdown
+                countdownStartTime = Date.now();
+                totalPausedTime = 0;
+                isPaused = true;
+                pauseStartTime = 0;
+                updateDisplay();
+                showAchievement('Countdown reset!');
+            } else {
+                // Reset count up
+                startTime = Date.now();
+                totalPausedTime = 0;
+                isPaused = true;
+                pauseStartTime = 0;
+                updateDisplay();
+                showAchievement('Counter reset!');
+            }
+        }
+
+        // Stop and reset counter (for collect money)
+        function stopAndResetCounter() {
+            startTime = Date.now();
+            totalPausedTime = 0;
+            isPaused = true;
+            pauseStartTime = 0;
+            updateDisplay();
+        }
+
+        // Toggle theme
+        function toggleTheme() {
+            currentTheme = (currentTheme + 1) % themes.length;
+            applyTheme(themes[currentTheme]);
+            showAchievement(`Theme: ${themes[currentTheme].name}`);
+            
+            // Save theme preference to local storage
+            localStorage.setItem('moneyCounterTheme', currentTheme.toString());
+        }
+
+        // Apply theme
+        function applyTheme(theme) {
+            document.body.style.background = theme.background;
+            
+            // Update money display color
+            const moneyDisplay = document.getElementById('moneyDisplay');
+            if (moneyDisplay) {
+                moneyDisplay.style.color = theme.moneyColor;
+                moneyDisplay.style.textShadow = `2px 2px 4px rgba(0, 0, 0, 0.9), -2px -2px 4px rgba(0, 0, 0, 0.9), 2px -2px 4px rgba(0, 0, 0, 0.9), -2px 2px 4px rgba(0, 0, 0, 0.9)`;
+            }
+            
+            // Update stat cards
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach(card => {
+                card.style.background = theme.cardBg;
+                card.style.borderColor = theme.cardBorder;
+            });
+            
+            // Update stat values color
+            const statValues = document.querySelectorAll('.stat-value');
+            statValues.forEach(value => {
+                value.style.color = theme.accentColor;
+            });
+            
+            // Update counter container
+            const counterContainer = document.querySelector('.counter-container');
+            if (counterContainer) {
+                counterContainer.style.background = theme.cardBg;
+                counterContainer.style.borderColor = theme.cardBorder;
+            }
+        }
+
+        // Collect money function
+        function collectMoney() {
+            const earnings = getCurrentEarnings();
+            const duration = getSessionDuration();
+            const now = new Date();
+            const collectionTime = `${now.getDate()} ${now.toLocaleDateString('en-US', {month: 'short'})} ${now.getFullYear()}, ${now.toLocaleTimeString()}`;
+            
+            // Store collection time for sharing
+            window.lastCollectionTime = collectionTime;
+            
+            // Calculate animation intensity based on earnings
+            const animationIntensity = Math.min(Math.max(earnings / 100, 0.5), 3); // Scale from 0.5x to 3x
+            
+            // Trigger enhanced animations
+            triggerEnhancedAnimations(earnings, animationIntensity);
+            
+            // Show notification
+            if (currentMode === 'countDown' && targetAmount > 0) {
+                document.getElementById('collectedAmount').textContent = `${formatNumber(earnings)} / ${formatNumber(targetAmount)}`;
+            } else {
+                document.getElementById('collectedAmount').textContent = formatNumber(earnings);
+            }
+            document.getElementById('collectionDuration').textContent = `Duration: ${formatDuration(duration)}`;
+            document.getElementById('moneyNotification').classList.add('show');
+            
+            if (currentMode === 'countDown') {
+                // Reset countdown back to 0 for retry
+                countdownStartTime = Date.now();
+                totalPausedTime = 0;
+                isPaused = true;
+                pauseStartTime = 0;
+                
+                // Update button back to Start
+                const mainBtn = document.getElementById('mainBtn');
+                mainBtn.textContent = '▶️ Start';
+                mainBtn.classList.remove('collecting');
+                
+                // Force update display to show 0 and full time remaining
+                updateDisplay();
+            } else {
+                // Stop and reset counter for count up mode
+                stopAndResetCounter();
+                
+                // Update button back to Start
+                const mainBtn = document.getElementById('mainBtn');
+                mainBtn.textContent = '▶️ Start';
+                mainBtn.classList.remove('collecting');
+            }
+        }
+
+        // Enhanced animation function
+        function triggerEnhancedAnimations(earnings, intensity) {
+            const counterContainer = document.querySelector('.counter-container');
+            const moneyDisplay = document.getElementById('moneyDisplay');
+            
+            // Screen shake (intensity based on earnings)
+            const shakeIntensity = Math.min(intensity * 2, 8);
+            document.body.style.setProperty('--shake-intensity', shakeIntensity + 'px');
+            document.body.classList.add('screen-shake');
+            setTimeout(() => document.body.classList.remove('screen-shake'), 500);
+            
+            // Money display pulse
+            moneyDisplay.classList.add('money-pulse');
+            setTimeout(() => moneyDisplay.classList.remove('money-pulse'), 300);
+            
+            // Success flash on counter container
+            counterContainer.classList.add('success-flash');
+            setTimeout(() => counterContainer.classList.remove('success-flash'), 600);
+            
+            // Create particle explosion
+            createParticleExplosion(earnings, intensity);
+            
+            // Create enhanced flying money
+            createEnhancedFlyingMoney(earnings, intensity);
+            
+            // Play sound effect (if supported)
+            playMoneySound(earnings);
+        }
+
+        // Create particle explosion
+        function createParticleExplosion(earnings, intensity) {
+            const counterContainer = document.querySelector('.counter-container');
+            const rect = counterContainer.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            const particleCount = Math.min(Math.floor(earnings / 10), 50); // Scale with earnings
+            
+            for (let i = 0; i < particleCount; i++) {
+                setTimeout(() => {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle-explosion';
+                    
+                    // Position at counter center
+                    particle.style.left = centerX + 'px';
+                    particle.style.top = centerY + 'px';
+                    
+                    // Random explosion direction
+                    const angle = (Math.PI * 2 * i) / particleCount;
+                    const distance = 100 + Math.random() * 100 * intensity;
+                    const explosionX = Math.cos(angle) * distance;
+                    const explosionY = Math.sin(angle) * distance;
+                    
+                    particle.style.setProperty('--explosion-x', explosionX + 'px');
+                    particle.style.setProperty('--explosion-y', explosionY + 'px');
+                    
+                    // Random color
+                    const colors = ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4'];
+                    particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    document.body.appendChild(particle);
+                    
+                    // Remove after animation
+                    setTimeout(() => {
+                        if (particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }, 1500);
+                }, i * 20); // Stagger particles
+            }
+        }
+
+        // Create enhanced flying money
+        function createEnhancedFlyingMoney(earnings, intensity) {
+            const moneyEmojis = ['💰', '💵', '💸', '🪙', '💎', '🏆', '💲', '🤑'];
+            const counterContainer = document.querySelector('.counter-container');
+            const rect = counterContainer.getBoundingClientRect();
+            
+            const emojiCount = Math.min(Math.floor(earnings / 50), 30); // Scale with earnings
+            
+            for (let i = 0; i < emojiCount; i++) {
+                setTimeout(() => {
+                    const emoji = document.createElement('div');
+                    emoji.className = 'flying-money';
+                    emoji.textContent = moneyEmojis[Math.floor(Math.random() * moneyEmojis.length)];
+                    
+                    // Position at counter center
+                    emoji.style.left = (rect.left + rect.width / 2) + 'px';
+                    emoji.style.top = (rect.top + rect.height / 2) + 'px';
+                    
+                    // Scale emoji size based on earnings
+                    const emojiSize = Math.min(1 + (earnings / 1000), 3);
+                    emoji.style.fontSize = (emojiSize * 2) + 'rem';
+                    
+                    // Random flight direction with intensity scaling
+                    const flyX = (Math.random() - 0.5) * 400 * intensity;
+                    const flyY = (Math.random() - 0.5) * 400 * intensity - 100;
+                    emoji.style.setProperty('--fly-x', flyX + 'px');
+                    emoji.style.setProperty('--fly-y', flyY + 'px');
+                    
+                    document.body.appendChild(emoji);
+                    
+                    // Remove after animation
+                    setTimeout(() => {
+                        if (emoji.parentNode) {
+                            emoji.parentNode.removeChild(emoji);
+                        }
+                    }, 2000);
+                }, i * 50); // Stagger the emojis
+            }
+        }
+
+        // Play money sound effect
+        function playMoneySound(earnings) {
+            // Create audio context for sound effects
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                // Scale frequency with earnings
+                const frequency = 800 + (earnings / 100) * 200;
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (e) {
+                // Silently fail if audio is not supported
+            }
+        }
+
+        // Close money notification
+        function closeMoneyNotification() {
+            document.getElementById('moneyNotification').classList.remove('show');
+        }
+
+        // Share results
+        function shareResults() {
+            const earnings = document.getElementById('collectedAmount').textContent;
+            const duration = document.getElementById('collectionDuration').textContent;
+            const hourlyRate = formatStatNumber(monthlyIncome / (30 * 24));
+            const dailyRate = formatStatNumber(monthlyIncome / 30);
+            const timestamp = window.lastCollectionTime || (() => {
+                const now = new Date();
+                return `${now.getDate()} ${now.toLocaleDateString('en-US', {month: 'short'})} ${now.getFullYear()}, ${now.toLocaleTimeString()}`;
+            })();
+            
+            let shareText;
+            if (currentMode === 'countDown') {
+                const earningsText = currentMode === 'countDown' && targetAmount > 0 ? 
+                    `${earnings} / ${formatNumber(targetAmount)} earned` : 
+                    `${earnings} earned`;
+                
+                shareText = `💰 Countdown Results 💰
+
+${earningsText} in ${duration.replace('Duration: ', '')}
+
+📊 Stats:
+• Hourly Rate: ${hourlyRate}
+• Daily Rate: ${dailyRate}
+• Monthly Salary: ${formatStatNumber(monthlyIncome)}
+
+📆 ${timestamp}`;
+            } else {
+                shareText = `💰 Money Counter Results 💰
+
+${earnings} earned in ${duration.replace('Duration: ', '')}
+
+📊 Stats:
+• Hourly Rate: ${hourlyRate}
+• Daily Rate: ${dailyRate}
+• Monthly Salary: ${formatStatNumber(monthlyIncome)}
+
+📆 ${timestamp}`;
+            }
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(shareText).then(() => {
+                showAchievement('Results copied to clipboard! 📋');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = shareText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showAchievement('Results copied to clipboard! 📋');
+            });
+        }
+
+
+
+        // Format duration
+        function formatDuration(milliseconds) {
+            const seconds = Math.floor(milliseconds / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${seconds % 60}s`;
+            } else {
+                return `${seconds}s`;
+            }
+        }
+
+        // Switch between count up and count down modes
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Update button states
+            document.getElementById('countUpBtn').classList.toggle('active', mode === 'countUp');
+            document.getElementById('countDownBtn').classList.toggle('active', mode === 'countDown');
+            
+            // Show/hide countdown input
+            document.getElementById('countdownInput').style.display = mode === 'countDown' ? 'block' : 'none';
+            
+            // Reset counter when switching modes
+            if (mode === 'countUp') {
+                resetCounter();
+            } else {
+                // Stop any running counter
+                isPaused = true;
+                const mainBtn = document.getElementById('mainBtn');
+                mainBtn.textContent = '▶️ Start';
+                mainBtn.classList.remove('collecting');
+            }
+            
+            updateDisplay();
+            
+            // Save mode preference to local storage
+            localStorage.setItem('moneyCounterMode', mode);
+        }
+
+        // Start countdown
+        function startCountdown() {
+            const targetInput = document.getElementById('targetAmount');
+            const amount = parseFloat(targetInput.value);
+            
+            if (amount > 0) {
+                targetAmount = amount;
+                countdownStartTime = Date.now();
+                totalPausedTime = 0;
+                isPaused = false;
+                
+                // Calculate how long it will take
+                const hourlyRate = monthlyIncome / (30 * 24);
+                const timeToEarn = (amount / hourlyRate) * 60 * 60 * 1000; // in milliseconds
+                countdownDuration = timeToEarn;
+                
+                // Update button
+                const mainBtn = document.getElementById('mainBtn');
+                mainBtn.textContent = '💰 Collect Money';
+                mainBtn.classList.add('collecting');
+                
+                updateDisplay();
+            } else {
+                // No target set, focus on target amount field and pulse it
+                targetInput.focus();
+                targetInput.classList.add('pulse');
+                showAchievement('Please set a target amount first');
+                
+                // Remove pulse class after animation completes
+                setTimeout(() => {
+                    targetInput.classList.remove('pulse');
+                }, 600);
+            }
+        }
+
+
+
+        // Get current earnings
+        function getCurrentEarnings() {
+            if (currentMode === 'countDown') {
+                if (isPaused) {
+                    const elapsedTime = pauseStartTime - countdownStartTime - totalPausedTime;
+                    return Math.max(0, (monthlyIncome / (30 * 24 * 60 * 60 * 1000)) * elapsedTime);
+                } else {
+                    const elapsedTime = Date.now() - countdownStartTime - totalPausedTime;
+                    return Math.max(0, (monthlyIncome / (30 * 24 * 60 * 60 * 1000)) * elapsedTime);
+                }
+            } else {
+                if (isPaused) {
+                    // When paused, calculate earnings up to the pause point
+                    const effectiveTime = pauseStartTime - startTime - totalPausedTime;
+                    return Math.max(0, (monthlyIncome / (30 * 24 * 60 * 60 * 1000)) * effectiveTime);
+                } else {
+                    const effectiveTime = Date.now() - startTime - totalPausedTime;
+                    return Math.max(0, (monthlyIncome / (30 * 24 * 60 * 60 * 1000)) * effectiveTime);
+                }
+            }
+        }
+
+        // Get session duration
+        function getSessionDuration() {
+            if (currentMode === 'countDown') {
+                if (isPaused) {
+                    return pauseStartTime - countdownStartTime - totalPausedTime;
+                } else {
+                    return Date.now() - countdownStartTime - totalPausedTime;
+                }
+            } else {
+                if (isPaused) {
+                    // When paused, return duration up to pause point
+                    return pauseStartTime - startTime - totalPausedTime;
+                } else {
+                    const effectiveTime = Date.now() - startTime - totalPausedTime;
+                    return effectiveTime;
+                }
+            }
+        }
+
+        // Show achievement
+        function showAchievement(message) {
+            const achievement = document.getElementById('achievement');
+            achievement.textContent = message;
+            achievement.classList.add('show');
+            
+            setTimeout(() => {
+                achievement.classList.remove('show');
+            }, 3000);
+        }
+
+        // Check for achievements
+        function checkAchievements(amount) {
+            achievements.forEach(achievement => {
+                if (amount >= achievement.amount && !shownAchievements.has(achievement.amount)) {
+                    showAchievement(achievement.message);
+                    shownAchievements.add(achievement.amount);
+                }
+            });
+        }
+
+        // Update display
+        function updateDisplay() {
+            const earnings = getCurrentEarnings();
+            const formattedEarnings = formatNumber(earnings);
+            
+            if (currentMode === 'countDown') {
+                if (targetAmount > 0) {
+                    if (earnings < targetAmount) {
+                        document.getElementById('moneyDisplay').textContent = formatNumber(earnings);
+                        
+                        // Calculate time remaining
+                        const hourlyRate = monthlyIncome / (30 * 24);
+                        const remainingAmount = targetAmount - earnings;
+                        const timeRemaining = (remainingAmount / hourlyRate) * 60 * 60 * 1000; // in milliseconds
+                        
+                        document.getElementById('earningSince').textContent = `Target: ${formatNumber(targetAmount)}`;
+                        document.getElementById('timeRemaining').textContent = `Time to target: ${formatDuration(timeRemaining)}`;
+                    } else {
+                        document.getElementById('moneyDisplay').textContent = formatNumber(targetAmount);
+                        document.getElementById('earningSince').textContent = `🎉 Target reached! ${formatNumber(targetAmount)} earned`;
+                        document.getElementById('timeRemaining').textContent = '';
+                    }
+                } else {
+                    // No target set yet
+                    document.getElementById('moneyDisplay').textContent = '$0.00';
+                    document.getElementById('earningSince').textContent = 'Set a target to start countdown';
+                    document.getElementById('timeRemaining').textContent = '';
+                }
+            } else {
+                document.getElementById('moneyDisplay').textContent = formattedEarnings;
+                const startDate = new Date(startTime);
+                const startTimeString = startDate.toLocaleTimeString();
+                document.getElementById('earningSince').textContent = `Earning since ${startTimeString}`;
+                document.getElementById('timeRemaining').textContent = '';
+            }
+            
+            document.getElementById('hourlyRate').textContent = formatStatNumber(monthlyIncome / (30 * 24));
+            document.getElementById('dailyRate').textContent = formatStatNumber(monthlyIncome / 30);
+            document.getElementById('weeklyRate').textContent = formatStatNumber(monthlyIncome / 4.33);
+            document.getElementById('monthlyRate').textContent = formatStatNumber(monthlyIncome);
+            
+            // Update time and date display (always running)
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            const dateString = `${now.getDate()} ${now.toLocaleDateString('en-US', {month: 'short'})} ${now.getFullYear()}`;
+            
+            document.getElementById('timeDisplay').textContent = timeString;
+            document.getElementById('dateDisplay').textContent = dateString;
+            
+            // Check achievements
+            checkAchievements(earnings);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load saved salary from local storage
+            const savedSalary = localStorage.getItem('moneyCounterSalary');
+            if (savedSalary) {
+                monthlyIncome = parseFloat(savedSalary);
+                document.getElementById('monthlyIncome').value = savedSalary;
+            }
+            
+            // Load saved theme from local storage
+            const savedTheme = localStorage.getItem('moneyCounterTheme');
+            if (savedTheme) {
+                currentTheme = parseInt(savedTheme);
+                applyTheme(themes[currentTheme]);
+            }
+
+            // Load saved mode preference
+            const savedMode = localStorage.getItem('moneyCounterMode');
+            if (savedMode) {
+                switchMode(savedMode);
+            }
+            
+            createParticles();
+            updateDisplay();
+            
+            // Add click listener for money display
+            addMoneyDisplayClickListener();
+            
+            // Start with counter paused
+            isPaused = true;
+            
+            // Update every 100ms for smooth animation
+            setInterval(() => {
+                if (!isPaused) {
+                    updateDisplay();
+                } else {
+                    // Always update time and date, even when paused
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString();
+                    const dateString = `${now.getDate()} ${now.toLocaleDateString('en-US', {month: 'short'})} ${now.getFullYear()}`;
+                    
+                    document.getElementById('timeDisplay').textContent = timeString;
+                    document.getElementById('dateDisplay').textContent = dateString;
+                }
+            }, 100);
+            
+            // Enter key to update income
+            document.getElementById('monthlyIncome').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    updateIncome();
+                }
+            });
+
+            // Enter key to start countdown from target field
+            document.getElementById('targetAmount').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    startCountdown();
+                }
+            });
+
+
+
+
+        });
+    </script>
+</body>
+</html> 

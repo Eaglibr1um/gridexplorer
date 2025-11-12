@@ -7,6 +7,26 @@
   "regions": ["sin1"],
   "rewrites": [
     {
+      "source": "/cpf",
+      "destination": "/CPF.html"
+    },
+    {
+      "source": "/invest",
+      "destination": "/investment.html"
+    },
+    {
+      "source": "/learn",
+      "destination": "/learningpoints.html"
+    },
+    {
+      "source": "/money",
+      "destination": "/money_counter.html"
+    },
+    {
+      "source": "/tracker",
+      "destination": "/work_progress_tracker.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -1,0 +1,3491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Portfolio Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            min-height: 100vh;
+            padding: 10px;
+            margin: 0;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Silver gradient diagonal wave background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(ellipse at 20% 80%, rgba(192, 192, 192, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(192, 192, 192, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 40% 40%, rgba(192, 192, 192, 0.05) 0%, transparent 50%);
+            animation: waveFloat 20s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        /* Money Rain Container */
+        .money-rain-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        /* Spotlight Search Styles */
+        .spotlight-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .spotlight-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .spotlight-search {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-color);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .spotlight-overlay.active .spotlight-search {
+            transform: scale(1);
+        }
+
+        .spotlight-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 12px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 500;
+            outline: none;
+            margin-bottom: 15px;
+        }
+
+        .spotlight-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .spotlight-results {
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+        }
+
+        .spotlight-result {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .spotlight-result:last-child {
+            border-bottom: none;
+        }
+
+        .spotlight-result:hover {
+            background: var(--accent-color);
+            color: var(--text-primary);
+        }
+
+        .spotlight-result.selected {
+            background: var(--accent-color);
+            color: var(--text-primary);
+        }
+
+        .result-icon {
+            font-size: 20px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .result-content {
+            flex: 1;
+        }
+
+        .result-title {
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #FFFFFF;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+            font-size: 16px;
+        }
+
+        .result-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .result-details {
+            text-align: right;
+            min-width: 120px;
+        }
+
+        .result-price {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .result-quantity {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .result-total {
+            font-weight: 600;
+            color: #28a745;
+            font-size: 13px;
+        }
+
+        .highlight {
+            background: rgba(255, 215, 0, 0.3);
+            color: #FFD700;
+            padding: 1px 2px;
+            border-radius: 2px;
+            font-weight: 600;
+        }
+
+        .spotlight-no-results {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Zoom animation for search results */
+        .zoom-highlight {
+            animation: zoomToElement 0.8s ease-out;
+        }
+
+        @keyframes zoomToElement {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .money-particle {
+            position: absolute;
+            font-size: 24px;
+            font-weight: bold;
+            z-index: 1;
+            pointer-events: none;
+            will-change: transform;
+            transform-origin: center;
+            filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
+        }
+
+        .money-particle.gold {
+            color: #FFD700;
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+        }
+
+        .money-particle.silver {
+            color: #C0C0C0;
+            text-shadow: 0 0 6px rgba(192, 192, 192, 0.5);
+        }
+
+        .money-particle.bronze {
+            color: #CD7F32;
+            text-shadow: 0 0 6px rgba(205, 127, 50, 0.5);
+        }
+
+        .money-particle.sparkle {
+            animation: sparkle 2s ease-in-out infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        @keyframes waveFloat {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(-2%, -1%) rotate(1deg); }
+            50% { transform: translate(1%, -2%) rotate(-1deg); }
+            75% { transform: translate(-1%, 1%) rotate(0.5deg); }
+        }
+
+        /* Money Rain Physics Animation - Continuous Smooth Motion */
+        @keyframes moneyFall1 {
+            0% {
+                transform: translateY(-100px) translateX(0) rotate(0deg) scale(0.8);
+                opacity: 0;
+            }
+            5% {
+                opacity: 1;
+                transform: translateY(-50px) translateX(3px) rotate(30deg) scale(0.9);
+            }
+            100% {
+                transform: translateY(110vh) translateX(25px) rotate(360deg) scale(0.7);
+                opacity: 0;
+            }
+        }
+
+        @keyframes moneyFall2 {
+            0% {
+                transform: translateY(-100px) translateX(0) rotate(0deg) scale(0.9);
+                opacity: 0;
+            }
+            5% {
+                opacity: 1;
+                transform: translateY(-50px) translateX(-5px) rotate(60deg) scale(1);
+            }
+            100% {
+                transform: translateY(110vh) translateX(-20px) rotate(420deg) scale(0.8);
+                opacity: 0;
+            }
+        }
+
+        @keyframes moneyFall3 {
+            0% {
+                transform: translateY(-100px) translateX(0) rotate(0deg) scale(1);
+                opacity: 0;
+            }
+            5% {
+                opacity: 1;
+                transform: translateY(-50px) translateX(8px) rotate(45deg) scale(1.1);
+            }
+            100% {
+                transform: translateY(110vh) translateX(30px) rotate(380deg) scale(0.85);
+                opacity: 0;
+            }
+        }
+
+        @keyframes moneyFall4 {
+            0% {
+                transform: translateY(-100px) translateX(0) rotate(0deg) scale(0.85);
+                opacity: 0;
+            }
+            5% {
+                opacity: 1;
+                transform: translateY(-50px) translateX(-8px) rotate(90deg) scale(0.95);
+            }
+            100% {
+                transform: translateY(110vh) translateX(-30px) rotate(450deg) scale(0.75);
+                opacity: 0;
+            }
+        }
+
+        @keyframes moneyFall5 {
+            0% {
+                transform: translateY(-100px) translateX(0) rotate(0deg) scale(0.9);
+                opacity: 0;
+            }
+            5% {
+                opacity: 1;
+                transform: translateY(-50px) translateX(12px) rotate(75deg) scale(1.05);
+            }
+            100% {
+                transform: translateY(110vh) translateX(35px) rotate(400deg) scale(0.8);
+                opacity: 0;
+            }
+        }
+
+        /* Dark mode variables */
+        :root {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-card: #333333;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --text-muted: #888888;
+            --border-color: #444444;
+            --accent-color: #667eea;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .clock-card {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            border-radius: 50px;
+            padding: 12px 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            min-width: 120px;
+        }
+
+        .clock-time {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .clock-date {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 1px;
+        }
+
+        .clock-day {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .controls {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+        }
+
+        .control-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background: var(--bg-secondary);
+        }
+
+        .input-group select {
+            background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+            border: 2px solid #4a4a4a;
+            box-shadow: 
+                0 4px 8px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+
+        .input-group select:hover {
+            border-color: var(--accent-color);
+            box-shadow: 
+                0 6px 12px rgba(102, 126, 234, 0.4),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            background: linear-gradient(145deg, #4a4a4a, #3a3a3a);
+        }
+
+        .input-group select:focus {
+            border-color: var(--accent-color);
+            box-shadow: 
+                0 6px 12px rgba(102, 126, 234, 0.4),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .portfolio-summary {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .summary-card {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .summary-card h3 {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .summary-card .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .positive { color: #28a745 !important; }
+        .negative { color: #dc3545 !important; }
+
+        .markets-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .market-section {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+        }
+
+        .market-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .market-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .market-total {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .sort-btn {
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .sort-btn:hover, .sort-btn.active {
+            background: var(--accent-color);
+            color: var(--text-primary);
+            border-color: var(--accent-color);
+        }
+
+        .stock-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .stock-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .stock-card:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .summary-card.flippable {
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+            transition: transform 0.6s ease-in-out;
+        }
+
+        .summary-card.flippable.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .summary-card-front,
+        .summary-card-back {
+            backface-visibility: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .summary-card-front {
+            background: var(--bg-secondary);
+            transform: rotateY(0deg);
+        }
+
+        .summary-card-back {
+            background: var(--bg-secondary);
+            transform: rotateY(180deg);
+        }
+
+        .flip-indicator {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .ticker {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .company-name {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .total-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-align: right;
+        }
+
+        .percentage {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .stock-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+        }
+
+        .detail-item {
+            text-align: center;
+            flex: 1;
+            padding: 0 8px;
+        }
+
+        .detail-label {
+            font-size: 0.9rem;
+            color: #ffffff;
+            margin-bottom: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            background: linear-gradient(135deg, #f4f4f4 0%, #e0e0e0 50%, #f4f4f4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .detail-value {
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: 8px;
+            font-size: 1.1rem;
+        }
+
+        .editable-value {
+            background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+            border: 2px solid #4a4a4a;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 4px 8px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+            position: relative;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .editable-value:hover {
+            border-color: var(--accent-color);
+            box-shadow: 
+                0 6px 12px rgba(102, 126, 234, 0.4),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+            background: linear-gradient(145deg, #4a4a4a, #3a3a3a);
+        }
+
+        .editable-value:active {
+            transform: translateY(0);
+            box-shadow: 
+                0 2px 4px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        .editable-value::before {
+            content: '✏️';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 0.6rem;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .editable-value:hover::before {
+            opacity: 1;
+        }
+
+        .stock-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--accent-color);
+            color: var(--text-primary);
+            border-color: var(--accent-color);
+        }
+
+        .action-btn.danger {
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        .action-btn.danger:hover {
+            background: var(--danger-color);
+            color: var(--text-primary);
+        }
+
+        .stock-card {
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .stock-card.crumbling {
+            transform: scale(0.8) rotate(5deg);
+            opacity: 0.7;
+            filter: blur(1px);
+        }
+
+        .stock-card.deleting {
+            transform: scale(0.1) rotate(180deg);
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        .delete-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .delete-modal > div {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            animation: slideIn 0.3s ease;
+        }
+
+        .delete-modal h3 {
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .delete-modal p {
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+            font-size: 1rem;
+        }
+
+        .delete-modal .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .delete-modal .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .delete-modal .btn-cancel {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .delete-modal .btn-delete {
+            background: #ff4444;
+            color: white;
+        }
+
+        .delete-modal .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .stock-card {
+            position: relative;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-50px) scale(0.9);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes modalSlideIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-30px) scale(0.95);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes modalSlideOut {
+            from { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+            to { 
+                opacity: 0; 
+                transform: translateY(30px) scale(0.95);
+            }
+        }
+
+        .modal-overlay {
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay > div {
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        .modal-overlay.closing {
+            animation: fadeIn 0.3s ease reverse;
+            opacity: 0 !important;
+        }
+
+        .modal-overlay.closing > div {
+            animation: modalSlideOut 0.3s ease;
+            transform: translateY(30px) scale(0.95) !important;
+        }
+
+        .import-modal {
+            animation: fadeIn 0.3s ease;
+        }
+
+        .import-modal > div {
+            animation: slideIn 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .controls {
+                padding: 10px;
+            }
+            
+            .control-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .input-group {
+                min-width: auto;
+            }
+            
+            .btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            .stock-details {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .stock-actions {
+                flex-wrap: wrap;
+                gap: 5px;
+            }
+            
+            .action-btn {
+                padding: 6px 8px;
+                font-size: 11px;
+            }
+            
+            .sort-controls {
+                gap: 5px;
+            }
+            
+            .sort-btn {
+                padding: 4px 8px;
+                font-size: 0.7rem;
+            }
+            
+            .import-modal > div {
+                margin: 10px;
+            }
+            
+            .clock-card {
+                top: 10px;
+                right: 10px;
+                padding: 8px 12px;
+                min-width: 100px;
+            }
+            
+            .clock-time {
+                font-size: 1rem;
+            }
+            
+            .clock-date {
+                font-size: 0.6rem;
+            }
+            
+            .clock-day {
+                font-size: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="money-rain-container" id="moneyRainContainer"></div>
+    
+    <!-- Spotlight Search Overlay -->
+    <div class="spotlight-overlay" id="spotlightOverlay">
+        <div class="spotlight-search">
+            <input type="text" class="spotlight-input" id="spotlightInput" placeholder="Search stocks, markets, or values..." autocomplete="off">
+            <div class="spotlight-results" id="spotlightResults">
+                <div class="spotlight-no-results">Type to search...</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>📈 Investment Portfolio Tracker</h1>
+            <p>Keep track of your investments across multiple markets</p>
+        </div>
+
+        <div class="clock-card">
+            <div class="clock-time" id="clockTime">00:00:00</div>
+            <div class="clock-date" id="clockDate">1 January 2025</div>
+            <div class="clock-day" id="clockDay">MONDAY</div>
+        </div>
+
+        <div class="controls">
+            <div class="control-row">
+                <div class="input-group">
+                    <label for="ticker">Ticker Symbol</label>
+                    <input type="text" id="ticker" placeholder="e.g., AAPL, TSLA" maxlength="10">
+                </div>
+                <div class="input-group">
+                    <label for="boughtAt">Bought At Price</label>
+                    <input type="number" id="boughtAt" placeholder="0.00" step="0.01" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="quantity">Quantity</label>
+                    <input type="number" id="quantity" placeholder="0" step="0.01" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="market">Market</label>
+                    <select id="market">
+                        <option value="US">US Market</option>
+                        <option value="SG">Singapore Market</option>
+                        <option value="HK">Hong Kong Market</option>
+                        <option value="EU">European Market</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="control-row">
+                <button class="btn btn-primary" onclick="addStock()">➕ Add Stock</button>
+                <button class="btn btn-secondary" onclick="importData()">📥 Import Data</button>
+                <button class="btn btn-success" onclick="exportData()">📤 Export Data</button>
+                <button class="btn btn-secondary" onclick="updateExchangeRates()">💱 Update Rates</button>
+                <button class="btn btn-danger" onclick="clearAll()">🗑️ Clear All</button>
+            </div>
+        </div>
+
+        <div class="portfolio-summary">
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <h3>Total Invested</h3>
+                    <div class="value" id="totalInvested">S$0.00</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Total Stocks</h3>
+                    <div class="value" id="currentValue">0</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Active Markets</h3>
+                    <div class="value" id="totalGainLoss">0</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Total Holdings</h3>
+                    <div class="value" id="totalReturn">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="marketsContainer" class="markets-container">
+            <!-- Markets will be populated here -->
+        </div>
+    </div>
+
+    <script>
+        let portfolio = {
+            US: [],
+            SG: [],
+            HK: [],
+            EU: [],
+            OTHER: []
+        };
+
+        // Exchange rates (you can update these manually or fetch from a free API)
+        let exchangeRates = {
+            USD_TO_SGD: 1.35, // 1 USD = 1.35 SGD (approximate)
+            SGD_TO_SGD: 1.0,
+            HKD_TO_SGD: 0.17, // 1 HKD = 0.17 SGD (approximate)
+            EUR_TO_SGD: 1.45  // 1 EUR = 1.45 SGD (approximate)
+        };
+
+        // Market currency mapping
+        const marketCurrencies = {
+            US: 'USD',
+            SG: 'SGD',
+            HK: 'HKD',
+            EU: 'EUR',
+            OTHER: 'USD'
+        };
+
+        // Sorting state
+        let sortStates = {
+            US: { field: 'value', direction: 'desc' },
+            SG: { field: 'value', direction: 'desc' },
+            HK: { field: 'value', direction: 'desc' },
+            EU: { field: 'value', direction: 'desc' },
+            OTHER: { field: 'value', direction: 'desc' }
+        };
+
+        // Company names mapping (you can expand this)
+        const companyNames = {
+            // US Stocks
+            'TSLA': 'Tesla Inc',
+            'AAPL': 'Apple Inc',
+            'GOOG': 'Alphabet Inc',
+            'AMZN': 'Amazon.com Inc',
+            'NVDA': 'NVIDIA Corporation',
+            'AMD': 'Advanced Micro Devices',
+            'ADBE': 'Adobe Inc',
+            'SPY': 'SPDR S&P 500 ETF',
+            'STLA': 'Stellantis NV',
+            'SANA': 'Sana Biotechnology',
+            'PBR.A': 'Petrobras',
+            'HIMS': 'Hims & Hers Health',
+            'FUTU': 'Futu Holdings',
+            'DOYU': 'DouYu International',
+            
+            // Singapore Stocks
+            'NTDU': 'Nikko AM SGD Investment Grade Corporate Bond ETF',
+            'S68': 'SGX',
+            'ME8U': 'Mapletree Industrial Trust',
+            'C6L': 'Singapore Airlines',
+            'AJBU': 'Keppel DC REIT',
+            'BS6': 'Yangzijiang Shipbuilding',
+            'D05': 'DBS Group Holdings',
+            'Z74': 'Singapore Telecommunications',
+            'OV8': 'Sheng Siong Group',
+            '9A4U': 'ESR-REIT'
+        };
+
+        // Currency conversion functions
+        function convertToSGD(amount, fromCurrency) {
+            const rateKey = `${fromCurrency}_TO_SGD`;
+            return amount * (exchangeRates[rateKey] || 1);
+        }
+
+        function updateExchangeRates() {
+            // You can manually update these rates or fetch from a free API
+            // For now, let's add a simple way to update them
+            const newUsdRate = prompt('Enter USD to SGD rate (current: ' + exchangeRates.USD_TO_SGD + '):', exchangeRates.USD_TO_SGD);
+            if (newUsdRate && !isNaN(newUsdRate)) {
+                exchangeRates.USD_TO_SGD = parseFloat(newUsdRate);
+                localStorage.setItem('exchangeRates', JSON.stringify(exchangeRates));
+                updateDisplay();
+            }
+        }
+
+        // Load portfolio from localStorage on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load saved exchange rates
+            const savedRates = localStorage.getItem('exchangeRates');
+            if (savedRates) {
+                exchangeRates = JSON.parse(savedRates);
+            }
+            
+            loadPortfolio();
+            updateDisplay();
+            updateClock();
+            
+            // Update clock every second
+            setInterval(updateClock, 1000);
+            
+            // Initialize money rain animation (controlled by 'm' key)
+            initMoneyRain();
+        });
+
+        function updateClock() {
+            const now = new Date();
+            
+            // Convert to Singapore time (UTC+8)
+            const sgtTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+            
+            // Format time (24-hour format)
+            const hours = String(sgtTime.getUTCHours()).padStart(2, '0');
+            const minutes = String(sgtTime.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(sgtTime.getUTCSeconds()).padStart(2, '0');
+            
+            // Format date
+            const day = sgtTime.getUTCDate();
+            const month = sgtTime.getUTCMonth();
+            const year = sgtTime.getUTCFullYear();
+            
+            const monthNames = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+            
+            const dayNames = [
+                'SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'
+            ];
+            
+            // Update DOM elements
+            document.getElementById('clockTime').textContent = `${hours}:${minutes}:${seconds}`;
+            document.getElementById('clockDate').textContent = `${day} ${monthNames[month]} ${year}`;
+            document.getElementById('clockDay').textContent = dayNames[sgtTime.getUTCDay()];
+        }
+
+        function loadPortfolio() {
+            const saved = localStorage.getItem('investmentPortfolio');
+            if (saved) {
+                portfolio = JSON.parse(saved);
+            }
+            
+            // Auto-correct market placement for known Singapore stocks
+            correctMarketPlacement();
+        }
+
+        function correctMarketPlacement() {
+            const knownSingaporeStocks = ['AJBU', 'S68', 'ME8U', 'C6L', 'BS6', 'D05', 'Z74', 'OV8', '9A4U'];
+            let hasChanges = false;
+            
+            // Check all markets except SG
+            ['US', 'HK', 'EU', 'OTHER'].forEach(market => {
+                if (portfolio[market]) {
+                    const stocksToMove = portfolio[market].filter(stock => 
+                        knownSingaporeStocks.includes(stock.ticker)
+                    );
+                    
+                    if (stocksToMove.length > 0) {
+                        // Move stocks to SG market
+                        portfolio[market] = portfolio[market].filter(stock => 
+                            !knownSingaporeStocks.includes(stock.ticker)
+                        );
+                        portfolio['SG'] = portfolio['SG'] || [];
+                        portfolio['SG'].push(...stocksToMove);
+                        hasChanges = true;
+                        
+                        // Moved Singapore stocks to correct market
+                    }
+                }
+            });
+            
+            if (hasChanges) {
+                savePortfolio();
+            }
+        }
+
+        function savePortfolio() {
+            localStorage.setItem('investmentPortfolio', JSON.stringify(portfolio));
+        }
+
+        function addStock() {
+            const ticker = document.getElementById('ticker').value.toUpperCase().trim();
+            const boughtAt = parseFloat(document.getElementById('boughtAt').value);
+            const quantity = parseFloat(document.getElementById('quantity').value);
+            const market = document.getElementById('market').value;
+
+            if (!ticker || isNaN(boughtAt) || isNaN(quantity) || boughtAt <= 0 || quantity <= 0) {
+                alert('Please fill in all fields with valid values');
+                return;
+            }
+
+            const stock = {
+                ticker: ticker,
+                bought_at: boughtAt,
+                qty: quantity,
+                current_price: null,
+                last_updated: null
+            };
+
+            portfolio[market].push(stock);
+            savePortfolio();
+            updateDisplay();
+
+            // Clear form
+            document.getElementById('ticker').value = '';
+            document.getElementById('boughtAt').value = '';
+            document.getElementById('quantity').value = '';
+        }
+
+        function flipSummaryCard(card) {
+            card.classList.toggle('flipped');
+        }
+
+        function editUnitPrice(market, index) {
+            const stock = portfolio[market][index];
+            const marketCurrency = marketCurrencies[market];
+            const currencyPrefix = marketCurrency === 'SGD' ? 'S$' : 'US$';
+            
+            const previewData = {
+                type: 'price',
+                market: market,
+                index: index,
+                currentPrice: stock.bought_at,
+                currentQty: stock.qty,
+                currencyPrefix: currencyPrefix,
+                marketCurrency: marketCurrency
+            };
+            
+            showEditValueModal(
+                `Edit Unit Price - ${stock.ticker}`,
+                `Current: ${currencyPrefix}${stock.bought_at.toFixed(2)}`,
+                stock.bought_at,
+                'number',
+                0.01,
+                (newValue) => {
+                    stock.bought_at = parseFloat(newValue);
+                    savePortfolio();
+                    updateDisplay();
+                },
+                previewData
+            );
+        }
+
+        function editQuantity(market, index) {
+            const stock = portfolio[market][index];
+            const marketCurrency = marketCurrencies[market];
+            const currencyPrefix = marketCurrency === 'SGD' ? 'S$' : 'US$';
+            
+            const previewData = {
+                type: 'quantity',
+                market: market,
+                index: index,
+                currentPrice: stock.bought_at,
+                currentQty: stock.qty,
+                currencyPrefix: currencyPrefix,
+                marketCurrency: marketCurrency
+            };
+            
+            showEditValueModal(
+                `Edit Quantity - ${stock.ticker}`,
+                `Current: ${stock.qty}`,
+                stock.qty,
+                'number',
+                0.01,
+                (newValue) => {
+                    stock.qty = parseFloat(newValue);
+                    savePortfolio();
+                    updateDisplay();
+                },
+                previewData
+            );
+        }
+
+        function editStock(market, index) {
+            const stock = portfolio[market][index];
+            showEditModal(stock, market, index);
+        }
+
+        function increaseQuantity(market, index) {
+            const stock = portfolio[market][index];
+            showQuantityModal(stock, market, index, 'add');
+        }
+
+        function decreaseQuantity(market, index) {
+            const stock = portfolio[market][index];
+            showQuantityModal(stock, market, index, 'reduce');
+        }
+
+        function saveEditPrice(market, index) {
+            const newPrice = parseFloat(document.getElementById('editPrice').value);
+            if (newPrice && !isNaN(newPrice) && newPrice > 0) {
+                portfolio[market][index].bought_at = newPrice;
+                savePortfolio();
+                updateDisplay();
+                closeModal();
+            } else {
+                alert('Please enter a valid price');
+            }
+        }
+
+        function saveQuantityChange(market, index, action) {
+            const quantity = parseFloat(document.getElementById('quantityInput').value);
+            if (quantity && !isNaN(quantity) && quantity > 0) {
+                const stock = portfolio[market][index];
+                if (action === 'add') {
+                    stock.qty += quantity;
+                } else {
+                    const newQty = stock.qty - quantity;
+                    if (newQty >= 0) {
+                        stock.qty = newQty;
+                    } else {
+                        alert('Cannot reduce more shares than you own!');
+                        return;
+                    }
+                }
+                savePortfolio();
+                updateDisplay();
+                closeModal();
+            } else {
+                alert('Please enter a valid quantity');
+            }
+        }
+
+        function removeStock(market, index) {
+            const stock = portfolio[market][index];
+            showConfirmModal(`Are you sure you want to remove ${stock.ticker} from your portfolio?`, () => {
+                portfolio[market].splice(index, 1);
+                savePortfolio();
+                updateDisplay();
+            });
+        }
+
+        function showEditValueModal(title, subtitle, currentValue, inputType, step, onSave, previewData = null) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                backdrop-filter: blur(5px);
+            `;
+            
+            const previewSection = previewData ? `
+                <div id="previewSection" style="
+                    margin: 20px 0;
+                    padding: 15px;
+                    background: var(--bg-secondary);
+                    border-radius: 8px;
+                    border: 1px solid var(--border-color);
+                    display: none;
+                ">
+                    <h4 style="margin-bottom: 10px; color: var(--text-primary); font-size: 0.9rem; text-align: center;">
+                        📊 Preview Changes
+                    </h4>
+                    <div id="previewContent" style="color: var(--text-secondary); font-size: 0.85rem;">
+                    </div>
+                </div>
+            ` : '';
+            
+            modal.innerHTML = `
+                <div style="
+                    background: var(--bg-card);
+                    border-radius: 12px;
+                    padding: 25px;
+                    max-width: 450px;
+                    width: 90%;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+                    border: 1px solid var(--border-color);
+                ">
+                    <h3 style="margin-bottom: 10px; color: var(--text-primary); text-align: center; font-size: 1.2rem;">
+                        ${title}
+                    </h3>
+                    <p style="margin-bottom: 20px; color: var(--text-secondary); text-align: center; font-size: 0.9rem;">
+                        ${subtitle}
+                    </p>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">
+                            New Value
+                        </label>
+                        <input type="${inputType}" id="editValueInput" value="${currentValue}" step="${step}" min="0" style="
+                            width: 100%;
+                            padding: 12px;
+                            border: 2px solid var(--border-color);
+                            border-radius: 8px;
+                            background: var(--bg-secondary);
+                            color: var(--text-primary);
+                            font-size: 16px;
+                            text-align: center;
+                        ">
+                    </div>
+                    ${previewSection}
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="closeModal()" style="
+                            padding: 10px 20px;
+                            border: 1px solid var(--border-color);
+                            border-radius: 8px;
+                            background: var(--bg-secondary);
+                            color: var(--text-secondary);
+                            cursor: pointer;
+                            font-weight: 600;
+                            transition: all 0.2s ease;
+                        " 
+                        onmouseover="this.style.background='var(--border-color)'"
+                        onmouseout="this.style.background='var(--bg-secondary)'">Cancel</button>
+                        <button onclick="saveEditValue();" style="
+                            padding: 10px 20px;
+                            border: none;
+                            border-radius: 8px;
+                            background: var(--accent-color);
+                            color: var(--text-primary);
+                            cursor: pointer;
+                            font-weight: 600;
+                            transition: all 0.2s ease;
+                        "
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(102, 126, 234, 0.4)'"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">Save</button>
+                    </div>
+                </div>
+            `;
+            
+            // Store the callback function
+            window.saveEditValue = function() {
+                const newValue = document.getElementById('editValueInput').value;
+                
+                if (newValue && !isNaN(newValue) && parseFloat(newValue) >= 0) {
+                    onSave(newValue);
+                    
+                    // Try multiple approaches to find and close the modal
+                    let modal = document.querySelector('.modal-overlay');
+                    
+                    if (!modal) {
+                        // Try finding by parent of the input
+                        const input = document.getElementById('editValueInput');
+                        modal = input.closest('.modal-overlay');
+                    }
+                    
+                    if (modal) {
+                        modal.classList.add('closing');
+                        
+                        // Also add inline styles as backup
+                        modal.style.transition = 'all 0.3s ease';
+                        modal.style.opacity = '0';
+                        modal.style.transform = 'scale(0.9)';
+                        
+                        setTimeout(() => {
+                            modal.remove();
+                        }, 300);
+                    } else {
+                        // Force remove all modals immediately
+                        const allModals = document.querySelectorAll('.modal-overlay, .import-modal, .delete-modal');
+                        allModals.forEach(m => {
+                            m.remove();
+                        });
+                    }
+                } else {
+                    alert('Please enter a valid value');
+                }
+                delete window.saveEditValue;
+            };
+            
+            document.body.appendChild(modal);
+            
+            // Add real-time preview functionality
+            if (previewData) {
+                const input = document.getElementById('editValueInput');
+                const previewSection = document.getElementById('previewSection');
+                const previewContent = document.getElementById('previewContent');
+                
+                const updatePreview = () => {
+                    const newValue = parseFloat(input.value) || 0;
+                    if (newValue > 0) {
+                        previewSection.style.display = 'block';
+                        
+                        if (previewData.type === 'price') {
+                            const oldTotal = previewData.currentPrice * previewData.currentQty;
+                            const newTotal = newValue * previewData.currentQty;
+                            const difference = newTotal - oldTotal;
+                            const percentageChange = ((newValue - previewData.currentPrice) / previewData.currentPrice * 100);
+                            
+                            previewContent.innerHTML = `
+                                <div style="margin-bottom: 8px;">
+                                    <strong>Current Total:</strong> ${previewData.currencyPrefix}${oldTotal.toFixed(2)}
+                                </div>
+                                <div style="margin-bottom: 8px;">
+                                    <strong>New Total:</strong> ${previewData.currencyPrefix}${newTotal.toFixed(2)}
+                                </div>
+                                <div style="margin-bottom: 8px; color: ${difference >= 0 ? '#28a745' : '#dc3545'};">
+                                    <strong>Change:</strong> ${difference >= 0 ? '+' : ''}${previewData.currencyPrefix}${difference.toFixed(2)} 
+                                    (${percentageChange >= 0 ? '+' : ''}${percentageChange.toFixed(1)}%)
+                                </div>
+                            `;
+                        } else if (previewData.type === 'quantity') {
+                            const oldTotal = previewData.currentPrice * previewData.currentQty;
+                            const newTotal = previewData.currentPrice * newValue;
+                            const difference = newTotal - oldTotal;
+                            const quantityChange = newValue - previewData.currentQty;
+                            
+                            previewContent.innerHTML = `
+                                <div style="margin-bottom: 8px;">
+                                    <strong>Current Total:</strong> ${previewData.currencyPrefix}${oldTotal.toFixed(2)}
+                                </div>
+                                <div style="margin-bottom: 8px;">
+                                    <strong>New Total:</strong> ${previewData.currencyPrefix}${newTotal.toFixed(2)}
+                                </div>
+                                <div style="margin-bottom: 8px; color: ${difference >= 0 ? '#28a745' : '#dc3545'};">
+                                    <strong>Change:</strong> ${difference >= 0 ? '+' : ''}${previewData.currencyPrefix}${difference.toFixed(2)}
+                                </div>
+                                <div style="color: ${quantityChange >= 0 ? '#28a745' : '#dc3545'};">
+                                    <strong>Quantity Change:</strong> ${quantityChange >= 0 ? '+' : ''}${quantityChange.toFixed(2)} shares
+                                </div>
+                            `;
+                        }
+                    } else {
+                        previewSection.style.display = 'none';
+                    }
+                };
+                
+                // Add event listeners for real-time updates
+                input.addEventListener('input', updatePreview);
+                input.addEventListener('change', updatePreview);
+                
+                // Initial preview
+                setTimeout(updatePreview, 100);
+            }
+            
+            // Add click outside to close
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal();
+                    delete window.saveEditValue;
+                }
+            });
+            
+            // Add keyboard support
+            modal.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    saveEditValue();
+                } else if (e.key === 'Escape') {
+                    closeModal();
+                    delete window.saveEditValue;
+                }
+            });
+            
+            // Focus on input
+            setTimeout(() => {
+                document.getElementById('editValueInput').focus();
+                document.getElementById('editValueInput').select();
+            }, 100);
+        }
+
+        function showConfirmModal(message, onConfirm) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                backdrop-filter: blur(5px);
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: var(--bg-card);
+                    border-radius: 12px;
+                    padding: 25px;
+                    max-width: 400px;
+                    width: 90%;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+                    border: 1px solid var(--border-color);
+                ">
+                    <h3 style="margin-bottom: 20px; color: var(--text-primary); text-align: center;">
+                        Confirm Action
+                    </h3>
+                    <p style="margin-bottom: 20px; color: var(--text-secondary); text-align: center;">
+                        ${message}
+                    </p>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="closeModal()" style="
+                            padding: 10px 20px;
+                            border: 1px solid var(--border-color);
+                            border-radius: 8px;
+                            background: var(--bg-secondary);
+                            color: var(--text-secondary);
+                            cursor: pointer;
+                            font-weight: 600;
+                        ">Cancel</button>
+                        <button onclick="confirmAction()" style="
+                            padding: 10px 20px;
+                            border: none;
+                            border-radius: 8px;
+                            background: var(--danger-color);
+                            color: var(--text-primary);
+                            cursor: pointer;
+                            font-weight: 600;
+                        ">Confirm</button>
+                    </div>
+                </div>
+            `;
+            
+            // Store the callback function
+            window.confirmAction = function() {
+                onConfirm();
+                closeModal();
+                delete window.confirmAction;
+            };
+            
+            document.body.appendChild(modal);
+            
+            // Add click outside to close
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal();
+                    delete window.confirmAction;
+                }
+            });
+        }
+
+        function updateDisplay() {
+            const container = document.getElementById('marketsContainer');
+            container.innerHTML = '';
+
+            Object.keys(portfolio).forEach(market => {
+                if (portfolio[market].length > 0) {
+                    const marketSection = createMarketSection(market);
+                    container.appendChild(marketSection);
+                }
+            });
+
+            updateSummary();
+        }
+
+        function createMarketSection(market) {
+            const section = document.createElement('div');
+            section.className = 'market-section';
+            section.setAttribute('data-market', market);
+
+            const marketNames = {
+                'US': '🇺🇸 US Market',
+                'SG': '🇸🇬 Singapore Market',
+                'HK': '🇭🇰 Hong Kong Market',
+                'EU': '🇪🇺 European Market',
+                'OTHER': '🌍 Other Markets'
+            };
+
+            const stocks = portfolio[market];
+            const marketTotal = calculateMarketTotal(stocks, market);
+
+            const currentSort = sortStates[market];
+            const sortIcon = currentSort.direction === 'desc' ? '↓' : '↑';
+            
+            section.innerHTML = `
+                <div class="market-header">
+                    <div class="market-title">${marketNames[market]}</div>
+                    <div class="market-total">
+                        Total: S$${marketTotal.toFixed(2)}
+                    </div>
+                </div>
+                <div class="sort-controls">
+                    <button class="sort-btn ${currentSort.field === 'value' ? 'active' : ''}" 
+                            onclick="sortStocks('${market}', 'value')">
+                        Value ${currentSort.field === 'value' ? sortIcon : ''}
+                    </button>
+                    <button class="sort-btn ${currentSort.field === 'ticker' ? 'active' : ''}" 
+                            onclick="sortStocks('${market}', 'ticker')">
+                        Ticker ${currentSort.field === 'ticker' ? sortIcon : ''}
+                    </button>
+                    <button class="sort-btn ${currentSort.field === 'quantity' ? 'active' : ''}" 
+                            onclick="sortStocks('${market}', 'quantity')">
+                        Quantity ${currentSort.field === 'quantity' ? sortIcon : ''}
+                    </button>
+                    <button class="sort-btn ${currentSort.field === 'price' ? 'active' : ''}" 
+                            onclick="sortStocks('${market}', 'price')">
+                        Price ${currentSort.field === 'price' ? sortIcon : ''}
+                    </button>
+                </div>
+                <div class="stock-grid">
+                    ${stocks.map((stock, index) => createStockCard(stock, market, index)).join('')}
+                </div>
+            `;
+
+            return section;
+        }
+
+                function createStockCard(stock, market, index) {
+            const marketCurrency = marketCurrencies[market];
+            const companyName = companyNames[stock.ticker] || 'Unknown Company';
+            
+            // Convert prices to SGD
+            const boughtAtSGD = convertToSGD(stock.bought_at, marketCurrency);
+            const totalValueSGD = boughtAtSGD * stock.qty;
+            
+            // Calculate percentage of market total
+            const marketTotal = calculateMarketTotal(portfolio[market], market);
+            const percentage = marketTotal > 0 ? (totalValueSGD / marketTotal * 100) : 0;
+
+            // Determine currency prefix based on market
+            const currencyPrefix = marketCurrency === 'SGD' ? 'S$' : 'US$';
+            
+            // Special handling for known Singapore stocks that might be in wrong market
+            const knownSingaporeStocks = ['AJBU', 'S68', 'ME8U', 'C6L', 'BS6', 'D05', 'Z74', 'OV8', '9A4U'];
+            const isSingaporeStock = knownSingaporeStocks.includes(stock.ticker);
+            const isInWrongMarket = isSingaporeStock && market !== 'SG';
+            
+            // Use correct currency prefix
+            const displayCurrencyPrefix = isInWrongMarket ? 'S$' : currencyPrefix;
+            const displayMarketCurrency = isInWrongMarket ? 'SGD' : marketCurrency;
+            
+            // Add warning indicator for stocks in wrong market
+            const marketWarning = isInWrongMarket ? 
+                `<div style="
+                    position: absolute;
+                    top: 8px;
+                    left: 8px;
+                    background: #ffc107;
+                    color: #000;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    font-size: 0.7rem;
+                    font-weight: bold;
+                    z-index: 1;
+                " title="This stock should be in Singapore market">⚠️ SG</div>` : '';
+
+            return `
+                <div class="stock-card" 
+                     data-market="${market}"
+                     data-index="${index}"
+                     onmousedown="startLongPress('${market}', ${index}, event)" 
+                     onmouseup="clearLongPress()" 
+                     onmouseleave="clearLongPress()"
+                     ontouchstart="startLongPress('${market}', ${index}, event)" 
+                     ontouchend="clearLongPress()">
+                    ${marketWarning}
+                    <div class="stock-header">
+                        <div>
+                            <div class="ticker">${stock.ticker}</div>
+                            <div class="company-name">${companyName}</div>
+                        </div>
+                        <div>
+                            <div class="total-value">S$${totalValueSGD.toFixed(2)}</div>
+                            <div class="percentage">${percentage.toFixed(1)}% of market</div>
+                        </div>
+                    </div>
+                    <div class="stock-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Unit Price</div>
+                            <div class="detail-value">
+                                <span class="editable-value" ondblclick="editUnitPrice('${market}', ${index})">
+                                    ${displayCurrencyPrefix}${stock.bought_at.toFixed(2)}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Quantity</div>
+                            <div class="detail-value">
+                                <span class="editable-value" ondblclick="editQuantity('${market}', ${index})">
+                                    ${stock.qty}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Currency</div>
+                            <div class="detail-value">${displayMarketCurrency}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function calculateMarketTotal(stocks, market) {
+            const marketCurrency = marketCurrencies[market];
+            return stocks.reduce((total, stock) => {
+                const boughtAtSGD = convertToSGD(stock.bought_at, marketCurrency);
+                const currentPriceSGD = stock.current_price ? convertToSGD(stock.current_price, marketCurrency) : boughtAtSGD;
+                const currentValue = currentPriceSGD * stock.qty;
+                return total + currentValue;
+            }, 0);
+        }
+
+        function updateSummary() {
+            let totalInvestedSGD = 0;
+            let totalInvestedUSD = 0;
+            let totalStocks = 0;
+
+            Object.keys(portfolio).forEach(market => {
+                const marketCurrency = marketCurrencies[market];
+                portfolio[market].forEach(stock => {
+                    const boughtAtSGD = convertToSGD(stock.bought_at, marketCurrency);
+                    const investedSGD = boughtAtSGD * stock.qty;
+                    const investedUSD = stock.bought_at * stock.qty;
+                    totalInvestedSGD += investedSGD;
+                    totalInvestedUSD += investedUSD;
+                    totalStocks += 1;
+                });
+            });
+
+            // Update the total invested card with flip functionality
+            const totalInvestedElement = document.getElementById('totalInvested');
+            if (totalInvestedElement && totalInvestedElement.parentElement) {
+                const totalInvestedCard = totalInvestedElement.parentElement;
+                totalInvestedCard.className = 'summary-card flippable';
+                totalInvestedCard.onclick = function() { flipSummaryCard(this); };
+                
+                totalInvestedCard.innerHTML = `
+                    <div class="flip-indicator">🔄 Click to flip</div>
+                    
+                    <!-- Front Side (SGD View) -->
+                    <div class="summary-card-front">
+                        <h3>Total Invested</h3>
+                        <div class="value">S$${totalInvestedSGD.toFixed(2)}</div>
+                    </div>
+                    
+                    <!-- Back Side (USD View) -->
+                    <div class="summary-card-back">
+                        <h3>Total Invested</h3>
+                        <div class="value">US$${totalInvestedUSD.toFixed(2)}</div>
+                    </div>
+                `;
+            } else {
+                // Fallback: just update the text content if element exists
+                if (totalInvestedElement) {
+                    totalInvestedElement.textContent = `S$${totalInvestedSGD.toFixed(2)}`;
+                }
+            }
+
+            // Safely update summary elements
+            const currentValueElement = document.getElementById('currentValue');
+            const totalGainLossElement = document.getElementById('totalGainLoss');
+            const totalReturnElement = document.getElementById('totalReturn');
+            
+            if (currentValueElement) currentValueElement.textContent = `${totalStocks}`;
+            if (totalGainLossElement) totalGainLossElement.textContent = `${Object.keys(portfolio).filter(market => portfolio[market].length > 0).length}`;
+            if (totalReturnElement) totalReturnElement.textContent = `${Object.values(portfolio).reduce((sum, market) => sum + market.length, 0)}`;
+        }
+
+        function sortStocks(market, field) {
+            const currentSort = sortStates[market];
+            const newDirection = (currentSort.field === field && currentSort.direction === 'desc') ? 'asc' : 'desc';
+            
+            sortStates[market] = { field, direction: newDirection };
+            
+            portfolio[market].sort((a, b) => {
+                const marketCurrency = marketCurrencies[market];
+                const aValue = convertToSGD(a.bought_at, marketCurrency) * a.qty;
+                const bValue = convertToSGD(b.bought_at, marketCurrency) * b.qty;
+                
+                let comparison = 0;
+                switch(field) {
+                    case 'value':
+                        comparison = aValue - bValue;
+                        break;
+                    case 'ticker':
+                        comparison = a.ticker.localeCompare(b.ticker);
+                        break;
+                    case 'quantity':
+                        comparison = a.qty - b.qty;
+                        break;
+                    case 'price':
+                        comparison = a.bought_at - b.bought_at;
+                        break;
+                }
+                
+                return newDirection === 'desc' ? -comparison : comparison;
+            });
+            
+            updateDisplay();
+        }
+
+
+
+        function closeModal() {
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                // Add closing animation class
+                modal.classList.add('closing');
+                
+                // Remove modal after animation
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            }
+        }
+
+        function closeImportModal() {
+            const modal = document.querySelector('.import-modal');
+            if (modal) {
+                // Add closing animation
+                modal.style.transition = 'all 0.3s ease';
+                modal.style.opacity = '0';
+                modal.style.transform = 'scale(0.9)';
+                
+                // Remove modal after animation
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            }
+        }
+
+        function showEditModal(stock, market, index) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                backdrop-filter: blur(5px);
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: var(--bg-card);
+                    border-radius: 12px;
+                    padding: 25px;
+                    max-width: 400px;
+                    width: 90%;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+                    border: 1px solid var(--border-color);
+                ">
+                    <h3 style="margin-bottom: 20px; color: var(--text-primary); text-align: center;">
+                        Edit ${stock.ticker}
+                    </h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-weight: 600;">
+                            Unit Price (USD)
+                        </label>
+                        <input type="number" id="editPrice" value="${stock.bought_at}" step="0.01" min="0" style="
+                            width: 100%;
+                            padding: 10px;
+                            border: 2px solid var(--border-color);
+                            border-radius: 8px;
+                            background: var(--bg-secondary);
+                            color: var(--text-primary);
+                            font-size: 14px;
+                        ">
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="closeModal()" style="
+                            padding: 10px 20px;
+                            border: 1px solid var(--border-color);
+                            border-radius: 8px;
+                            background: var(--bg-secondary);
+                            color: var(--text-secondary);
+                            cursor: pointer;
+                            font-weight: 600;
+                        ">Cancel</button>
+                        <button onclick="saveEditPrice('${market}', ${index})" style="
+                            padding: 10px 20px;
+                            border: none;
+                            border-radius: 8px;
+                            background: var(--accent-color);
+                            color: var(--text-primary);
+                            cursor: pointer;
+                            font-weight: 600;
+                        ">Save</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Add click outside to close
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+            
+            // Focus on input
+            setTimeout(() => {
+                document.getElementById('editPrice').focus();
+            }, 100);
+        }
+
+        function showQuantityModal(stock, market, index, action) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                backdrop-filter: blur(5px);
+            `;
+            
+            const actionText = action === 'add' ? 'Add' : 'Reduce';
+            const actionIcon = action === 'add' ? '➕' : '➖';
+            
+            modal.innerHTML = `
+                <div style="
+                    background: var(--bg-card);
+                    border-radius: 12px;
+                    padding: 25px;
+                    max-width: 400px;
+                    width: 90%;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+                    border: 1px solid var(--border-color);
+                ">
+                    <h3 style="margin-bottom: 20px; color: var(--text-primary); text-align: center;">
+                        ${actionIcon} ${actionText} Shares - ${stock.ticker}
+                    </h3>
+                    <p style="margin-bottom: 15px; color: var(--text-secondary); text-align: center;">
+                        Current quantity: ${stock.qty}
+                    </p>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-weight: 600;">
+                            Quantity to ${action.toLowerCase()}
+                        </label>
+                        <input type="number" id="quantityInput" value="1" step="0.01" min="0" style="
+                            width: 100%;
+                            padding: 10px;
+                            border: 2px solid var(--border-color);
+                            border-radius: 8px;
+                            background: var(--bg-secondary);
+                            color: var(--text-primary);
+                            font-size: 14px;
+                        ">
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="closeModal()" style="
+                            padding: 10px 20px;
+                            border: 1px solid var(--border-color);
+                            border-radius: 8px;
+                            background: var(--bg-secondary);
+                            color: var(--text-secondary);
+                            cursor: pointer;
+                            font-weight: 600;
+                        ">Cancel</button>
+                        <button onclick="saveQuantityChange('${market}', ${index}, '${action}')" style="
+                            padding: 10px 20px;
+                            border: none;
+                            border-radius: 8px;
+                            background: var(--accent-color);
+                            color: var(--text-primary);
+                            cursor: pointer;
+                            font-weight: 600;
+                        ">${actionText}</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Add click outside to close
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+            
+            // Focus on input
+            setTimeout(() => {
+                document.getElementById('quantityInput').focus();
+            }, 100);
+        }
+
+        function importData() {
+            // Create modal for JSON input
+            const modal = document.createElement('div');
+            modal.className = 'import-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                backdrop-filter: blur(5px);
+                animation: fadeIn 0.3s ease;
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: var(--bg-card);
+                    border-radius: 15px;
+                    padding: 30px;
+                    max-width: 600px;
+                    width: 90%;
+                    max-height: 80vh;
+                    overflow-y: auto;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+                    border: 1px solid var(--border-color);
+                ">
+                    <h2 style="margin-bottom: 20px; color: var(--text-primary);">Import Portfolio Data</h2>
+                    <p style="margin-bottom: 15px; color: var(--text-secondary); font-size: 14px;">
+                        Paste your JSON data in the format below:
+                    </p>
+                    <textarea id="jsonInput" placeholder="[
+  { ticker: 'TSLA', bought_at: 286.38, qty: 2 },
+  { ticker: 'AAPL', bought_at: 191.232, qty: 10 }
+]" style="
+                        width: 100%;
+                        height: 300px;
+                        padding: 15px;
+                        border: 2px solid var(--border-color);
+                        border-radius: 8px;
+                        font-family: 'Courier New', monospace;
+                        font-size: 14px;
+                        resize: vertical;
+                        margin-bottom: 20px;
+                        background: var(--bg-secondary);
+                        color: var(--text-primary);
+                    "></textarea>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="closeImportModal()" 
+                                style="
+                                    padding: 10px 20px;
+                                    border: none;
+                                    border-radius: 8px;
+                                    background: #6c757d;
+                                    color: white;
+                                    cursor: pointer;
+                                    font-weight: 600;
+                                    transition: all 0.3s ease;
+                                " 
+                                onmouseover="this.style.background='#5a6268'; this.style.transform='translateY(-2px)'"
+                                onmouseout="this.style.background='#6c757d'; this.style.transform='translateY(0)'">Cancel</button>
+                        <button onclick="processImport()" 
+                                style="
+                                    padding: 10px 20px;
+                                    border: none;
+                                    border-radius: 8px;
+                                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                    color: white;
+                                    cursor: pointer;
+                                    font-weight: 600;
+                                    transition: all 0.3s ease;
+                                "
+                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(102, 126, 234, 0.4)'"
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">Import Data</button>
+                    </div>
+                </div>
+            `;
+            
+            // Add click outside to close
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeImportModal();
+                }
+            });
+            
+            // Add keyboard support
+            modal.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeImportModal();
+                }
+            });
+            
+            document.body.appendChild(modal);
+            
+            // Focus on textarea
+            setTimeout(() => {
+                document.getElementById('jsonInput').focus();
+            }, 100);
+        }
+
+        function processImport() {
+            const jsonInput = document.getElementById('jsonInput').value.trim();
+            
+            if (!jsonInput) {
+                alert('Please enter JSON data');
+                return;
+            }
+            
+            try {
+                // Clean the input - remove comments and extra whitespace
+                let cleanedInput = jsonInput
+                    .replace(/\/\/.*$/gm, '') // Remove single-line comments
+                    .replace(/\/\*[\s\S]*?\*\//g, '') // Remove multi-line comments
+                    .trim();
+                
+                // If the input doesn't start with [ and end with ], wrap it
+                if (!cleanedInput.startsWith('[')) {
+                    cleanedInput = '[' + cleanedInput;
+                }
+                if (!cleanedInput.endsWith(']')) {
+                    cleanedInput = cleanedInput + ']';
+                }
+                
+                // More robust cleanup for JavaScript object literals to JSON
+                cleanedInput = cleanedInput
+                    // Fix property names - add quotes around unquoted property names
+                    .replace(/(\w+):/g, '"$1":')
+                    // Convert single quotes to double quotes
+                    .replace(/'/g, '"')
+                    // Remove trailing commas before closing brackets/braces
+                    .replace(/,(\s*[}\]])/g, '$1')
+                    // Normalize whitespace
+                    .replace(/\s+/g, ' ');
+                
+                console.log('Cleaned input:', cleanedInput); // Debug log
+                
+                const data = JSON.parse(cleanedInput);
+                
+                // Convert flat array to market-based structure
+                portfolio = {
+                    US: [],
+                    SG: [],
+                    HK: [],
+                    EU: [],
+                    OTHER: []
+                };
+                
+                data.forEach(stock => {
+                    // Determine market based on ticker patterns
+                    let market = 'OTHER';
+                    if (stock.ticker.length <= 4 && /^[A-Z]+$/.test(stock.ticker)) {
+                        market = 'US';
+                    } else if (stock.ticker.length <= 4 && /^[0-9A-Z]+$/.test(stock.ticker)) {
+                        market = 'SG';
+                    } else if (stock.ticker.length <= 4 && /^[0-9]+$/.test(stock.ticker)) {
+                        market = 'HK';
+                    }
+                    
+                    portfolio[market].push({
+                        ticker: stock.ticker,
+                        bought_at: stock.bought_at,
+                        qty: stock.qty,
+                        current_price: null,
+                        last_updated: null
+                    });
+                });
+                
+                savePortfolio();
+                updateDisplay();
+                
+                // Close modal
+                closeImportModal();
+                
+                alert(`Data imported successfully! Added ${data.length} stocks.`);
+            } catch (error) {
+                console.error('Import error:', error);
+                console.error('Cleaned input that failed:', cleanedInput);
+                alert('Error importing data: ' + error.message + '\n\nPlease check your JSON format.\n\nTip: Make sure all property names and string values are properly formatted.');
+            }
+        }
+
+        function exportData() {
+            const allStocks = [];
+            Object.values(portfolio).forEach(marketStocks => {
+                marketStocks.forEach(stock => {
+                    allStocks.push({
+                        ticker: stock.ticker,
+                        bought_at: stock.bought_at,
+                        qty: stock.qty
+                    });
+                });
+            });
+            
+            const dataStr = JSON.stringify(allStocks, null, 2);
+            
+            // Create modal for JSON preview
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                backdrop-filter: blur(5px);
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: var(--bg-card);
+                    border-radius: 12px;
+                    padding: 25px;
+                    max-width: 600px;
+                    width: 90%;
+                    max-height: 80vh;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+                    border: 1px solid var(--border-color);
+                ">
+                    <h2 style="margin-bottom: 20px; color: var(--text-primary);">Export Portfolio Data</h2>
+                    <p style="margin-bottom: 15px; color: var(--text-secondary); font-size: 14px;">
+                        Preview and copy your portfolio data:
+                    </p>
+                    <textarea id="exportPreview" readonly style="
+                        width: 100%;
+                        height: 300px;
+                        padding: 15px;
+                        border: 2px solid var(--border-color);
+                        border-radius: 8px;
+                        font-family: 'Courier New', monospace;
+                        font-size: 14px;
+                        resize: vertical;
+                        margin-bottom: 20px;
+                        background: var(--bg-secondary);
+                        color: var(--text-primary);
+                    ">${dataStr}</textarea>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="closeExportModal()" 
+                                style="
+                                    padding: 10px 20px;
+                                    border: none;
+                                    border-radius: 8px;
+                                    background: #6c757d;
+                                    color: white;
+                                    cursor: pointer;
+                                    font-weight: 600;
+                                    transition: all 0.3s ease;
+                                " 
+                                onmouseover="this.style.background='#5a6268'; this.style.transform='translateY(-2px)'"
+                                onmouseout="this.style.background='#6c757d'; this.style.transform='translateY(0)'">Close</button>
+                        <button onclick="copyToClipboard()" 
+                                style="
+                                    padding: 10px 20px;
+                                    border: none;
+                                    border-radius: 8px;
+                                    background: #28a745;
+                                    color: white;
+                                    cursor: pointer;
+                                    font-weight: 600;
+                                    transition: all 0.3s ease;
+                                "
+                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(40, 167, 69, 0.4)'"
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">📋 Copy</button>
+                        <button onclick="downloadExport()" 
+                                style="
+                                    padding: 10px 20px;
+                                    border: none;
+                                    border-radius: 8px;
+                                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                    color: white;
+                                    cursor: pointer;
+                                    font-weight: 600;
+                                    transition: all 0.3s ease;
+                                "
+                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(102, 126, 234, 0.4)'"
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">💾 Download</button>
+                    </div>
+                </div>
+            `;
+            
+            // Add click outside to close
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeExportModal();
+                }
+            });
+            
+            // Add keyboard support
+            modal.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeExportModal();
+                }
+            });
+            
+            document.body.appendChild(modal);
+            
+            // Focus on textarea and select all text
+            setTimeout(() => {
+                const textarea = document.getElementById('exportPreview');
+                textarea.focus();
+                textarea.select();
+            }, 100);
+        }
+
+        function closeExportModal() {
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                // Add closing animation class
+                modal.classList.add('closing');
+                
+                // Remove modal after animation
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            }
+        }
+
+        function copyToClipboard() {
+            const textarea = document.getElementById('exportPreview');
+            textarea.select();
+            document.execCommand('copy');
+            
+            // Show feedback
+            const copyBtn = document.querySelector('button[onclick="copyToClipboard()"]');
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = '✅ Copied!';
+            copyBtn.style.background = '#28a745';
+            
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+            }, 2000);
+        }
+
+        function downloadExport() {
+            const textarea = document.getElementById('exportPreview');
+            const dataStr = textarea.value;
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'portfolio_export.json';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearAll() {
+            showConfirmModal('Are you sure you want to clear all portfolio data? This cannot be undone.', () => {
+                portfolio = {
+                    US: [],
+                    SG: [],
+                    HK: [],
+                    EU: [],
+                    OTHER: []
+                };
+                savePortfolio();
+                updateDisplay();
+            });
+        }
+
+        // Long press functionality
+        let longPressTimer = null;
+        let currentLongPressTarget = null;
+
+        function startLongPress(market, index, event) {
+            // Prevent default to avoid text selection
+            event.preventDefault();
+            
+            currentLongPressTarget = { market, index };
+            
+            longPressTimer = setTimeout(() => {
+                const stockCard = event.target.closest('.stock-card');
+                if (stockCard) {
+                    stockCard.classList.add('crumbling');
+                    
+                    setTimeout(() => {
+                        showDeleteModal(market, index);
+                        stockCard.classList.remove('crumbling');
+                    }, 300);
+                }
+            }, 800); // 800ms long press
+        }
+
+        function clearLongPress() {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+            
+            // Remove crumbling effect from all cards
+            document.querySelectorAll('.stock-card').forEach(card => {
+                card.classList.remove('crumbling');
+            });
+            
+            currentLongPressTarget = null;
+        }
+
+        function showDeleteModal(market, index) {
+            const stock = portfolio[market][index];
+            const modal = document.createElement('div');
+            modal.className = 'delete-modal';
+            
+            modal.innerHTML = `
+                <div>
+                    <h3>Delete Stock</h3>
+                    <p>Are you sure you want to delete <strong>${stock.ticker}</strong>?</p>
+                    <div class="btn-group">
+                        <button class="btn btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+                        <button class="btn btn-delete" onclick="confirmDelete('${market}', ${index})">Delete</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Add click outside to close
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeDeleteModal();
+                }
+            });
+            
+            // Add keyboard support
+            modal.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeDeleteModal();
+                }
+            });
+        }
+
+        function closeDeleteModal() {
+            const modal = document.querySelector('.delete-modal');
+            if (modal) {
+                // Add closing animation
+                modal.style.transition = 'all 0.3s ease';
+                modal.style.opacity = '0';
+                modal.style.transform = 'scale(0.9)';
+                
+                // Remove modal after animation
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            }
+        }
+
+        function confirmDelete(market, index) {
+            const stockCard = document.querySelectorAll('.stock-card')[index];
+            if (stockCard) {
+                stockCard.classList.add('deleting');
+                
+                setTimeout(() => {
+                    removeStock(market, index);
+                    closeDeleteModal();
+                }, 500);
+            } else {
+                removeStock(market, index);
+                closeDeleteModal();
+            }
+        }
+
+        function moveStock(market, index) {
+            const stock = portfolio[market][index];
+            const currentMarket = market;
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                backdrop-filter: blur(5px);
+            `;
+            
+            const marketOptions = {
+                'US': '🇺🇸 US Market',
+                'SG': '🇸🇬 Singapore Market',
+                'HK': '🇭🇰 Hong Kong Market',
+                'EU': '🇪🇺 European Market',
+                'OTHER': '🌍 Other Markets'
+            };
+            
+            modal.innerHTML = `
+                <div style="
+                    background: var(--bg-card);
+                    border-radius: 12px;
+                    padding: 25px;
+                    max-width: 400px;
+                    width: 90%;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+                    border: 1px solid var(--border-color);
+                ">
+                    <h3 style="margin-bottom: 20px; color: var(--text-primary); text-align: center;">
+                        Move ${stock.ticker} to Different Market
+                    </h3>
+                    <p style="margin-bottom: 20px; color: var(--text-secondary); text-align: center;">
+                        Currently in: ${marketOptions[currentMarket]}
+                    </p>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">
+                            Select New Market
+                        </label>
+                        <select id="newMarket" style="
+                            width: 100%;
+                            padding: 12px;
+                            border: 2px solid var(--border-color);
+                            border-radius: 8px;
+                            background: var(--bg-secondary);
+                            color: var(--text-primary);
+                            font-size: 14px;
+                        ">
+                            ${Object.entries(marketOptions).map(([key, value]) => 
+                                `<option value="${key}" ${key === currentMarket ? 'selected' : ''}>${value}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="closeModal()" style="
+                            padding: 10px 20px;
+                            border: 1px solid var(--border-color);
+                            border-radius: 8px;
+                            background: var(--bg-secondary);
+                            color: var(--text-secondary);
+                            cursor: pointer;
+                            font-weight: 600;
+                        ">Cancel</button>
+                        <button onclick="confirmMoveStock('${market}', ${index})" style="
+                            padding: 10px 20px;
+                            border: none;
+                            border-radius: 8px;
+                            background: var(--accent-color);
+                            color: var(--text-primary);
+                            cursor: pointer;
+                            font-weight: 600;
+                        ">Move Stock</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Add click outside to close
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+        }
+
+        function confirmMoveStock(oldMarket, index) {
+            const newMarket = document.getElementById('newMarket').value;
+            const stock = portfolio[oldMarket][index];
+            
+            if (newMarket === oldMarket) {
+                closeModal();
+                return;
+            }
+            
+            // Remove from old market
+            portfolio[oldMarket].splice(index, 1);
+            
+            // Add to new market
+            portfolio[newMarket] = portfolio[newMarket] || [];
+            portfolio[newMarket].push(stock);
+            
+            savePortfolio();
+            updateDisplay();
+            closeModal();
+        }
+
+        // ===== INDUSTRY GOLD STANDARD MONEY RAIN ANIMATION =====
+        let moneyRainActive = false;
+        let moneyRainInterval = null;
+        let moneyRainContainer = null;
+        let moneyRainSymbols = null;
+
+        function initMoneyRain() {
+            moneyRainContainer = document.getElementById('moneyRainContainer');
+            if (!moneyRainContainer) return;
+            
+            // Enhanced money symbols with different types
+            moneyRainSymbols = [
+                { symbol: '💰', type: 'gold', rarity: 0.3 },
+                { symbol: '💵', type: 'gold', rarity: 0.4 },
+                { symbol: '💎', type: 'silver', rarity: 0.2 },
+                { symbol: '🏆', type: 'gold', rarity: 0.1 },
+                { symbol: '💸', type: 'bronze', rarity: 0.3 },
+                { symbol: '🎯', type: 'silver', rarity: 0.2 },
+                { symbol: '⭐', type: 'gold', rarity: 0.1 },
+                { symbol: '✨', type: 'silver', rarity: 0.2 },
+                { symbol: '🔥', type: 'bronze', rarity: 0.3 }
+            ];
+            
+            // Add keyboard listener for 'm' key
+            document.addEventListener('keydown', function(e) {
+                if (e.key.toLowerCase() === 'm' && !isSpotlightActive()) {
+                    toggleMoneyRain();
+                }
+            });
+            
+            // Add keyboard listener for 's' key (spotlight search)
+            document.addEventListener('keydown', function(e) {
+                if (e.key.toLowerCase() === 's' && !isSpotlightActive()) {
+                    e.preventDefault();
+                    openSpotlight();
+                }
+            });
+        }
+
+        function toggleMoneyRain() {
+            if (moneyRainActive) {
+                stopMoneyRain();
+            } else {
+                startMoneyRain();
+            }
+        }
+
+        function startMoneyRain() {
+            if (moneyRainActive || !moneyRainContainer) return;
+            
+            moneyRainActive = true;
+            console.log('💰 Money rain started! Press "m" to stop.');
+            
+            // Create initial burst of particles
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    createMoneyParticle(moneyRainContainer, moneyRainSymbols);
+                }, i * 100);
+            }
+            
+            // Continuous particle generation with higher frequency
+            let particleCount = 0;
+            const maxParticles = 35;
+            
+            moneyRainInterval = setInterval(() => {
+                const currentParticles = moneyRainContainer.querySelectorAll('.money-particle').length;
+                if (currentParticles < maxParticles) {
+                    createMoneyParticle(moneyRainContainer, moneyRainSymbols);
+                    particleCount++;
+                    
+                    // Add sparkle effect to some particles
+                    if (particleCount % 3 === 0) {
+                        setTimeout(() => {
+                            const particles = moneyRainContainer.querySelectorAll('.money-particle');
+                            if (particles.length > 0) {
+                                const randomParticle = particles[Math.floor(Math.random() * particles.length)];
+                                randomParticle.classList.add('sparkle');
+                                setTimeout(() => {
+                                    randomParticle.classList.remove('sparkle');
+                                }, 2000);
+                            }
+                        }, 800);
+                    }
+                }
+            }, 1200);
+        }
+
+        function stopMoneyRain() {
+            if (!moneyRainActive) return;
+            
+            moneyRainActive = false;
+            console.log('💰 Money rain stopped! Press "m" to start again.');
+            
+            if (moneyRainInterval) {
+                clearInterval(moneyRainInterval);
+                moneyRainInterval = null;
+            }
+            
+            // Remove all existing particles with fade out effect
+            const particles = moneyRainContainer.querySelectorAll('.money-particle');
+            particles.forEach((particle, index) => {
+                setTimeout(() => {
+                    particle.style.transition = 'opacity 0.5s ease-out';
+                    particle.style.opacity = '0';
+                    setTimeout(() => {
+                        if (particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }, 500);
+                }, index * 50);
+            });
+        }
+
+        // ===== SPOTLIGHT SEARCH FUNCTIONALITY =====
+        let spotlightActive = false;
+        let selectedResultIndex = -1;
+        let searchResults = [];
+        let lastEnterTime = 0;
+        let isCalculatorMode = false;
+
+        function isSpotlightActive() {
+            return spotlightActive;
+        }
+
+        function openSpotlight() {
+            const overlay = document.getElementById('spotlightOverlay');
+            const input = document.getElementById('spotlightInput');
+            
+            spotlightActive = true;
+            overlay.classList.add('active');
+            
+            // Focus input after animation
+            setTimeout(() => {
+                input.focus();
+            }, 300);
+            
+            // Add event listeners
+            setupSpotlightEvents();
+        }
+
+        function closeSpotlight() {
+            const overlay = document.getElementById('spotlightOverlay');
+            const input = document.getElementById('spotlightInput');
+            
+            spotlightActive = false;
+            selectedResultIndex = -1;
+            searchResults = [];
+            isCalculatorMode = false;
+            lastEnterTime = 0;
+            
+            overlay.classList.remove('active');
+            input.value = '';
+            clearSearchResults();
+            
+            // Remove event listeners
+            removeSpotlightEvents();
+        }
+
+        function setupSpotlightEvents() {
+            const input = document.getElementById('spotlightInput');
+            const overlay = document.getElementById('spotlightOverlay');
+            
+            // Input change event
+            input.addEventListener('input', handleSearchInput);
+            
+            // Keyboard events
+            input.addEventListener('keydown', handleSpotlightKeydown);
+            
+            // Click outside to close
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) {
+                    closeSpotlight();
+                }
+            });
+            
+            // Escape key to close
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && spotlightActive) {
+                    closeSpotlight();
+                }
+            });
+        }
+
+        function removeSpotlightEvents() {
+            const input = document.getElementById('spotlightInput');
+            input.removeEventListener('input', handleSearchInput);
+            input.removeEventListener('keydown', handleSpotlightKeydown);
+        }
+
+        function handleSearchInput(e) {
+            const query = e.target.value.trim();
+            
+            if (query.length === 0) {
+                clearSearchResults();
+                return;
+            }
+            
+            // Check if this is a calculator expression
+            if (query.startsWith('=')) {
+                handleCalculator(query);
+                return;
+            }
+            
+            // Regular search functionality
+            const searchQuery = query.toLowerCase();
+            
+            // Debug: Check if portfolio has data
+            const totalStocks = Object.values(portfolio).reduce((sum, market) => sum + market.length, 0);
+            console.log(`Searching for "${searchQuery}" in ${totalStocks} stocks across ${Object.keys(portfolio).length} markets`);
+            
+            searchResults = performSearch(searchQuery);
+            console.log(`Found ${searchResults.length} results`);
+            displaySearchResults(searchResults);
+        }
+
+        function handleCalculator(query) {
+            try {
+                // Remove the '=' prefix
+                const expression = query.substring(1).trim();
+                
+                if (expression.length === 0) {
+                    displayCalculatorResult('Enter a calculation after =');
+                    return;
+                }
+                
+                // Replace 'x' with '*' for multiplication
+                let processedExpression = expression.replace(/x/gi, '*');
+                
+                // Validate expression (only allow numbers, operators, and parentheses)
+                if (!/^[\d\s+\-*/().]+$/.test(processedExpression)) {
+                    displayCalculatorResult('Invalid characters in expression');
+                    return;
+                }
+                
+                // Evaluate the expression
+                const result = evaluateExpression(processedExpression);
+                
+                if (result === null) {
+                    displayCalculatorResult('Invalid expression');
+                    return;
+                }
+                
+                // Format the result
+                const formattedResult = formatCalculatorResult(result);
+                displayCalculatorResult(formattedResult);
+                isCalculatorMode = true;
+                
+            } catch (error) {
+                displayCalculatorResult('Calculation error');
+            }
+        }
+
+        function evaluateExpression(expression) {
+            try {
+                // Use Function constructor for safe evaluation
+                const result = new Function('return ' + expression)();
+                
+                // Check if result is valid
+                if (typeof result === 'number' && isFinite(result)) {
+                    return result;
+                }
+                return null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function formatCalculatorResult(result) {
+            // Format based on the type of number
+            if (Number.isInteger(result)) {
+                return result.toString();
+            } else {
+                // Limit decimal places for readability
+                return result.toFixed(6).replace(/\.?0+$/, '');
+            }
+        }
+
+        function displayCalculatorResult(result) {
+            const resultsContainer = document.getElementById('spotlightResults');
+            
+            const calculatorHTML = `
+                <div class="spotlight-result calculator-result">
+                    <div class="result-icon">🧮</div>
+                    <div class="result-content">
+                        <div class="result-title">${result}</div>
+                        <div class="result-subtitle">Calculator Result</div>
+                    </div>
+                    <div class="result-details">
+                        <div class="result-price">Copy Result</div>
+                        <div class="result-quantity">Click to copy</div>
+                        <div class="result-total">${result}</div>
+                    </div>
+                </div>
+            `;
+            
+            resultsContainer.innerHTML = calculatorHTML;
+            
+            // Add click handler to copy result
+            const calculatorResult = resultsContainer.querySelector('.calculator-result');
+            if (calculatorResult) {
+                calculatorResult.onclick = function() {
+                    const currentTime = Date.now();
+                    
+                    // Check if this is a double click (within 500ms)
+                    const isDoubleClick = (currentTime - lastEnterTime) < 500 && isCalculatorMode;
+                    lastEnterTime = currentTime;
+                    
+                    if (isDoubleClick) {
+                        // Double click - copy result and close spotlight
+                        navigator.clipboard.writeText(result).then(() => {
+                            // Show brief feedback
+                            const originalText = calculatorResult.querySelector('.result-price').textContent;
+                            calculatorResult.querySelector('.result-price').textContent = 'Copied!';
+                            setTimeout(() => {
+                                calculatorResult.querySelector('.result-price').textContent = originalText;
+                                closeSpotlight();
+                            }, 500);
+                        });
+                    } else {
+                        // Single click - copy result and put it back in input for next calculation
+                        navigator.clipboard.writeText(result).then(() => {
+                            // Show brief feedback
+                            const originalText = calculatorResult.querySelector('.result-price').textContent;
+                            calculatorResult.querySelector('.result-price').textContent = 'Copied!';
+                            setTimeout(() => {
+                                calculatorResult.querySelector('.result-price').textContent = originalText;
+                                // Put result back in input for next calculation
+                                const input = document.getElementById('spotlightInput');
+                                input.value = '=' + result;
+                                input.focus();
+                                // Trigger input event to show the result again
+                                input.dispatchEvent(new Event('input'));
+                            }, 500);
+                        });
+                    }
+                };
+            }
+        }
+
+        function performSearch(query) {
+            const results = [];
+            
+            // Search through all markets and stocks
+            Object.keys(portfolio).forEach(market => {
+                portfolio[market].forEach((stock, index) => {
+                    const searchableText = [
+                        stock.ticker,
+                        stock.name || companyNames[stock.ticker] || '',
+                        market,
+                        stock.qty.toString(),
+                        stock.bought_at.toString(),
+                        (stock.qty * stock.bought_at).toFixed(2)
+                    ].join(' ').toLowerCase();
+                    
+                    if (searchableText.includes(query)) {
+                        const matchType = getMatchType(stock, query);
+                        const relevance = calculateRelevance(stock, query);
+                        
+                        results.push({
+                            stock: stock,
+                            market: market,
+                            index: index,
+                            matchType: matchType,
+                            relevance: relevance,
+                            element: findStockElement(market, index)
+                        });
+                    }
+                });
+            });
+            
+            // Sort by relevance
+            results.sort((a, b) => b.relevance - a.relevance);
+            
+            return results.slice(0, 10); // Limit to top 10 results
+        }
+
+        function getMatchType(stock, query) {
+            if (stock.ticker.toLowerCase().includes(query)) return 'ticker';
+            if (stock.name && stock.name.toLowerCase().includes(query)) return 'name';
+            if (stock.qty.toString().includes(query)) return 'quantity';
+            if (stock.bought_at.toString().includes(query)) return 'price';
+            return 'other';
+        }
+
+        function calculateRelevance(stock, query) {
+            let score = 0;
+            
+            // Exact ticker match gets highest score
+            if (stock.ticker.toLowerCase() === query) score += 100;
+            else if (stock.ticker.toLowerCase().startsWith(query)) score += 50;
+            else if (stock.ticker.toLowerCase().includes(query)) score += 30;
+            
+            // Name matches
+            if (stock.name && stock.name.toLowerCase().includes(query)) score += 20;
+            
+            // Company name matches
+            if (companyNames[stock.ticker] && companyNames[stock.ticker].toLowerCase().includes(query)) score += 25;
+            
+            return score;
+        }
+
+        function findStockElement(market, index) {
+            const marketContainer = document.querySelector(`[data-market="${market}"]`);
+            if (marketContainer) {
+                const stockCards = marketContainer.querySelectorAll('.stock-card');
+                return stockCards[index];
+            }
+            return null;
+        }
+
+        function displaySearchResults(results) {
+            const resultsContainer = document.getElementById('spotlightResults');
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<div class="spotlight-no-results">No results found</div>';
+                return;
+            }
+            
+            const resultsHTML = results.map((result, index) => {
+                const stock = result.stock;
+                const market = result.market;
+                const marketCurrency = marketCurrencies[market];
+                const currencyPrefix = marketCurrency === 'SGD' ? 'S$' : 'US$';
+                
+                // Calculate total value in SGD
+                const boughtAtSGD = convertToSGD(stock.bought_at, marketCurrency);
+                const totalValueSGD = boughtAtSGD * stock.qty;
+                
+                const highlightedTitle = highlightText(stock.ticker, document.getElementById('spotlightInput').value);
+                const companyName = companyNames[stock.ticker] || stock.name || 'Unknown Company';
+                const highlightedSubtitle = highlightText(companyName, document.getElementById('spotlightInput').value);
+                
+                return `
+                    <div class="spotlight-result" data-index="${index}" onclick="selectSearchResult(${index})">
+                        <div class="result-icon">📈</div>
+                        <div class="result-content">
+                            <div class="result-title">${highlightedTitle}</div>
+                            <div class="result-subtitle">${highlightedSubtitle} • ${result.market} Market</div>
+                        </div>
+                        <div class="result-details">
+                            <div class="result-price">${currencyPrefix}${stock.bought_at.toFixed(2)}</div>
+                            <div class="result-quantity">Qty: ${stock.qty}</div>
+                            <div class="result-total">S$${totalValueSGD.toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            resultsContainer.innerHTML = resultsHTML;
+            selectedResultIndex = -1;
+        }
+
+        function highlightText(text, query) {
+            if (!query) return text;
+            
+            const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        function clearSearchResults() {
+            const resultsContainer = document.getElementById('spotlightResults');
+            resultsContainer.innerHTML = '<div class="spotlight-no-results">Type to search...</div>';
+            selectedResultIndex = -1;
+        }
+
+        function handleSpotlightKeydown(e) {
+            const results = document.querySelectorAll('.spotlight-result');
+            const input = document.getElementById('spotlightInput');
+            
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    selectedResultIndex = Math.min(selectedResultIndex + 1, results.length - 1);
+                    updateSelectedResult(results);
+                    break;
+                    
+                case 'ArrowUp':
+                    e.preventDefault();
+                    selectedResultIndex = Math.max(selectedResultIndex - 1, -1);
+                    updateSelectedResult(results);
+                    break;
+                    
+                case 'Enter':
+                    e.preventDefault();
+                    // Check if this is a calculator result
+                    const calculatorResult = document.querySelector('.calculator-result');
+                    if (calculatorResult) {
+                        const result = calculatorResult.querySelector('.result-title').textContent;
+                        const currentTime = Date.now();
+                        
+                        // Check if this is a double Enter (within 500ms)
+                        const isDoubleEnter = (currentTime - lastEnterTime) < 500 && isCalculatorMode;
+                        lastEnterTime = currentTime;
+                        
+                        if (isDoubleEnter) {
+                            // Double Enter - copy result and close spotlight
+                            navigator.clipboard.writeText(result).then(() => {
+                                // Show brief feedback
+                                const originalText = calculatorResult.querySelector('.result-price').textContent;
+                                calculatorResult.querySelector('.result-price').textContent = 'Copied!';
+                                setTimeout(() => {
+                                    calculatorResult.querySelector('.result-price').textContent = originalText;
+                                    closeSpotlight();
+                                }, 500);
+                            });
+                        } else {
+                            // Single Enter - copy result and put it back in input for next calculation
+                            navigator.clipboard.writeText(result).then(() => {
+                                // Show brief feedback
+                                const originalText = calculatorResult.querySelector('.result-price').textContent;
+                                calculatorResult.querySelector('.result-price').textContent = 'Copied!';
+                                setTimeout(() => {
+                                    calculatorResult.querySelector('.result-price').textContent = originalText;
+                                    // Put result back in input for next calculation
+                                    input.value = '=' + result;
+                                    input.focus();
+                                    // Trigger input event to show the result again
+                                    input.dispatchEvent(new Event('input'));
+                                }, 500);
+                            });
+                        }
+                    } else if (selectedResultIndex >= 0 && searchResults[selectedResultIndex]) {
+                        zoomToSearchResult(searchResults[selectedResultIndex]);
+                    }
+                    break;
+            }
+        }
+
+        function updateSelectedResult(results) {
+            results.forEach((result, index) => {
+                result.classList.toggle('selected', index === selectedResultIndex);
+            });
+        }
+
+        function selectSearchResult(index) {
+            if (searchResults[index]) {
+                zoomToSearchResult(searchResults[index]);
+            }
+        }
+
+        function zoomToSearchResult(result) {
+            const element = result.element;
+            if (!element) {
+                console.log('Element not found for search result');
+                closeSpotlight();
+                return;
+            }
+            
+            // Add zoom animation
+            element.classList.add('zoom-highlight');
+            
+            // Scroll to element
+            element.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+            
+            // Remove animation class after animation completes
+            setTimeout(() => {
+                element.classList.remove('zoom-highlight');
+            }, 800);
+            
+            // Close spotlight
+            closeSpotlight();
+        }
+
+        function createMoneyParticle(container, symbols) {
+            const particle = document.createElement('div');
+            
+            // Select symbol based on rarity
+            const random = Math.random();
+            let selectedSymbol = symbols[0];
+            let cumulativeRarity = 0;
+            
+            for (const symbol of symbols) {
+                cumulativeRarity += symbol.rarity;
+                if (random <= cumulativeRarity) {
+                    selectedSymbol = symbol;
+                    break;
+                }
+            }
+            
+            particle.textContent = selectedSymbol.symbol;
+            particle.className = `money-particle ${selectedSymbol.type}`;
+            
+            // Advanced positioning and physics
+            const startX = Math.random() * 100;
+            const animationType = Math.floor(Math.random() * 5) + 1;
+            const duration = 5 + Math.random() * 2;
+            const delay = Math.random() * 1;
+            
+            // Apply physics-based animation with continuous motion
+            particle.style.cssText = `
+                left: ${startX}%;
+                animation: moneyFall${animationType} ${duration}s linear ${delay}s forwards;
+                font-size: ${20 + Math.random() * 12}px;
+                opacity: 0;
+            `;
+            
+            container.appendChild(particle);
+            
+            // Performance-optimized cleanup
+            const cleanupTime = (duration + delay) * 1000 + 1000;
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+            }, cleanupTime);
+            
+            // Add interaction effect on hover (subtle)
+            particle.addEventListener('mouseenter', () => {
+                if (!particle.classList.contains('sparkle')) {
+                    particle.classList.add('sparkle');
+                    setTimeout(() => {
+                        particle.classList.remove('sparkle');
+                    }, 1000);
+                }
+            });
+        }
+
+
+    </script>
+</body>
+</html> 

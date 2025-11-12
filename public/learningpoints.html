@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debugging Learning Points</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+            border-radius: 24px;
+            margin-bottom: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .learning-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .learning-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .learning-card h2 {
+            color: #667eea;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .learning-card h3 {
+            color: #a0aec0;
+            font-size: 1.1rem;
+            margin: 1.5rem 0 0.5rem 0;
+            font-weight: 600;
+        }
+
+        .learning-card p {
+            color: #cbd5e0;
+            margin-bottom: 1rem;
+            font-weight: 400;
+        }
+
+        .learning-card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .learning-card li {
+            color: #cbd5e0;
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .learning-card li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .code-block {
+            background: #1a202c;
+            border: 1px solid #2d3748;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+
+        .code-block .comment {
+            color: #718096;
+        }
+
+        .code-block .string {
+            color: #68d391;
+        }
+
+        .code-block .keyword {
+            color: #f6ad55;
+        }
+
+        .code-block .function {
+            color: #63b3ed;
+        }
+
+        .warning {
+            background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid #dd6b20;
+        }
+
+        .success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid #2f855a;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid #c53030;
+        }
+
+        .debug-section {
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .debug-section h4 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .tag {
+            display: inline-block;
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin: 0.25rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .mini-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .mini-card:hover {
+            border-color: rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .mini-card h4 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .mini-card p {
+            color: #a0aec0;
+            font-size: 0.9rem;
+        }
+
+        .issue-summary {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .issue-summary:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .issue-header {
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .issue-title {
+            margin: 0;
+            color: #667eea;
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .issue-description {
+            color: #a0aec0;
+            margin: 1rem 0 0 0;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .expand-icon {
+            color: #667eea;
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+            margin-left: 1rem;
+            flex-shrink: 0;
+        }
+
+        .issue-summary.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .issue-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .issue-summary.expanded .issue-details {
+            max-height: 10000px;
+        }
+
+        .issue-details .learning-card {
+            margin: 0;
+            border-radius: 0;
+            border-left: none;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .issue-details .learning-card:first-child {
+            border-top: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .issue-header {
+                padding: 1.5rem;
+            }
+
+            .issue-title {
+                font-size: 1.3rem;
+            }
+        }
+
+        /* ===== FLOATING CLOCK CARD COMPONENT ===== */
+        .floating-clock {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 50px;
+            padding: 12px 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            z-index: 1000;
+            min-width: 120px;
+            transition: all 0.3s ease;
+        }
+
+        .floating-clock:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .floating-clock .time {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 2px;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .floating-clock .date {
+            font-size: 0.7rem;
+            color: #a0aec0;
+            font-weight: 500;
+            margin-bottom: 1px;
+        }
+
+        .floating-clock .day {
+            font-size: 0.6rem;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Mobile responsive for floating clock */
+        @media (max-width: 768px) {
+            .floating-clock {
+                top: 10px;
+                right: 10px;
+                padding: 8px 12px;
+                min-width: 100px;
+            }
+            
+            .floating-clock .time {
+                font-size: 1rem;
+            }
+            
+            .floating-clock .date {
+                font-size: 0.6rem;
+            }
+            
+            .floating-clock .day {
+                font-size: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating Clock Component -->
+    <div class="floating-clock">
+        <div class="time" id="floatingClockTime">00:00:00</div>
+        <div class="date" id="floatingClockDate">1 January 2025</div>
+        <div class="day" id="floatingClockDay">MONDAY</div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🐛 Debugging Learning Points</h1>
+            <p>Lessons from Stucked Issues</p>
+        </div>
+
+        <div class="issue-summary" onclick="toggleIssue(this)">
+            <div class="issue-header">
+                <div>
+                    <h2 class="issue-title">🎯 Player Mode UI Update Issues</h2>
+                    <p class="issue-description"><strong>Problem:</strong> Player mode interface elements not updating correctly after deposit/withdraw operations. Current balance showing "4" instead of calculated amount, total deposits not updating, and complex CSS selectors failing.</p>
+                </div>
+                <div class="expand-icon">▼</div>
+            </div>
+            <div class="issue-details">
+                <div class="learning-card">
+                    <h2>🎯 Issue Summary</h2>
+                    <p><strong>Problem:</strong> Player mode interface elements not updating correctly after deposit/withdraw operations.</p>
+                    
+                    <div class="grid">
+                        <div class="mini-card">
+                            <h4>❌ What Wasn't Working</h4>
+                            <p>Current balance showing "4" instead of calculated amount</p>
+                            <p>Total deposits not updating</p>
+                            <p>Complex CSS selectors failing</p>
+                        </div>
+                        <div class="mini-card">
+                            <h4>✅ What Fixed It</h4>
+                            <p>Direct element targeting with array indexing</p>
+                            <p>Simplified selectors</p>
+                            <p>Better debugging with console logs</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="learning-card">
+                    <h2>🔍 Root Cause Analysis</h2>
+                    
+                    <h3>1. CSS Selector Issues</h3>
+                    <p><strong>Problem:</strong> Complex CSS selectors were not finding the correct elements in dynamically created content.</p>
+                    
+                    <div class="code-block">
+<span class="comment">// ❌ BROKEN - Complex selectors</span>
+<span class="keyword">const</span> balanceElement = document.querySelector(<span class="string">'.stat-card.primary .stat-value.primary'</span>);
+<span class="keyword">const</span> depositElement = document.querySelector(<span class="string">'.stat-card:nth-child(2) .stat-value'</span>);
+</div>
+
+                    <div class="warning">
+                        <strong>⚠️ Why This Failed:</strong>
+                        <ul>
+                            <li>Selectors were too generic and matched multiple elements</li>
+                            <li>Dynamic content creation changed DOM structure</li>
+                            <li>Complex selectors broke when HTML structure changed</li>
+                        </ul>
+                    </div>
+
+                    <h3>2. Element Targeting Strategy</h3>
+                    <p><strong>Solution:</strong> Use direct element targeting with array indexing instead of complex CSS selectors.</p>
+                    
+                    <div class="code-block">
+<span class="comment">// ✅ WORKING - Direct element targeting</span>
+<span class="keyword">const</span> allStatCards = document.querySelectorAll(<span class="string">'#playersSection .stat-card'</span>);
+
+<span class="comment">// Target by array position</span>
+<span class="keyword">const</span> balanceElement = allStatCards[0].querySelector(<span class="string">'.stat-value.primary'</span>);
+<span class="keyword">const</span> depositElement = allStatCards[1].querySelector(<span class="string">'.stat-value'</span>);
+<span class="keyword">const</span> withdrawalElement = allStatCards[2].querySelector(<span class="string">'.stat-value'</span>);
+</div>
+
+                    <div class="success">
+                        <strong>✅ Why This Works:</strong>
+                        <ul>
+                            <li>Simple and reliable element targeting</li>
+                            <li>Works regardless of DOM structure changes</li>
+                            <li>Easy to debug and maintain</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="learning-card">
+                    <h2>🛠️ Debugging Techniques Used</h2>
+                    
+                    <h3>1. Console Logging Strategy</h3>
+                    <div class="code-block">
+<span class="comment">// Add debugging to understand what's happening</span>
+console.log(<span class="string">'Found stat cards:'</span>, allStatCards.length);
+console.log(<span class="string">'Updating UI - Deposits:'</span>, playerDeposits, <span class="string">'Withdrawals:'</span>, playerWithdrawals);
+console.log(<span class="string">'Balance updated to:'</span>, currentBalance.toFixed(2));
+</div>
+
+                    <h3>2. Element Discovery</h3>
+                    <div class="code-block">
+<span class="comment">// Check if elements exist before updating</span>
+<span class="keyword">if</span> (allStatCards.length >= 3) {
+    <span class="comment">// Elements found, proceed with updates</span>
+} <span class="keyword">else</span> {
+    console.log(<span class="string">'Not enough stat cards found'</span>);
+}
+</div>
+
+                    <div class="debug-section">
+                        <h4>🔍 Debugging Checklist</h4>
+                        <ul>
+                            <li>✅ Check if elements exist before targeting</li>
+                            <li>✅ Log element counts and values</li>
+                            <li>✅ Verify selectors are finding correct elements</li>
+                            <li>✅ Test with simple, direct targeting first</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="learning-card">
+                    <h2>📋 Best Practices for Dynamic UI Updates</h2>
+                    
+                    <h3>1. Element Targeting Strategy</h3>
+                    <ul>
+                        <li><strong>Use direct targeting:</strong> `querySelectorAll()` then array indexing</li>
+                        <li><strong>Avoid complex selectors:</strong> Keep selectors simple and specific</li>
+                        <li><strong>Scope your selectors:</strong> Target parent containers first</li>
+                        <li><strong>Check element existence:</strong> Always verify elements exist before updating</li>
+                    </ul>
+
+                    <h3>2. Debugging Approach</h3>
+                    <ul>
+                        <li><strong>Add console logs:</strong> Log element counts, values, and operations</li>
+                        <li><strong>Test incrementally:</strong> Fix one issue at a time</li>
+                        <li><strong>Use browser dev tools:</strong> Inspect elements to understand structure</li>
+                        <li><strong>Simplify first:</strong> Start with basic functionality, then add complexity</li>
+                    </ul>
+
+                    <h3>3. Code Organization</h3>
+                    <ul>
+                        <li><strong>Group related updates:</strong> Update all elements in one function</li>
+                        <li><strong>Use clear variable names:</strong> Make code self-documenting</li>
+                        <li><strong>Add error handling:</strong> Graceful fallbacks when elements not found</li>
+                        <li><strong>Comment your logic:</strong> Explain complex targeting strategies</li>
+                    </ul>
+                </div>
+
+                <div class="learning-card">
+                    <h2>🎯 Key Takeaways</h2>
+                    
+                    <div class="grid">
+                        <div class="mini-card">
+                            <h4>🚫 Avoid</h4>
+                            <p>Complex CSS selectors for dynamic content</p>
+                            <p>Generic selectors that match multiple elements</p>
+                            <p>Assuming DOM structure won't change</p>
+                        </div>
+                        <div class="mini-card">
+                            <h4>✅ Do</h4>
+                            <p>Use direct element targeting with array indexing</p>
+                            <p>Add comprehensive debugging logs</p>
+                            <p>Test element existence before updates</p>
+                        </div>
+                    </div>
+
+                    <div class="error">
+                        <strong>🚨 Common Pitfalls:</strong>
+                        <ul>
+                            <li>Complex selectors breaking with DOM changes</li>
+                            <li>Not checking if elements exist before updating</li>
+                            <li>Lack of debugging information</li>
+                            <li>Assuming selectors will work without testing</li>
+                        </ul>
+                    </div>
+
+                    <div class="success">
+                        <strong>🎉 Success Patterns:</strong>
+                        <ul>
+                            <li>Simple, direct element targeting</li>
+                            <li>Comprehensive console logging</li>
+                            <li>Element existence validation</li>
+                            <li>Incremental debugging approach</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="learning-card">
+                    <h2>🔧 Quick Reference</h2>
+                    
+                    <h3>Element Targeting Pattern</h3>
+                    <div class="code-block">
+<span class="comment">// 1. Get all elements of a type</span>
+<span class="keyword">const</span> elements = document.querySelectorAll(<span class="string">'#container .element-type'</span>);
+
+<span class="comment">// 2. Check if enough elements exist</span>
+<span class="keyword">if</span> (elements.length >= expectedCount) {
+    <span class="comment">// 3. Target by array position</span>
+    <span class="keyword">const</span> firstElement = elements[0];
+    <span class="keyword">const</span> secondElement = elements[1];
+    
+    <span class="comment">// 4. Update elements</span>
+    firstElement.textContent = newValue;
+}
+</div>
+
+                    <h3>Debugging Template</h3>
+                    <div class="code-block">
+<span class="comment">// Add this to any UI update function</span>
+console.log(<span class="string">'Function called with:'</span>, { param1, param2 });
+console.log(<span class="string">'Elements found:'</span>, elements.length);
+console.log(<span class="string">'Updating element:'</span>, elementIndex, <span class="string">'to:'</span>, newValue);
+</div>
+
+                    <div class="debug-section">
+                        <h4>🏷️ Tags for Future Reference</h4>
+                        <span class="tag">#dynamic-ui</span>
+                        <span class="tag">#css-selectors</span>
+                        <span class="tag">#element-targeting</span>
+                        <span class="tag">#debugging</span>
+                        <span class="tag">#console-logging</span>
+                        <span class="tag">#array-indexing</span>
+                        <span class="tag">#dom-manipulation</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="issue-summary" onclick="toggleIssue(this)">
+            <div class="issue-header">
+                <div>
+                    <h2 class="issue-title">🎯 Infinite Loading on Page Refresh Issue</h2>
+                    <p class="issue-description"><strong>Problem:</strong> React app stuck in infinite loading state when refreshing the page, even though user had valid authentication token. Role fetching was blocking the entire auth flow and loading state never resolved to false.</p>
+                </div>
+                <div class="expand-icon">▼</div>
+            </div>
+            <div class="issue-details">
+                <div class="learning-card">
+                    <h2>🎯 Issue Summary</h2>
+                    <p><strong>Problem:</strong> React app stuck in infinite loading state when refreshing the page, even though user had valid authentication token</p>
+                    
+                    <div class="grid">
+                        <div class="mini-card">
+                            <h4>❌ What Wasn't Working</h4>
+                            <p>• Page refresh caused infinite loading spinner</p>
+                            <p>• Auth token existed but app couldn't proceed</p>
+                            <p>• Role fetching was blocking the entire auth flow</p>
+                            <p>• Loading state never resolved to false</p>
+                        </div>
+                        <div class="mini-card">
+                            <h4>✅ What Fixed It</h4>
+                            <p>• Made role fetching asynchronous and non-blocking</p>
+                            <p>• Set loading state to false immediately after session retrieval</p>
+                            <p>• Added shorter timeout for role fetching</p>
+                            <p>• Updated App.js to show loading while role loads</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="learning-card">
+                    <h2>💻 Error Code & Fix</h2>
+                    <div class="code-block">
+                        <span class="comment">// ❌ BROKEN - What didn't work</span>
+                        <br><span class="keyword">const</span> { data: { user } } = <span class="function">await</span> supabase.auth.getUser();
+                        <br><span class="keyword">if</span> (user) {
+                        <br>&nbsp;&nbsp;<span class="keyword">const</span> { data: roleData } = <span class="function">await</span> supabase
+                        <br>&nbsp;&nbsp;&nbsp;&nbsp;.from(<span class="string">'user_roles'</span>)
+                        <br>&nbsp;&nbsp;&nbsp;&nbsp;.select(<span class="string">'role'</span>)
+                        <br>&nbsp;&nbsp;&nbsp;&nbsp;.eq(<span class="string">'user_id'</span>, user.id)
+                        <br>&nbsp;&nbsp;&nbsp;&nbsp;.single();
+                        <br>&nbsp;&nbsp;setUserRole(roleData?.role || <span class="string">'investor'</span>);
+                        <br>}
+                        <br>setLoading(<span class="keyword">false</span>); <span class="comment">// This never reached if role fetch failed</span>
+                    </div>
+                    <div class="code-block">
+                        <span class="comment">// ✅ WORKING - What fixed it</span>
+                        <br><span class="keyword">const</span> { data: { user } } = <span class="function">await</span> supabase.auth.getUser();
+                        <br><span class="keyword">if</span> (user) {
+                        <br>&nbsp;&nbsp;setUser(user);
+                        <br>&nbsp;&nbsp;setLoading(<span class="keyword">false</span>); <span class="comment">// Set loading false immediately</span>
+                        <br>&nbsp;&nbsp;
+                        <br>&nbsp;&nbsp;<span class="comment">// Fetch role asynchronously without blocking</span>
+                        <br>&nbsp;&nbsp;fetchUserRole(user.id);
+                        <br>} <span class="keyword">else</span> {
+                        <br>&nbsp;&nbsp;setLoading(<span class="keyword">false</span>);
+                        <br>}
+                        <br>
+                        <br><span class="keyword">const</span> fetchUserRole = <span class="function">async</span> (userId) => {
+                        <br>&nbsp;&nbsp;<span class="keyword">try</span> {
+                        <br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">const</span> { data: roleData } = <span class="function">await</span> supabase
+                        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.from(<span class="string">'user_roles'</span>)
+                        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.select(<span class="string">'role'</span>)
+                        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.eq(<span class="string">'user_id'</span>, userId)
+                        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.single();
+                        <br>&nbsp;&nbsp;&nbsp;&nbsp;setUserRole(roleData?.role || <span class="string">'investor'</span>);
+                        <br>&nbsp;&nbsp;} <span class="keyword">catch</span> (error) {
+                        <br>&nbsp;&nbsp;&nbsp;&nbsp;console.error(<span class="string">'Error fetching user role:'</span>, error);
+                        <br>&nbsp;&nbsp;&nbsp;&nbsp;setUserRole(<span class="string">'investor'</span>); <span class="comment">// Fallback</span>
+                        <br>&nbsp;&nbsp;}
+                        <br>};
+                    </div>
+                </div>
+
+                <div class="learning-card">
+                    <h2>🧠 Simple Analogy</h2>
+                    <p><strong>Think of it like:</strong> A restaurant where the waiter won't let you sit down until they've checked your entire reservation history, even though you just want to eat now.</p>
+                    <p><strong>The fix is like:</strong> The waiter seats you immediately and then checks your reservation history in the background while you're already enjoying your meal.</p>
+                    <p><strong>Why this works:</strong> By separating the critical authentication check from the optional role fetching, users can access the app immediately while their role loads asynchronously. This prevents the entire app from being blocked by a single database query.</p>
+                </div>
+
+                <div class="learning-card">
+                    <h2>🔑 Key Learning Points</h2>
+                    <div class="grid">
+                        <div class="mini-card">
+                            <h4>🚫 Common Anti-Patterns</h4>
+                            <p>• Don't block UI rendering with non-critical data fetching</p>
+                            <p>• Avoid chaining async operations that can fail</p>
+                            <p>• Don't make loading state dependent on multiple operations</p>
+                        </div>
+                        <div class="mini-card">
+                            <h4>✅ Best Practices</h4>
+                            <p>• Set loading to false as soon as critical data is available</p>
+                            <p>• Use separate async functions for non-critical operations</p>
+                            <p>• Implement proper error handling with fallbacks</p>
+                            <p>• Show loading states for specific operations, not entire app</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="learning-card">
+                    <h2>🎯 React-Specific Insights</h2>
+                    <p><strong>AuthContext Pattern:</strong> When managing authentication state in React Context, always separate critical auth checks from supplementary data fetching.</p>
+                    <p><strong>Loading State Management:</strong> Loading states should reflect the minimum required data, not all possible data.</p>
+                    <p><strong>Error Boundaries:</strong> Implement fallbacks for non-critical operations so they don't break the entire user experience.</p>
+                </div>
+
+                <div class="debug-section">
+                    <h4>🏷️ Tags for Future Reference</h4>
+                    <span class="tag">#react</span>
+                    <span class="tag">#authentication</span>
+                    <span class="tag">#loading-states</span>
+                    <span class="tag">#async-operations</span>
+                    <span class="tag">#supabase</span>
+                    <span class="tag">#context-api</span>
+                    <span class="tag">#error-handling</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleIssue(element) {
+            element.classList.toggle('expanded');
+        }
+
+        // ===== FLOATING CLOCK FUNCTIONALITY =====
+        function updateFloatingClock() {
+            const now = new Date();
+            
+            // Convert to Singapore time (UTC+8)
+            const sgtTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+            
+            // Format time (24-hour format)
+            const hours = String(sgtTime.getUTCHours()).padStart(2, '0');
+            const minutes = String(sgtTime.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(sgtTime.getUTCSeconds()).padStart(2, '0');
+            
+            // Format date
+            const day = sgtTime.getUTCDate();
+            const month = sgtTime.getUTCMonth();
+            const year = sgtTime.getUTCFullYear();
+            
+            const monthNames = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+            
+            const dayNames = [
+                'SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'
+            ];
+            
+            // Update DOM elements
+            document.getElementById('floatingClockTime').textContent = `${hours}:${minutes}:${seconds}`;
+            document.getElementById('floatingClockDate').textContent = `${day} ${monthNames[month]} ${year}`;
+            document.getElementById('floatingClockDay').textContent = dayNames[sgtTime.getUTCDay()];
+        }
+
+        // Initialize clock and update every second
+        document.addEventListener('DOMContentLoaded', function() {
+            updateFloatingClock();
+            setInterval(updateFloatingClock, 1000);
+        });
+    </script>
+</body>
+</html> 

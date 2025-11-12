@@ -1,0 +1,2109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Singapore CPF Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(211, 47, 47, 0.3);
+            cursor: pointer;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+
+        .flip-container {
+            perspective: 1000px;
+            margin-bottom: 30px;
+        }
+
+        .flip-card {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .flip-card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .header, .settings-panel {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .settings-panel {
+            background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+            color: white;
+            transform: rotateY(180deg);
+            padding: 15px;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .settings-panel h2 {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+            text-align: center;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .settings-group {
+            text-align: left;
+        }
+
+        .settings-group label {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 0.8em;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .settings-group input {
+            width: 100%;
+            padding: 6px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .settings-group input:focus {
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+        }
+
+        .flip-hint {
+            font-size: 0.8em;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+
+        .card h2 {
+            color: #d32f2f;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #ffcdd2;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #d32f2f;
+            box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(211, 47, 47, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #757575 0%, #9e9e9e 100%);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 8px 25px rgba(117, 117, 117, 0.3);
+        }
+
+        .results {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .results h2 {
+            color: #d32f2f;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid #d32f2f;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #d32f2f;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .comparison-card {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ff9800;
+        }
+
+        .comparison-card h3 {
+            color: #e65100;
+            margin-bottom: 15px;
+        }
+
+        .milestone-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .milestone-table th,
+        .milestone-table td {
+            padding: 12px 8px;
+            text-align: right;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .milestone-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .milestone-table th:first-child,
+        .milestone-table td:first-child {
+            text-align: left;
+        }
+
+        @media (max-width: 768px) {
+            .milestone-table {
+                font-size: 12px;
+                margin-top: 15px;
+            }
+
+            .milestone-table th,
+            .milestone-table td {
+                padding: 8px 4px;
+                white-space: nowrap;
+            }
+
+            .milestone-table th:nth-child(3),
+            .milestone-table th:nth-child(4),
+            .milestone-table th:nth-child(5),
+            .milestone-table td:nth-child(3),
+            .milestone-table td:nth-child(4),
+            .milestone-table td:nth-child(5) {
+                display: none;
+            }
+
+            .milestone-table th:nth-child(6),
+            .milestone-table td:nth-child(6) {
+                font-weight: bold;
+                color: #d32f2f;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .milestone-table {
+                font-size: 11px;
+            }
+
+            .milestone-table th,
+            .milestone-table td {
+                padding: 6px 3px;
+            }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease, background-color 0.5s ease;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .goal-marker {
+            position: absolute;
+            top: -25px;
+            width: 3px;
+            height: 20px;
+            border-radius: 2px;
+            transform: translateX(-50%);
+        }
+
+        .marker-label {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            font-weight: 600;
+            white-space: nowrap;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        @media (max-width: 768px) {
+            .calculator-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .desktop-only {
+                display: none !important;
+            }
+            
+            .flip-card {
+                height: 250px;
+            }
+            
+            .settings-panel {
+                padding: 10px;
+            }
+            
+            .settings-panel h2 {
+                font-size: 1.1em;
+                margin-bottom: 8px;
+            }
+            
+            .settings-grid {
+                gap: 8px;
+            }
+            
+            .settings-group label {
+                font-size: 0.75em;
+                margin-bottom: 2px;
+            }
+            
+            .settings-group input {
+                padding: 5px;
+                font-size: 11px;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #d32f2f;
+            margin: 0;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: #d32f2f;
+        }
+
+        .scenario-config {
+            margin-bottom: 20px;
+        }
+
+        .scenario-config h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .config-group {
+            text-align: left;
+        }
+
+        .config-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        .config-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .config-group input:focus {
+            outline: none;
+            border-color: #d32f2f;
+            box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        /* Share Section Styles */
+        .share-container {
+            perspective: 1000px;
+            margin-top: 30px;
+        }
+
+        .share-card {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .share-card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .share-front, .share-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            cursor: pointer;
+        }
+
+        .share-front {
+            background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
+            color: white;
+            box-shadow: 0 8px 32px rgba(211, 47, 47, 0.3);
+        }
+
+        .share-back {
+            background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+            color: white;
+            transform: rotateY(180deg);
+            box-shadow: 0 8px 32px rgba(25, 118, 210, 0.3);
+            overflow: hidden;
+        }
+
+        .share-front h2, .share-back h2 {
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+
+        .share-front p {
+            margin-bottom: 15px;
+            opacity: 0.9;
+        }
+
+        .share-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .share-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .share-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .share-btn span {
+            font-size: 1.3em;
+            min-width: 25px;
+        }
+
+        .share-btn div {
+            flex: 1;
+        }
+
+        .share-btn strong {
+            display: block;
+            font-size: 0.9em;
+            margin-bottom: 2px;
+        }
+
+        .share-btn small {
+            display: block;
+            opacity: 0.8;
+            font-size: 0.75em;
+        }
+
+        .share-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .share-modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .share-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .share-modal-header h2 {
+            color: #4caf50;
+            margin: 0;
+        }
+
+        .share-preview {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .share-modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .share-card {
+                height: 280px;
+            }
+            
+            .share-options {
+                gap: 6px;
+            }
+            
+            .share-btn {
+                padding: 8px;
+            }
+            
+            .share-btn span {
+                font-size: 1.2em;
+                min-width: 20px;
+            }
+            
+            .share-btn strong {
+                font-size: 0.85em;
+            }
+            
+            .share-btn small {
+                font-size: 0.7em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="flip-container">
+            <div class="flip-card" id="flipCard">
+                <div class="header" onclick="flipCard()">
+                    <h1>🏦 Singapore CPF Calculator</h1>
+                    <p>Plan your Central Provident Fund growth and retirement readiness</p>
+                    <div class="flip-hint">Click to open settings</div>
+                </div>
+                <div class="settings-panel" onclick="flipCard()">
+                    <h2>⚙️ Settings</h2>
+                    <div class="settings-grid">
+                        <div class="settings-group">
+                            <label for="oaRate">OA Interest Rate (%)</label>
+                            <input type="number" id="oaRate" value="2.5" step="0.1" min="0" max="10" onclick="event.stopPropagation()">
+                        </div>
+                        <div class="settings-group">
+                            <label for="saRate">SA Interest Rate (%)</label>
+                            <input type="number" id="saRate" value="4.0" step="0.1" min="0" max="10" onclick="event.stopPropagation()">
+                        </div>
+                        <div class="settings-group">
+                            <label for="maRate">MA Interest Rate (%)</label>
+                            <input type="number" id="maRate" value="4.0" step="0.1" min="0" max="10" onclick="event.stopPropagation()">
+                        </div>
+                        <div class="settings-group">
+                            <label for="basicRetirementSum">Basic Retirement Sum (S$)</label>
+                            <input type="number" id="basicRetirementSum" value="106500" step="1000" min="50000" max="200000" onclick="event.stopPropagation()">
+                        </div>
+                    </div>
+                    <div class="flip-hint">Click to return to calculator</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="calculator-grid">
+            <div class="card">
+                <h2>📊 Current CPF Balances</h2>
+                <div class="form-group">
+                    <label for="currentOA">Current OA Balance (S$)</label>
+                    <input type="number" id="currentOA" value="20000" step="1000">
+                </div>
+                <div class="form-group">
+                    <label for="currentSA">Current SA Balance (S$)</label>
+                    <input type="number" id="currentSA" value="10000" step="1000">
+                </div>
+                <div class="form-group">
+                    <label for="currentMA">Current MA Balance (S$)</label>
+                    <input type="number" id="currentMA" value="10000" step="1000">
+                </div>
+                <div class="form-group">
+                    <label for="currentAge">Current Age</label>
+                    <input type="number" id="currentAge" value="25" min="16" max="100">
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>💰 Monthly Contributions</h2>
+                <div class="form-group">
+                    <label for="monthlyOA">Monthly OA Contribution (S$)</label>
+                    <input type="number" id="monthlyOA" value="1150" step="100">
+                </div>
+                <div class="form-group">
+                    <label for="monthlySA">Monthly SA Contribution (S$)</label>
+                    <input type="number" id="monthlySA" value="299" step="100">
+                </div>
+                <div class="form-group">
+                    <label for="monthlyMA">Monthly MA Contribution (S$)</label>
+                    <input type="number" id="monthlyMA" value="398" step="100">
+                </div>
+                <div style="margin-top: 15px;">
+                    <button class="btn btn-secondary" style="font-size: 14px; padding: 8px 15px;" onclick="openIncomeModal()">💰 Populate with Income</button>
+                </div>
+                <div class="form-group">
+                    <label for="projectionYears">Projection Years</label>
+                    <input type="number" id="projectionYears" value="25" min="1" max="50">
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 30px;">
+            <button class="btn" id="calculateBtn" onclick="calculateCPF()">Calculate CPF Growth</button>
+            <button class="btn btn-secondary" id="compareBtn" onclick="compareScenarios()">Compare Scenarios</button>
+        </div>
+
+        <div id="results" class="results" style="display: none;">
+            <h2>📈 CPF Growth Projection Results</h2>
+            <div id="summaryStats" class="stats-grid"></div>
+            <div id="retirementAlert"></div>
+            <div class="chart-container">
+                <canvas id="growthChart"></canvas>
+            </div>
+            <div id="milestoneTable"></div>
+        </div>
+
+        <div id="comparisonResults" class="results" style="display: none;">
+            <h2>📊 Scenario Comparison</h2>
+            <div class="chart-container">
+                <canvas id="comparisonChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Share Section -->
+        <div class="share-container">
+            <div class="share-card" id="shareCard">
+                <div class="share-front" onclick="flipShareCard()">
+                    <h2>📤 Share Results</h2>
+                    <p>Share your CPF calculations with others</p>
+                    <div class="flip-hint">Click to open sharing options</div>
+                </div>
+                <div class="share-back" onclick="flipShareCard()">
+                    <div class="share-options">
+                        <button class="share-btn" onclick="shareWebsite(event)">
+                            <span>🌐</span>
+                            <div>
+                                <strong>Share Website</strong>
+                                <small>Copy website URL</small>
+                            </div>
+                        </button>
+                        <button class="share-btn" onclick="shareStatsClipboard(event)">
+                            <span>📋</span>
+                            <div>
+                                <strong>Share CPF Stats (Clipboard)</strong>
+                                <small>Copy formatted results</small>
+                            </div>
+                        </button>
+                        <button class="share-btn" onclick="shareStatsWebpage(event)">
+                            <span>🔗</span>
+                            <div>
+                                <strong>Share CPF Stats (Webpage)</strong>
+                                <small>Generate shareable link</small>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="scenarioModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Scenario Configuration</h2>
+                <span class="close" onclick="closeScenarioModal()">&times;</span>
+            </div>
+            <div class="scenario-config">
+                <h3>Scenario Contributions</h3>
+                <div class="config-grid">
+                    <div class="config-group">
+                        <label for="scenarioOA">OA Contribution (S$)</label>
+                        <input type="number" id="scenarioOA" value="1150" step="100">
+                    </div>
+                    <div class="config-group">
+                        <label for="scenarioSA">SA Contribution (S$)</label>
+                        <input type="number" id="scenarioSA" value="299" step="100">
+                    </div>
+                    <div class="config-group">
+                        <label for="scenarioMA">MA Contribution (S$)</label>
+                        <input type="number" id="scenarioMA" value="398" step="100">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn" onclick="closeScenarioModal()">Cancel</button>
+                <button class="btn" onclick="applyScenario()">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="incomeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Calculate CPF from Income</h2>
+                <span class="close" onclick="closeIncomeModal()">&times;</span>
+            </div>
+            <div class="scenario-config">
+                <h3>Income Details</h3>
+                <div class="config-grid">
+                    <div class="config-group">
+                        <label for="grossIncome">Gross Monthly Income (S$)</label>
+                        <input type="number" id="grossIncome" value="5000" step="100" min="0">
+                    </div>
+                    <div class="config-group">
+                        <label style="display: flex; align-items: center; margin-top: 20px;">
+                            <input type="checkbox" id="above55" style="width: auto; margin-right: 10px;">
+                            Above 55 years old
+                        </label>
+                    </div>
+                </div>
+                <div id="cpfCalculationPreview" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: none;">
+                    <h4>Calculated CPF Contributions:</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <div><strong>Employee OA:</strong> <span id="previewEmployeeOA">-</span></div>
+                        <div><strong>Employer OA:</strong> <span id="previewEmployerOA">-</span></div>
+                        <div><strong>Employee SA:</strong> <span id="previewEmployeeSA">-</span></div>
+                        <div><strong>Employer SA:</strong> <span id="previewEmployerSA">-</span></div>
+                        <div><strong>Employee MA:</strong> <span id="previewEmployeeMA">-</span></div>
+                        <div><strong>Employer MA:</strong> <span id="previewEmployerMA">-</span></div>
+                        <div style="grid-column: 1 / -1; margin-top: 10px; padding-top: 10px; border-top: 1px solid #dee2e6;">
+                            <strong>Total Monthly:</strong> <span id="previewTotal" style="color: #d32f2f; font-size: 1.1em;">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn" onclick="closeIncomeModal()">Cancel</button>
+                <button class="btn" onclick="applyIncomeCalculation()">Apply to Calculator</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="share-modal" id="shareModal">
+        <div class="share-modal-content">
+            <div class="share-modal-header">
+                <h2>📤 Share CPF Stats</h2>
+                <span class="close" onclick="closeShareModal()">&times;</span>
+            </div>
+            <div id="sharePreview" class="share-preview"></div>
+            <div class="share-modal-buttons">
+                <button class="btn btn-secondary" onclick="closeShareModal()">Cancel</button>
+                <button class="btn" onclick="copyToClipboard()">Copy to Clipboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class CPFCalculator {
+            constructor(currentOA = 0, currentSA = 0, currentMA = 0, age = 25) {
+                this.currentOA = currentOA;
+                this.currentSA = currentSA;
+                this.currentMA = currentMA;
+                this.currentAge = age;
+
+                // Get rates from settings panel
+                this.baseOARate = (parseFloat(document.getElementById('oaRate')?.value || 2.5) / 100);
+                this.baseSARate = (parseFloat(document.getElementById('saRate')?.value || 4.0) / 100);
+                this.baseMARate = (parseFloat(document.getElementById('maRate')?.value || 4.0) / 100);
+                this.extraInterestRate = 0.01;  // 1% extra
+
+                // Limits for extra interest
+                this.totalExtraInterestCap = 60000;  // First $60k of combined balances
+                this.oaExtraInterestCap = 20000;     // Max $20k from OA gets extra interest
+            }
+
+            calculateEffectiveInterestRates() {
+                const totalBalance = this.currentOA + this.currentSA + this.currentMA;
+
+                // Calculate how much gets extra interest
+                const oaWithExtra = Math.min(this.currentOA, this.oaExtraInterestCap);
+                const remainingExtraCap = Math.max(0, this.totalExtraInterestCap - oaWithExtra);
+                const saMaWithExtra = Math.min(this.currentSA + this.currentMA, remainingExtraCap);
+
+                // Effective rates
+                let oaEffectiveRate;
+                if (this.currentOA <= this.oaExtraInterestCap) {
+                    oaEffectiveRate = this.baseOARate + this.extraInterestRate; // 3.5%
+                } else {
+                    // Weighted average: first 20k gets 3.5%, rest gets 2.5%
+                    const extraPortion = this.oaExtraInterestCap / this.currentOA;
+                    const regularPortion = (this.currentOA - this.oaExtraInterestCap) / this.currentOA;
+                    oaEffectiveRate = (extraPortion * (this.baseOARate + this.extraInterestRate) +
+                                     regularPortion * this.baseOARate);
+                }
+
+                // For SA/MA, calculate weighted rates
+                const saMaTotal = this.currentSA + this.currentMA;
+                let saMaEffectiveRate;
+                if (saMaTotal > 0) {
+                    saMaEffectiveRate = ((saMaWithExtra * (this.baseSARate + this.extraInterestRate) +
+                                       (saMaTotal - saMaWithExtra) * this.baseSARate) / saMaTotal);
+                } else {
+                    saMaEffectiveRate = this.baseSARate + this.extraInterestRate;
+                }
+
+                return {
+                    oaRate: oaEffectiveRate,
+                    saRate: saMaEffectiveRate,
+                    maRate: saMaEffectiveRate,
+                    oaWithExtra: oaWithExtra,
+                    saMaWithExtra: saMaWithExtra
+                };
+            }
+
+            projectGrowth(years, monthlyContributionOA = 0, monthlyContributionSA = 0, monthlyContributionMA = 0) {
+                const rates = this.calculateEffectiveInterestRates();
+                const months = years * 12;
+                
+                const data = [];
+                let oaBalance = this.currentOA;
+                let saBalance = this.currentSA;
+                let maBalance = this.currentMA;
+                let totalBalance = this.currentOA + this.currentSA + this.currentMA;
+
+                // Monthly interest rates
+                const monthlyOARate = rates.oaRate / 12;
+                const monthlySARate = rates.saRate / 12;
+                const monthlyMARate = rates.maRate / 12;
+
+                // Add initial data point
+                data.push({
+                    year: 0,
+                    age: this.currentAge,
+                    oa: oaBalance,
+                    sa: saBalance,
+                    ma: maBalance,
+                    total: totalBalance
+                });
+
+                // Project month by month
+                for (let month = 1; month <= months; month++) {
+                    // Add monthly contributions
+                    oaBalance += monthlyContributionOA;
+                    saBalance += monthlyContributionSA;
+                    maBalance += monthlyContributionMA;
+
+                    // Apply interest (compound monthly)
+                    oaBalance *= (1 + monthlyOARate);
+                    saBalance *= (1 + monthlySARate);
+                    maBalance *= (1 + monthlyMARate);
+
+                    totalBalance = oaBalance + saBalance + maBalance;
+
+                    // Add data point every year
+                    if (month % 12 === 0) {
+                        data.push({
+                            year: month / 12,
+                            age: this.currentAge + (month / 12),
+                            oa: oaBalance,
+                            sa: saBalance,
+                            ma: maBalance,
+                            total: totalBalance
+                        });
+                    }
+                }
+
+                return data;
+            }
+
+            calculateRetirementReadiness(targetRetirementAge = 65) {
+                const yearsToRetirement = targetRetirementAge - this.currentAge;
+
+                if (yearsToRetirement <= 0) {
+                    return { message: "Already at or past retirement age!" };
+                }
+
+                // Project without additional contributions
+                const dfBase = this.projectGrowth(yearsToRetirement);
+                const finalBalance = dfBase[dfBase.length - 1].total;
+
+                // Get Basic Retirement Sum from settings panel
+                const basicRetirementSum = parseFloat(document.getElementById('basicRetirementSum')?.value || 106500);
+                const fullRetirementSum = basicRetirementSum * 2;  // 2x basic
+                const enhancedRetirementSum = basicRetirementSum * 4;  // 4x basic
+
+                return {
+                    yearsToRetirement: yearsToRetirement,
+                    projectedTotalBalance: finalBalance,
+                    basicRetirementSum: basicRetirementSum,
+                    fullRetirementSum: fullRetirementSum,
+                    enhancedRetirementSum: enhancedRetirementSum,
+                    meetsBasic: finalBalance >= basicRetirementSum,
+                    meetsFull: finalBalance >= fullRetirementSum,
+                    meetsEnhanced: finalBalance >= enhancedRetirementSum,
+                    shortfallBasic: Math.max(0, basicRetirementSum - finalBalance),
+                    shortfallFull: Math.max(0, fullRetirementSum - finalBalance),
+                    shortfallEnhanced: Math.max(0, enhancedRetirementSum - finalBalance)
+                };
+            }
+        }
+
+        let growthChart = null;
+        let comparisonChart = null;
+
+        function flipCard() {
+            const flipCard = document.getElementById('flipCard');
+            flipCard.classList.toggle('flipped');
+        }
+
+        function flipShareCard() {
+            const shareCard = document.getElementById('shareCard');
+            shareCard.classList.toggle('flipped');
+        }
+
+        function saveSettings() {
+            const settings = {
+                oaRate: document.getElementById('oaRate').value,
+                saRate: document.getElementById('saRate').value,
+                maRate: document.getElementById('maRate').value,
+                basicRetirementSum: document.getElementById('basicRetirementSum').value
+            };
+            localStorage.setItem('cpfCalculatorSettings', JSON.stringify(settings));
+        }
+
+        function saveUserData() {
+            const userData = {
+                currentOA: document.getElementById('currentOA').value,
+                currentSA: document.getElementById('currentSA').value,
+                currentMA: document.getElementById('currentMA').value,
+                currentAge: document.getElementById('currentAge').value,
+                monthlyOA: document.getElementById('monthlyOA').value,
+                monthlySA: document.getElementById('monthlySA').value,
+                monthlyMA: document.getElementById('monthlyMA').value,
+                projectionYears: document.getElementById('projectionYears').value
+            };
+            localStorage.setItem('cpfCalculatorUserData', JSON.stringify(userData));
+        }
+
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('cpfCalculatorSettings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                document.getElementById('oaRate').value = settings.oaRate || 2.5;
+                document.getElementById('saRate').value = settings.saRate || 4.0;
+                document.getElementById('maRate').value = settings.maRate || 4.0;
+                document.getElementById('basicRetirementSum').value = settings.basicRetirementSum || 106500;
+            }
+        }
+
+        function loadUserData() {
+            const savedUserData = localStorage.getItem('cpfCalculatorUserData');
+            if (savedUserData) {
+                const userData = JSON.parse(savedUserData);
+                document.getElementById('currentOA').value = userData.currentOA || 20000;
+                document.getElementById('currentSA').value = userData.currentSA || 10000;
+                document.getElementById('currentMA').value = userData.currentMA || 10000;
+                document.getElementById('currentAge').value = userData.currentAge || 25;
+                document.getElementById('monthlyOA').value = userData.monthlyOA || 1150;
+                document.getElementById('monthlySA').value = userData.monthlySA || 299;
+                document.getElementById('monthlyMA').value = userData.monthlyMA || 398;
+                document.getElementById('projectionYears').value = userData.projectionYears || 30;
+            }
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-SG', {
+                style: 'currency',
+                currency: 'SGD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function formatPercentage(rate) {
+            return (rate * 100).toFixed(2) + '%';
+        }
+
+        function calculateCPF() {
+            const currentOA = parseFloat(document.getElementById('currentOA').value) || 0;
+            const currentSA = parseFloat(document.getElementById('currentSA').value) || 0;
+            const currentMA = parseFloat(document.getElementById('currentMA').value) || 0;
+            const currentAge = parseInt(document.getElementById('currentAge').value) || 25;
+            const monthlyOA = parseFloat(document.getElementById('monthlyOA').value) || 0;
+            const monthlySA = parseFloat(document.getElementById('monthlySA').value) || 0;
+            const monthlyMA = parseFloat(document.getElementById('monthlyMA').value) || 0;
+            const projectionYears = parseInt(document.getElementById('projectionYears').value) || 25;
+
+            const calculator = new CPFCalculator(currentOA, currentSA, currentMA, currentAge);
+            const rates = calculator.calculateEffectiveInterestRates();
+            const growthData = calculator.projectGrowth(projectionYears, monthlyOA, monthlySA, monthlyMA);
+            const retirementInfo = calculator.calculateRetirementReadiness();
+
+            // Highlight active tab
+            document.getElementById('calculateBtn').className = 'btn';
+            document.getElementById('compareBtn').className = 'btn btn-secondary';
+
+            // Display summary stats
+            const summaryStats = document.getElementById('summaryStats');
+            const finalBalance = growthData[growthData.length - 1].total;
+            const basicRetirementSum = retirementInfo.basicRetirementSum;
+            const fullRetirementSum = retirementInfo.fullRetirementSum;
+            const enhancedRetirementSum = retirementInfo.enhancedRetirementSum;
+            
+            // Calculate progress based on current SA balance (not final projected amount)
+            const currentSABalance = currentSA;
+            const maxGoal = enhancedRetirementSum;
+            const currentProgress = Math.min(100, (currentSABalance / maxGoal) * 100);
+            
+            // Calculate time to reach each goal based on monthly SA contribution
+            const monthlySAContribution = monthlySA;
+            let timeToBasic = 0;
+            let timeToFull = 0;
+            let timeToEnhanced = 0;
+            let ageAtBasic = currentAge;
+            let ageAtFull = currentAge;
+            let ageAtEnhanced = currentAge;
+            
+            if (monthlySAContribution > 0) {
+                // Calculate with compound interest (monthly)
+                const monthlyInterestRate = rates.saRate / 12;
+                
+                // Function to calculate months needed with compound interest
+                const calculateMonthsWithInterest = (targetAmount, currentAmount, monthlyContribution, monthlyRate) => {
+                    if (currentAmount >= targetAmount) return 0;
+                    
+                    // Formula: FV = PV(1+r)^n + PMT * ((1+r)^n - 1) / r
+                    // Where: FV = target amount, PV = current amount, PMT = monthly contribution, r = monthly rate, n = months
+                    // Solving for n: n = log((FV*r + PMT) / (PV*r + PMT)) / log(1+r)
+                    
+                    if (monthlyRate === 0) {
+                        // Simple calculation if no interest
+                        return Math.ceil((targetAmount - currentAmount) / monthlyContribution);
+                    }
+                    
+                    const numerator = targetAmount * monthlyRate + monthlyContribution;
+                    const denominator = currentAmount * monthlyRate + monthlyContribution;
+                    
+                    if (denominator <= 0) return Infinity; // Can't reach target
+                    
+                    const months = Math.log(numerator / denominator) / Math.log(1 + monthlyRate);
+                    return Math.ceil(months);
+                };
+                
+                if (currentSABalance < basicRetirementSum) {
+                    timeToBasic = calculateMonthsWithInterest(basicRetirementSum, currentSABalance, monthlySAContribution, monthlyInterestRate);
+                    ageAtBasic = currentAge + Math.floor(timeToBasic / 12);
+                }
+                if (currentSABalance < fullRetirementSum) {
+                    timeToFull = calculateMonthsWithInterest(fullRetirementSum, currentSABalance, monthlySAContribution, monthlyInterestRate);
+                    ageAtFull = currentAge + Math.floor(timeToFull / 12);
+                }
+                if (currentSABalance < enhancedRetirementSum) {
+                    timeToEnhanced = calculateMonthsWithInterest(enhancedRetirementSum, currentSABalance, monthlySAContribution, monthlyInterestRate);
+                    ageAtEnhanced = currentAge + Math.floor(timeToEnhanced / 12);
+                }
+            }
+            
+            // Determine progress bar color and message
+            let progressColor = '#d32f2f'; // Red for Basic
+            let progressMessage = '';
+            
+            if (currentSABalance >= enhancedRetirementSum) {
+                progressColor = '#4caf50'; // Green for Enhanced
+                progressMessage = '<span style="color: #4caf50; font-weight: bold;">🎉 Congratulations! You\'ve reached the Enhanced Retirement Sum!</span>';
+            } else if (currentSABalance >= fullRetirementSum) {
+                progressColor = '#4caf50'; // Green for Enhanced goal
+                const shortfall = enhancedRetirementSum - currentSABalance;
+                if (monthlySAContribution > 0) {
+                    progressMessage = `<span style="color: #1976d2;">You need ${formatCurrency(shortfall)} more to reach Enhanced Retirement Sum, and you will hit it in ${timeToEnhanced} months based on the monthly SA contribution of ${formatCurrency(monthlySAContribution)} at around age ${ageAtEnhanced}.</span>`;
+                } else {
+                    progressMessage = `<span style="color: #1976d2;">You need ${formatCurrency(shortfall)} more to reach Enhanced Retirement Sum. Consider adding monthly SA contributions to reach this goal faster.</span>`;
+                }
+            } else if (currentSABalance >= basicRetirementSum) {
+                progressColor = '#ff9800'; // Yellow for Full goal
+                const shortfall = fullRetirementSum - currentSABalance;
+                if (monthlySAContribution > 0) {
+                    progressMessage = `<span style="color: #ff9800; font-weight: bold;">You need ${formatCurrency(shortfall)} more to reach Full Retirement Sum, and you will hit it in ${timeToFull} months based on the monthly SA contribution of ${formatCurrency(monthlySAContribution)} at around age ${ageAtFull}.</span>`;
+                } else {
+                    progressMessage = `<span style="color: #ff9800; font-weight: bold;">You need ${formatCurrency(shortfall)} more to reach Full Retirement Sum. Consider adding monthly SA contributions to reach this goal faster.</span>`;
+                }
+            } else {
+                progressColor = '#d32f2f'; // Red for Basic goal
+                const shortfall = basicRetirementSum - currentSABalance;
+                if (monthlySAContribution > 0) {
+                    progressMessage = `<span style="color: #d32f2f;">📈 Keep saving! You need ${formatCurrency(shortfall)} more to reach Basic Retirement Sum, and you will hit it in ${timeToBasic} months based on the monthly SA contribution of ${formatCurrency(monthlySAContribution)} at around age ${ageAtBasic}.</span>`;
+                } else {
+                    progressMessage = `<span style="color: #d32f2f;">📈 Keep saving! You need ${formatCurrency(shortfall)} more to reach Basic Retirement Sum. Consider adding monthly SA contributions to reach this goal faster.</span>`;
+                }
+            }
+            
+            summaryStats.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${formatCurrency(currentOA + currentSA + currentMA)}</div>
+                    <div class="stat-label">Current Total Balance</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${formatCurrency(finalBalance)}</div>
+                    <div class="stat-label">Final Balance (${projectionYears} years)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${formatPercentage(rates.oaRate)}</div>
+                    <div class="stat-label">OA Effective Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${formatPercentage(rates.saRate)}</div>
+                    <div class="stat-label">SA/MA Effective Rate</div>
+                </div>
+            `;
+
+            // Add single progress bar with markers for all retirement goals
+            const progressSection = document.createElement('div');
+            progressSection.innerHTML = `
+                <h3>🎯 SA Balance Progress Toward Retirement Goals</h3>
+                <div style="margin: 20px 0; position: relative;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span><strong>Current SA Balance:</strong> ${formatCurrency(currentSABalance)}</span>
+                        <span>${currentProgress.toFixed(1)}% of Enhanced Goal</span>
+                    </div>
+                    <div class="progress-bar" style="position: relative;">
+                        <div class="progress-fill" style="width: ${currentProgress}%; background: ${progressColor};"></div>
+                        
+                        <!-- Basic Retirement Sum Marker -->
+                        <div class="goal-marker" style="left: ${(basicRetirementSum / maxGoal) * 100}%; background: #d32f2f;">
+                            <div class="marker-label">Basic<br>${formatCurrency(basicRetirementSum)}</div>
+                        </div>
+                        
+                        <!-- Full Retirement Sum Marker -->
+                        <div class="goal-marker" style="left: ${(fullRetirementSum / maxGoal) * 100}%; background: #ff9800;">
+                            <div class="marker-label">Full<br>${formatCurrency(fullRetirementSum)}</div>
+                        </div>
+                        
+                        <!-- Enhanced Retirement Sum Marker -->
+                        <div class="goal-marker" style="left: ${(enhancedRetirementSum / maxGoal) * 100}%; background: #1976d2;">
+                            <div class="marker-label">Enhanced<br>${formatCurrency(enhancedRetirementSum)}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; font-size: 0.9em; color: #666;">
+                        ${progressMessage}
+                    </div>
+                </div>
+            `;
+            
+            // Remove any existing progress section before adding new one
+            const existingProgress = document.querySelector('h3');
+            if (existingProgress && existingProgress.textContent.includes('🎯 SA Balance Progress Toward Retirement Goals')) {
+                existingProgress.parentNode.remove();
+            }
+            
+            // Insert progress section after summary stats
+            summaryStats.parentNode.insertBefore(progressSection, summaryStats.nextSibling);
+
+            // Display retirement readiness
+            const retirementAlert = document.getElementById('retirementAlert');
+            if (retirementInfo.message) {
+                retirementAlert.innerHTML = `<div class="alert alert-warning">${retirementInfo.message}</div>`;
+            } else {
+                // Calculate projection to age 65 with current monthly contributions
+                const yearsToRetirement = retirementInfo.yearsToRetirement;
+                const projectionTo65 = calculator.projectGrowth(yearsToRetirement, monthlyOA, monthlySA, monthlyMA);
+                const projectedBalanceAt65 = projectionTo65[projectionTo65.length - 1].total;
+                
+                let alertClass = 'alert-success';
+                let message = '';
+                
+                if (projectedBalanceAt65 >= retirementInfo.enhancedRetirementSum) {
+                    alertClass = 'alert-success';
+                    message = `You are on track to meet the Enhanced Retirement Sum!`;
+                } else if (projectedBalanceAt65 >= retirementInfo.fullRetirementSum) {
+                    alertClass = 'alert-success';
+                    message = `You are on track to meet the Full Retirement Sum!`;
+                } else if (projectedBalanceAt65 >= retirementInfo.basicRetirementSum) {
+                    alertClass = 'alert-success';
+                    message = `You are on track to meet the Basic Retirement Sum!`;
+                } else {
+                    alertClass = 'alert-danger';
+                    message = `You need ${formatCurrency(retirementInfo.basicRetirementSum - projectedBalanceAt65)} more to meet the Basic Retirement Sum.`;
+                }
+
+                retirementAlert.innerHTML = `
+                    <div class="alert ${alertClass}">
+                        <strong>Retirement Readiness (Age 65):</strong> ${message}
+                        <br>Projected Balance at 65: ${formatCurrency(projectedBalanceAt65)} | 
+                        Basic Retirement Sum: ${formatCurrency(retirementInfo.basicRetirementSum)}
+                    </div>
+                `;
+            }
+
+            // Create growth chart
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            if (growthChart) {
+                growthChart.destroy();
+            }
+
+            growthChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: growthData.map(d => `${d.age} years old`),
+                    datasets: [
+                        {
+                            label: 'OA Balance',
+                            data: growthData.map(d => d.oa),
+                            borderColor: '#d32f2f',
+                            backgroundColor: 'rgba(211, 47, 47, 0.1)',
+                            borderWidth: 2,
+                            fill: false
+                        },
+                        {
+                            label: 'SA Balance',
+                            data: growthData.map(d => d.sa),
+                            borderColor: '#1976d2',
+                            backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                            borderWidth: 2,
+                            fill: false
+                        },
+                        {
+                            label: 'MA Balance',
+                            data: growthData.map(d => d.ma),
+                            borderColor: '#388e3c',
+                            backgroundColor: 'rgba(56, 142, 60, 0.1)',
+                            borderWidth: 2,
+                            fill: false
+                        },
+                        {
+                            label: 'Total Balance',
+                            data: growthData.map(d => d.total),
+                            borderColor: '#000',
+                            backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                            borderWidth: 3,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `CPF Growth Projection (${projectionYears} Years)`,
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Age'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Create milestone table
+            const milestoneTable = document.getElementById('milestoneTable');
+            
+            // Generate milestones based on projection years
+            let milestones = [];
+            if (projectionYears <= 10) {
+                // For 10 years or less: multiples of 2
+                for (let i = 2; i <= projectionYears; i += 2) {
+                    milestones.push(i);
+                }
+                // Always include the final year if it's not already included
+                if (milestones[milestones.length - 1] !== projectionYears) {
+                    milestones.push(projectionYears);
+                }
+            } else {
+                // For more than 10 years: multiples of 5
+                for (let i = 5; i <= projectionYears; i += 5) {
+                    milestones.push(i);
+                }
+                // Always include the final year if it's not already included
+                if (milestones[milestones.length - 1] !== projectionYears) {
+                    milestones.push(projectionYears);
+                }
+            }
+            
+            const milestoneData = milestones.map(year => {
+                const dataPoint = growthData.find(d => d.year === year);
+                return dataPoint ? {
+                    year: year,
+                    age: dataPoint.age,
+                    oa: dataPoint.oa,
+                    sa: dataPoint.sa,
+                    ma: dataPoint.ma,
+                    total: dataPoint.total
+                } : null;
+            }).filter(d => d !== null);
+
+            milestoneTable.innerHTML = `
+                <h3>📊 Key Milestones</h3>
+                <table class="milestone-table">
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>Age</th>
+                            <th class="desktop-only">OA Balance</th>
+                            <th class="desktop-only">SA Balance</th>
+                            <th class="desktop-only">MA Balance</th>
+                            <th>Total Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${milestoneData.map(d => `
+                            <tr>
+                                <td>${d.year}</td>
+                                <td>${Math.round(d.age)} years old</td>
+                                <td class="desktop-only">${formatCurrency(d.oa)}</td>
+                                <td class="desktop-only">${formatCurrency(d.sa)}</td>
+                                <td class="desktop-only">${formatCurrency(d.ma)}</td>
+                                <td><strong>${formatCurrency(d.total)}</strong></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('comparisonResults').style.display = 'none';
+        }
+
+        function compareScenarios() {
+            const currentOA = parseFloat(document.getElementById('currentOA').value) || 0;
+            const currentSA = parseFloat(document.getElementById('currentSA').value) || 0;
+            const currentMA = parseFloat(document.getElementById('currentMA').value) || 0;
+            const currentAge = parseInt(document.getElementById('currentAge').value) || 25;
+            const projectionYears = parseInt(document.getElementById('projectionYears').value) || 25;
+            const monthlyOA = parseFloat(document.getElementById('monthlyOA').value) || 0;
+            const monthlySA = parseFloat(document.getElementById('monthlySA').value) || 0;
+            const monthlyMA = parseFloat(document.getElementById('monthlyMA').value) || 0;
+
+            const calculator = new CPFCalculator(currentOA, currentSA, currentMA, currentAge);
+
+            // Load saved scenario settings or use defaults
+            const savedScenarios = localStorage.getItem('cpfScenarios');
+            let scenarioSettings = {
+                basicTopup: { oa: 1150, sa: 299, ma: 398 },
+                aggressiveSaving: { oa: 1150, sa: 715, ma: 398 }
+            };
+            
+            if (savedScenarios) {
+                scenarioSettings = JSON.parse(savedScenarios);
+            }
+
+            const scenarios = {
+                'Current': { oa: monthlyOA, sa: monthlySA, ma: monthlyMA },
+                'No CPF Top-up': { oa: 0, sa: 0, ma: 0 },
+                'Basic Top-up': scenarioSettings.basicTopup,
+                'Aggressive Saving': scenarioSettings.aggressiveSaving
+            };
+
+            const results = {};
+            for (const [scenarioName, contributions] of Object.entries(scenarios)) {
+                const growthData = calculator.projectGrowth(
+                    projectionYears,
+                    contributions.oa,
+                    contributions.sa,
+                    contributions.ma
+                );
+                results[scenarioName] = growthData[growthData.length - 1].total;
+            }
+
+            // Highlight active tab
+            document.getElementById('calculateBtn').className = 'btn btn-secondary';
+            document.getElementById('compareBtn').className = 'btn';
+
+            // Create comparison chart
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+            if (comparisonChart) {
+                comparisonChart.destroy();
+            }
+
+            comparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(results),
+                    datasets: [{
+                        data: Object.values(results),
+                        backgroundColor: [
+                            'rgba(76, 175, 80, 0.7)',  // Green for Current
+                            'rgba(211, 47, 47, 0.7)',  // Red for No Top-up
+                            'rgba(25, 118, 210, 0.7)', // Blue for Basic Top-up
+                            'rgba(56, 142, 60, 0.7)'   // Green for Aggressive
+                        ],
+                        borderColor: [
+                            'rgba(76, 175, 80, 1)',
+                            'rgba(211, 47, 47, 1)',
+                            'rgba(25, 118, 210, 1)',
+                            'rgba(56, 142, 60, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `CPF Balance Comparison After ${projectionYears} Years`,
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Final Balance: ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    },
+                    onClick: function(event, elements) {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const labels = Object.keys(results);
+                            const clickedScenario = labels[index];
+                            
+                            if (clickedScenario === 'Basic Top-up' || clickedScenario === 'Aggressive Saving') {
+                                // Set modal values based on clicked scenario
+                                const scenario = scenarios[clickedScenario];
+                                document.getElementById('scenarioOA').value = scenario.oa;
+                                document.getElementById('scenarioSA').value = scenario.sa;
+                                document.getElementById('scenarioMA').value = scenario.ma;
+                                
+                                // Store which scenario is being edited
+                                window.editingScenario = clickedScenario;
+                                
+                                openScenarioModal();
+                            }
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('comparisonResults').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+        }
+
+        function openScenarioModal() {
+            document.getElementById('scenarioModal').style.display = 'block';
+        }
+
+        function closeScenarioModal() {
+            document.getElementById('scenarioModal').style.display = 'none';
+        }
+
+        function applyScenario() {
+            const scenarioOA = parseFloat(document.getElementById('scenarioOA').value) || 0;
+            const scenarioSA = parseFloat(document.getElementById('scenarioSA').value) || 0;
+            const scenarioMA = parseFloat(document.getElementById('scenarioMA').value) || 0;
+
+            // Save the scenario settings
+            const savedScenarios = localStorage.getItem('cpfScenarios');
+            let scenarioSettings = {
+                basicTopup: { oa: 1150, sa: 299, ma: 398 },
+                aggressiveSaving: { oa: 1150, sa: 715, ma: 398 }
+            };
+            
+            if (savedScenarios) {
+                scenarioSettings = JSON.parse(savedScenarios);
+            }
+
+            // Update the appropriate scenario
+            if (window.editingScenario === 'Basic Top-up') {
+                scenarioSettings.basicTopup = { oa: scenarioOA, sa: scenarioSA, ma: scenarioMA };
+            } else if (window.editingScenario === 'Aggressive Saving') {
+                scenarioSettings.aggressiveSaving = { oa: scenarioOA, sa: scenarioSA, ma: scenarioMA };
+            }
+
+            // Save updated scenarios
+            localStorage.setItem('cpfScenarios', JSON.stringify(scenarioSettings));
+
+            // Refresh the comparison chart
+            compareScenarios();
+
+            closeScenarioModal();
+        }
+
+        function calculateCPFContributions(grossIncome, above55 = false) {
+            // CPF contribution rates for 2025
+            // Source: https://www.cpf.gov.sg/employer/employer-obligations/contribution-and-allocation-rates
+            
+            let employeeTotal, employerTotal;
+            
+            if (above55) {
+                // Age 55 and above (using 55-60 rates as default for above 55)
+                employeeTotal = 0.17;  // 17%
+                employerTotal = 0.155; // 15.5%
+            } else {
+                // Below 55
+                employeeTotal = 0.20;  // 20%
+                employerTotal = 0.17;  // 17%
+            }
+
+            // Calculate total contributions
+            const employeeContribution = Math.round(grossIncome * employeeTotal);
+            const employerContribution = Math.round(grossIncome * employerTotal);
+            const totalContribution = employeeContribution + employerContribution;
+
+            // CPF allocation rates (how the total is distributed to OA, SA, MA)
+            // For employees below 55:
+            // - Employee: 20% total → 23% OA, 6% SA, 8% MA (37% total, but allocation is different)
+            // - Employer: 17% total → allocated to OA, SA, MA based on official allocation
+            
+            let oaAllocation, saAllocation, maAllocation;
+            
+            if (above55) {
+                // For 55 and above, more goes to SA/MA
+                oaAllocation = 0.10;  // 10% of total contribution
+                saAllocation = 0.45;  // 45% of total contribution  
+                maAllocation = 0.45;  // 45% of total contribution
+            } else {
+                // For below 55, standard allocation
+                oaAllocation = 0.6216;  // 23% of total contribution
+                saAllocation = 0.1614;  // 6% of total contribution
+                maAllocation = 0.2154;  // 8% of total contribution
+            }
+
+            // Calculate final amounts
+            const totalOA = Math.round(totalContribution * oaAllocation);
+            const totalSA = Math.round(totalContribution * saAllocation);
+            const totalMA = Math.round(totalContribution * maAllocation);
+
+            return {
+                employeeOA: Math.round(employeeContribution * oaAllocation),
+                employerOA: Math.round(employerContribution * oaAllocation),
+                employeeSA: Math.round(employeeContribution * saAllocation),
+                employerSA: Math.round(employerContribution * saAllocation),
+                employeeMA: Math.round(employeeContribution * maAllocation),
+                employerMA: Math.round(employerContribution * maAllocation),
+                totalMonthly: totalContribution,
+                totalOA: totalOA,
+                totalSA: totalSA,
+                                totalMA: totalMA
+            };
+        }
+
+        function openIncomeModal() {
+            document.getElementById('incomeModal').style.display = 'block';
+            // Add event listeners for real-time calculation
+            document.getElementById('grossIncome').addEventListener('input', updateCPFPreview);
+            document.getElementById('above55').addEventListener('change', updateCPFPreview);
+            // Initial calculation
+            updateCPFPreview();
+        }
+
+        function closeIncomeModal() {
+            document.getElementById('incomeModal').style.display = 'none';
+        }
+
+        function updateCPFPreview() {
+            const grossIncome = parseFloat(document.getElementById('grossIncome').value) || 0;
+            const above55 = document.getElementById('above55').checked;
+            
+            if (grossIncome > 0) {
+                const contributions = calculateCPFContributions(grossIncome, above55);
+                
+                document.getElementById('previewEmployeeOA').textContent = formatCurrency(contributions.employeeOA);
+                document.getElementById('previewEmployerOA').textContent = formatCurrency(contributions.employerOA);
+                document.getElementById('previewEmployeeSA').textContent = formatCurrency(contributions.employeeSA);
+                document.getElementById('previewEmployerSA').textContent = formatCurrency(contributions.employerSA);
+                document.getElementById('previewEmployeeMA').textContent = formatCurrency(contributions.employeeMA);
+                document.getElementById('previewEmployerMA').textContent = formatCurrency(contributions.employerMA);
+                document.getElementById('previewTotal').textContent = formatCurrency(contributions.totalMonthly);
+                
+                document.getElementById('cpfCalculationPreview').style.display = 'block';
+            } else {
+                document.getElementById('cpfCalculationPreview').style.display = 'none';
+            }
+        }
+
+        function applyIncomeCalculation() {
+            const grossIncome = parseFloat(document.getElementById('grossIncome').value) || 0;
+            const above55 = document.getElementById('above55').checked;
+            
+            if (grossIncome > 0) {
+                const contributions = calculateCPFContributions(grossIncome, above55);
+                
+                // Apply to calculator
+                document.getElementById('monthlyOA').value = contributions.totalOA;
+                document.getElementById('monthlySA').value = contributions.totalSA;
+                document.getElementById('monthlyMA').value = contributions.totalMA;
+                
+                // Save user data to localStorage
+                saveUserData();
+                
+                // Trigger calculation update
+                if (document.getElementById('results').style.display !== 'none') {
+                    calculateCPF();
+                } else if (document.getElementById('comparisonResults').style.display !== 'none') {
+                    compareScenarios();
+                }
+                
+                closeIncomeModal();
+            }
+        }
+
+        // Initialize with demo data
+        window.onload = function() {
+            // Load saved settings and user data first
+            loadSettings();
+            loadUserData();
+            
+            // Load shared data from URL parameters (if any)
+            loadSharedData();
+            
+            calculateCPF();
+            
+            // Add event listeners for dynamic updates and data saving
+            const inputs = ['currentOA', 'currentSA', 'currentMA', 'currentAge', 'monthlyOA', 'monthlySA', 'monthlyMA', 'projectionYears'];
+            inputs.forEach(id => {
+                document.getElementById(id).addEventListener('input', function() {
+                    // Save user data to localStorage
+                    saveUserData();
+                    
+                    // Debounce the updates to avoid too many recalculations
+                    clearTimeout(window.updateTimeout);
+                    window.updateTimeout = setTimeout(() => {
+                        if (document.getElementById('results').style.display !== 'none') {
+                            calculateCPF();
+                        } else if (document.getElementById('comparisonResults').style.display !== 'none') {
+                            compareScenarios();
+                        }
+                    }, 500);
+                });
+            });
+            
+            // Add event listeners for settings panel
+            const settingsInputs = ['oaRate', 'saRate', 'maRate', 'basicRetirementSum'];
+            settingsInputs.forEach(id => {
+                document.getElementById(id).addEventListener('input', function() {
+                    // Save settings to localStorage
+                    saveSettings();
+                    
+                    // Debounce the updates to avoid too many recalculations
+                    clearTimeout(window.settingsUpdateTimeout);
+                    window.settingsUpdateTimeout = setTimeout(() => {
+                        if (document.getElementById('results').style.display !== 'none') {
+                            calculateCPF();
+                        } else if (document.getElementById('comparisonResults').style.display !== 'none') {
+                            compareScenarios();
+                        }
+                    }, 500);
+                });
+            });
+        };
+
+        // Share Functions
+        function shareWebsite(event) {
+            event.stopPropagation();
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                showNotification('Website URL copied to clipboard!', 'success');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = window.location.href;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('Website URL copied to clipboard!', 'success');
+            });
+        }
+
+        function shareStatsClipboard(event) {
+            event.stopPropagation();
+            const statsText = generateStatsText();
+            openShareModal(statsText);
+        }
+
+        function shareStatsWebpage(event) {
+            event.stopPropagation();
+            const shareUrl = generateShareUrl();
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showNotification('Shareable link copied to clipboard!', 'success');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = shareUrl;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('Shareable link copied to clipboard!', 'success');
+            });
+        }
+
+        function generateStatsText() {
+            const currentOA = parseFloat(document.getElementById('currentOA').value) || 0;
+            const currentSA = parseFloat(document.getElementById('currentSA').value) || 0;
+            const currentMA = parseFloat(document.getElementById('currentMA').value) || 0;
+            const currentAge = parseInt(document.getElementById('currentAge').value) || 25;
+            const monthlyOA = parseFloat(document.getElementById('monthlyOA').value) || 0;
+            const monthlySA = parseFloat(document.getElementById('monthlySA').value) || 0;
+            const monthlyMA = parseFloat(document.getElementById('monthlyMA').value) || 0;
+            const projectionYears = parseInt(document.getElementById('projectionYears').value) || 25;
+
+            const calculator = new CPFCalculator(currentOA, currentSA, currentMA, currentAge);
+            const rates = calculator.calculateEffectiveInterestRates();
+            const growthData = calculator.projectGrowth(projectionYears, monthlyOA, monthlySA, monthlyMA);
+            const finalBalance = growthData[growthData.length - 1].total;
+
+            const now = new Date();
+            const timestamp = now.toLocaleString('en-SG', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            return `🏦 Singapore CPF Calculator Results
+Generated on: ${timestamp}
+
+📊 Current Balances:
+• OA Balance: ${formatCurrency(currentOA)}
+• SA Balance: ${formatCurrency(currentSA)}
+• MA Balance: ${formatCurrency(currentMA)}
+• Total Balance: ${formatCurrency(currentOA + currentSA + currentMA)}
+
+👤 Personal Info:
+• Current Age: ${currentAge} years old
+• Projection Period: ${projectionYears} years
+
+💰 Monthly Contributions:
+• OA Contribution: ${formatCurrency(monthlyOA)}
+• SA Contribution: ${formatCurrency(monthlySA)}
+• MA Contribution: ${formatCurrency(monthlyMA)}
+• Total Monthly: ${formatCurrency(monthlyOA + monthlySA + monthlyMA)}
+
+📈 Projection Results:
+• Final Balance (${projectionYears} years): ${formatCurrency(finalBalance)}
+• OA Effective Rate: ${formatPercentage(rates.oaRate)}
+• SA/MA Effective Rate: ${formatPercentage(rates.saRate)}
+
+🎯 Retirement Sums:
+• Basic Retirement Sum: ${formatCurrency(parseFloat(document.getElementById('basicRetirementSum').value) || 106500)}
+• Full Retirement Sum: ${formatCurrency((parseFloat(document.getElementById('basicRetirementSum').value) || 106500) * 2)}
+• Enhanced Retirement Sum: ${formatCurrency((parseFloat(document.getElementById('basicRetirementSum').value) || 106500) * 4)}
+
+🌐 Generated using: Singapore CPF Calculator (${window.location.href})`;
+        }
+
+        function generateShareUrl() {
+            const currentOA = document.getElementById('currentOA').value;
+            const currentSA = document.getElementById('currentSA').value;
+            const currentMA = document.getElementById('currentMA').value;
+            const currentAge = document.getElementById('currentAge').value;
+            const monthlyOA = document.getElementById('monthlyOA').value;
+            const monthlySA = document.getElementById('monthlySA').value;
+            const monthlyMA = document.getElementById('monthlyMA').value;
+            const projectionYears = document.getElementById('projectionYears').value;
+
+            const params = new URLSearchParams({
+                oa: currentOA,
+                sa: currentSA,
+                ma: currentMA,
+                age: currentAge,
+                moa: monthlyOA,
+                msa: monthlySA,
+                mma: monthlyMA,
+                years: projectionYears
+            });
+
+            return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+        }
+
+        function openShareModal(content) {
+            document.getElementById('sharePreview').textContent = content;
+            document.getElementById('shareModal').style.display = 'block';
+        }
+
+        function closeShareModal() {
+            document.getElementById('shareModal').style.display = 'none';
+        }
+
+        function copyToClipboard() {
+            const content = document.getElementById('sharePreview').textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                showNotification('CPF stats copied to clipboard!', 'success');
+                closeShareModal();
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = content;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('CPF stats copied to clipboard!', 'success');
+                closeShareModal();
+            });
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#4caf50' : '#2196f3'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                font-weight: 600;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Load shared data from URL parameters
+        function loadSharedData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('oa')) {
+                document.getElementById('currentOA').value = urlParams.get('oa');
+                document.getElementById('currentSA').value = urlParams.get('sa');
+                document.getElementById('currentMA').value = urlParams.get('ma');
+                document.getElementById('currentAge').value = urlParams.get('age');
+                document.getElementById('monthlyOA').value = urlParams.get('moa');
+                document.getElementById('monthlySA').value = urlParams.get('msa');
+                document.getElementById('monthlyMA').value = urlParams.get('mma');
+                document.getElementById('projectionYears').value = urlParams.get('years');
+                
+                // Save to localStorage
+                saveUserData();
+                
+                // Show notification
+                showNotification('Shared CPF data loaded successfully!', 'success');
+                
+                // Clear URL parameters
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Progress Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+
+        .header h1 {
+            font-size: 2.75rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tracker-title {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
+            letter-spacing: 0.01em;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .stats-section {
+            margin-bottom: 40px;
+        }
+
+        .stats-header {
+            font-size: 1.8rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .flip-card-container {
+            perspective: 1000px;
+            height: 100%;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 28px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 100%;
+            min-height: 200px;
+        }
+
+        .stat-card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+            border-color: rgba(0, 122, 255, 0.2);
+        }
+
+        .stat-card.flipped:hover {
+            transform: rotateY(180deg) translateY(-2px);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            top: 0;
+            left: 0;
+            padding: 28px;
+            box-sizing: border-box;
+        }
+
+        .card-front {
+            transform: rotateY(0deg);
+            background: white;
+            border-radius: 12px;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+
+
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #3498db;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .temp-addition {
+            font-size: 1.2rem;
+            color: #f39c12;
+            font-weight: 600;
+        }
+
+        .confirm-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+
+        .confirm-btn:hover {
+            background: #229954;
+            transform: scale(1.05);
+        }
+
+        .confirm-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .reset-temp-btn {
+            background: #e67e22;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+
+        .reset-temp-btn:hover {
+            background: #d35400;
+            transform: scale(1.05);
+        }
+
+        .stat-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-add {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-add:hover {
+            background: #229954;
+            transform: scale(1.05);
+        }
+
+        .btn-reset {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .btn-custom {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-custom:hover {
+            background: #e67e22;
+            transform: scale(1.05);
+        }
+
+        .custom-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .custom-input input {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            width: 80px;
+        }
+
+        .custom-input input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .last-update {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e1e8ed;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .add-section-btn {
+            background: #9b59b6;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+
+        .add-section-btn:hover {
+            background: #8e44ad;
+            transform: scale(1.05);
+        }
+
+        .section-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .edit-title {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .edit-title:hover {
+            background: #2980b9;
+        }
+
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e1e8ed;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .stat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .stat-title {
+            font-size: 1.3rem;
+            color: #34495e;
+            font-weight: 600;
+            flex: 1;
+            margin-right: 10px;
+        }
+
+        .stat-card-controls {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .edit-stat-btn {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .edit-stat-btn:hover {
+            background: #0056CC;
+            transform: scale(1.05);
+        }
+
+        .delete-stat-btn {
+            background: #FF3B30;
+            color: white;
+            border: none;
+            padding: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .delete-stat-btn:hover {
+            background: #D70015;
+            transform: scale(1.05);
+        }
+
+        .flip-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .flip-btn:hover {
+            background: #5a6268;
+            transform: scale(1.05);
+        }
+
+        .notes-textarea {
+            flex: 1;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: none;
+            background: #f8f9fa;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 120px;
+            margin-bottom: 0;
+        }
+
+        .notes-textarea:focus {
+            outline: none;
+            border-color: #007AFF;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .notes-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+
+
+        /* Custom Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 90%;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            transition: border-color 0.3s ease;
+        }
+
+        .modal input:focus {
+            outline: none;
+            border-color: #27ae60;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .modal-btn-primary {
+            background: #27ae60;
+            color: white;
+        }
+
+        .modal-btn-primary:hover {
+            background: #229954;
+            transform: scale(1.05);
+        }
+
+        .modal-btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .modal-btn-secondary:hover {
+            background: #7f8c8d;
+            transform: scale(1.05);
+        }
+
+        .modal-btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .modal-btn-danger:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Work Progress Tracker</h1>
+            <div class="tracker-title" id="trackerTitle" contenteditable="true">Tracker for My Work</div>
+        </div>
+        
+        <div class="content">
+            <div id="statsContainer">
+                <!-- Stats sections will be dynamically generated here -->
+            </div>
+            
+            <button class="add-section-btn" onclick="addNewSection()">+ Add New Section</button>
+        </div>
+        
+        <div class="last-update" id="lastUpdate">
+            Last update as of <span id="currentDate"></span>
+        </div>
+    </div>
+
+    <!-- Custom Modal for Add New Section -->
+    <div class="modal-overlay hidden" id="addSectionModal" style="display: none;">
+        <div class="modal">
+            <h3>Add New Section</h3>
+            <input type="text" id="sectionNameInput" placeholder="Enter section name">
+            <input type="text" id="statNameInput" placeholder="Enter first stat name">
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('addSectionModal')">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="confirmAddSection()">Add Section</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal for Edit Section Title -->
+    <div class="modal-overlay hidden" id="editSectionModal" style="display: none;">
+        <div class="modal">
+            <h3>Edit Section Title</h3>
+            <input type="text" id="editSectionNameInput" placeholder="Enter new section title">
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('editSectionModal')">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="confirmEditSection()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal for Delete Confirmation -->
+    <div class="modal-overlay hidden" id="deleteConfirmModal" style="display: none;">
+        <div class="modal">
+            <h3 id="deleteConfirmTitle">Confirm Deletion</h3>
+            <p id="deleteConfirmMessage" style="text-align: center; margin-bottom: 20px; color: #666;">Are you sure you want to delete this item?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('deleteConfirmModal')">Cancel</button>
+                <button class="modal-btn modal-btn-danger" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal for Edit Stat -->
+    <div class="modal-overlay hidden" id="editStatModal" style="display: none;">
+        <div class="modal">
+            <h3>Edit Stat</h3>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px; color: #666;">Stat Name:</label>
+                <input type="text" id="editStatNameInput" placeholder="Enter new stat name">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px; color: #666;">Stat Value:</label>
+                <input type="number" id="editStatValueInput" placeholder="Enter new stat value" min="0">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('editStatModal')">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="confirmEditStat()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize data structure
+        let trackerData = {
+            title: 'Tracker for My Work',
+            sections: [
+                {
+                    title: 'Posted news articles',
+                    stats: [
+                        { name: 'Normal news', value: 307, notes: '' },
+                        { name: '副刊 (专栏/活得好)', value: 40, notes: '' }
+                    ]
+                },
+                {
+                    title: 'Posted social media',
+                    stats: [
+                        { name: 'Instagram/Meta graphic', value: 36, notes: '' },
+                        { name: 'Tiktok reels', value: 8, notes: '' }
+                    ]
+                }
+            ],
+            lastUpdate: new Date().toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+        };
+
+        // Track temporary additions
+        let tempAdditions = {};
+
+        // Load data from localStorage on page load
+        function loadData() {
+            const saved = localStorage.getItem('workProgressTracker');
+            if (saved) {
+                trackerData = JSON.parse(saved);
+            }
+            renderTracker();
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            trackerData.lastUpdate = new Date().toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            localStorage.setItem('workProgressTracker', JSON.stringify(trackerData));
+            updateLastUpdate();
+        }
+
+        // Render the tracker
+        function renderTracker() {
+            document.getElementById('trackerTitle').textContent = trackerData.title;
+            const container = document.getElementById('statsContainer');
+            container.innerHTML = '';
+
+            trackerData.sections.forEach((section, sectionIndex) => {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'stats-section';
+                sectionDiv.innerHTML = `
+                    <div class="stats-header">
+                        <span>${section.title}</span>
+                        <div class="section-controls">
+                            <button class="edit-title" onclick="editSectionTitle(${sectionIndex})">Edit</button>
+                            <button class="delete-btn" onclick="deleteSection(${sectionIndex})">Delete</button>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        ${section.stats.map((stat, statIndex) => `
+                            <div class="flip-card-container">
+                                <div class="stat-card" id="statCard_${sectionIndex}_${statIndex}">
+                                    <div class="card-front">
+                                        <div class="stat-card-header">
+                                            <div class="stat-title">${stat.name}</div>
+                                            <div class="stat-card-controls">
+                                                <button class="flip-btn" onclick="flipCard(${sectionIndex}, ${statIndex})" title="View notes">📝</button>
+                                                <button class="edit-stat-btn" onclick="editStatName(${sectionIndex}, ${statIndex})" title="Edit stat name">✏️</button>
+                                                <button class="delete-stat-btn" onclick="deleteStat(${sectionIndex}, ${statIndex})" title="Delete stat">×</button>
+                                            </div>
+                                        </div>
+                                        <div class="stat-value" id="statValue_${sectionIndex}_${statIndex}">${stat.value}</div>
+                                        <div class="stat-controls">
+                                            <button class="btn btn-add" onclick="addTempToStat(${sectionIndex}, ${statIndex}, 1)">+1</button>
+                                            <button class="btn btn-add" onclick="addTempToStat(${sectionIndex}, ${statIndex}, 5)">+5</button>
+                                            <button class="btn btn-add" onclick="addTempToStat(${sectionIndex}, ${statIndex}, 10)">+10</button>
+                                            <button class="reset-temp-btn" id="resetTempBtn_${sectionIndex}_${statIndex}" onclick="resetTempAddition(${sectionIndex}, ${statIndex})" style="display: none;">Reset</button>
+                                            <button class="confirm-btn" id="confirmBtn_${sectionIndex}_${statIndex}" onclick="confirmTempAddition(${sectionIndex}, ${statIndex})" style="display: none;">Confirm</button>
+                                        </div>
+                                    </div>
+                                    <div class="card-back">
+                                        <div class="notes-header">
+                                            <div class="notes-title">Notes for ${stat.name}</div>
+                                            <button class="flip-btn" onclick="flipCard(${sectionIndex}, ${statIndex})" title="Back to stats">↩️</button>
+                                        </div>
+                                        <textarea class="notes-textarea" id="notes_${sectionIndex}_${statIndex}" placeholder="Add your notes here... (Type =timenow to insert current date/time)" oninput="handleNotesInput(this, ${sectionIndex}, ${statIndex})">${stat.notes || ''}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(sectionDiv);
+            });
+        }
+
+        // Add temporary addition to stat
+        function addTempToStat(sectionIndex, statIndex, amount) {
+            const key = `${sectionIndex}_${statIndex}`;
+            if (!tempAdditions[key]) {
+                tempAdditions[key] = 0;
+            }
+            tempAdditions[key] += amount;
+            
+            // Update the display to show temp addition
+            const statValueElement = document.querySelector(`#statValue_${sectionIndex}_${statIndex}`);
+            if (statValueElement) {
+                const originalValue = trackerData.sections[sectionIndex].stats[statIndex].value;
+                statValueElement.innerHTML = `
+                    ${originalValue} <span class="temp-addition">+${tempAdditions[key]}</span>
+                `;
+            }
+            
+            // Show confirm and reset buttons
+            const confirmBtn = document.getElementById(`confirmBtn_${sectionIndex}_${statIndex}`);
+            const resetBtn = document.getElementById(`resetTempBtn_${sectionIndex}_${statIndex}`);
+            if (confirmBtn) {
+                confirmBtn.style.display = 'inline-block';
+            }
+            if (resetBtn) {
+                resetBtn.style.display = 'inline-block';
+            }
+        }
+
+        // Confirm temporary addition
+        function confirmTempAddition(sectionIndex, statIndex) {
+            const key = `${sectionIndex}_${statIndex}`;
+            if (tempAdditions[key]) {
+                trackerData.sections[sectionIndex].stats[statIndex].value += tempAdditions[key];
+                delete tempAdditions[key];
+                saveData();
+                renderTracker();
+            }
+        }
+
+        // Reset temporary addition
+        function resetTempAddition(sectionIndex, statIndex) {
+            const key = `${sectionIndex}_${statIndex}`;
+            if (tempAdditions[key]) {
+                delete tempAdditions[key];
+                renderTracker();
+            }
+        }
+
+
+
+
+
+        // Modal management
+        let currentEditingSectionIndex = -1;
+        let currentEditingStatIndex = -1;
+        let deleteAction = null; // Store delete action details
+
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            // Clear inputs
+            if (modalId === 'addSectionModal') {
+                document.getElementById('sectionNameInput').value = '';
+                document.getElementById('statNameInput').value = '';
+            } else if (modalId === 'editSectionModal') {
+                document.getElementById('editSectionNameInput').value = '';
+            } else if (modalId === 'editStatModal') {
+                document.getElementById('editStatNameInput').value = '';
+                document.getElementById('editStatValueInput').value = '';
+            }
+        }
+
+        // Add new section
+        function addNewSection() {
+            showModal('addSectionModal');
+        }
+
+        function confirmAddSection() {
+            const sectionName = document.getElementById('sectionNameInput').value.trim();
+            const statName = document.getElementById('statNameInput').value.trim();
+            
+            if (sectionName && statName) {
+                trackerData.sections.push({
+                    title: sectionName,
+                    stats: [{ name: statName, value: 0, notes: '' }]
+                });
+                saveData();
+                renderTracker();
+                closeModal('addSectionModal');
+            } else {
+                alert('Please fill in both fields');
+            }
+        }
+
+        // Edit section title
+        function editSectionTitle(sectionIndex) {
+            currentEditingSectionIndex = sectionIndex;
+            const currentTitle = trackerData.sections[sectionIndex].title;
+            document.getElementById('editSectionNameInput').value = currentTitle;
+            showModal('editSectionModal');
+        }
+
+        function confirmEditSection() {
+            const newTitle = document.getElementById('editSectionNameInput').value.trim();
+            
+            if (newTitle && currentEditingSectionIndex >= 0) {
+                trackerData.sections[currentEditingSectionIndex].title = newTitle;
+                saveData();
+                renderTracker();
+                closeModal('editSectionModal');
+                currentEditingSectionIndex = -1;
+            } else {
+                alert('Please enter a valid title');
+            }
+        }
+
+        // Delete section
+        function deleteSection(sectionIndex) {
+            const section = trackerData.sections[sectionIndex];
+            deleteAction = {
+                type: 'section',
+                sectionIndex: sectionIndex,
+                name: section.title
+            };
+            
+            document.getElementById('deleteConfirmTitle').textContent = 'Delete Section';
+            document.getElementById('deleteConfirmMessage').textContent = `Are you sure you want to delete the section "${section.title}"? This will also delete all stats in this section.`;
+            showModal('deleteConfirmModal');
+        }
+
+        // Delete stat
+        function deleteStat(sectionIndex, statIndex) {
+            const stat = trackerData.sections[sectionIndex].stats[statIndex];
+            deleteAction = {
+                type: 'stat',
+                sectionIndex: sectionIndex,
+                statIndex: statIndex,
+                name: stat.name
+            };
+            
+            document.getElementById('deleteConfirmTitle').textContent = 'Delete Stat';
+            document.getElementById('deleteConfirmMessage').textContent = `Are you sure you want to delete the stat "${stat.name}"?`;
+            showModal('deleteConfirmModal');
+        }
+
+        // Confirm deletion
+        function confirmDelete() {
+            if (!deleteAction) return;
+            
+            if (deleteAction.type === 'section') {
+                trackerData.sections.splice(deleteAction.sectionIndex, 1);
+            } else if (deleteAction.type === 'stat') {
+                trackerData.sections[deleteAction.sectionIndex].stats.splice(deleteAction.statIndex, 1);
+                
+                // If no stats left in section, delete the section too
+                if (trackerData.sections[deleteAction.sectionIndex].stats.length === 0) {
+                    trackerData.sections.splice(deleteAction.sectionIndex, 1);
+                }
+            }
+            
+            saveData();
+            renderTracker();
+            closeModal('deleteConfirmModal');
+            deleteAction = null;
+        }
+
+        // Flip card function
+        function flipCard(sectionIndex, statIndex) {
+            const card = document.getElementById(`statCard_${sectionIndex}_${statIndex}`);
+            const isFlippingToBack = !card.classList.contains('flipped');
+            
+            if (isFlippingToBack) {
+                // Flipping to back - save notes automatically
+                saveNotes(sectionIndex, statIndex);
+            }
+            
+            card.classList.toggle('flipped');
+        }
+
+        // Save notes function (now called automatically)
+        function saveNotes(sectionIndex, statIndex) {
+            const notesTextarea = document.getElementById(`notes_${sectionIndex}_${statIndex}`);
+            if (!notesTextarea) return;
+            
+            let notes = notesTextarea.value;
+            
+            // Replace =timenow with current date/time
+            notes = notes.replace(/=timenow/g, getCurrentDateTime());
+            
+            trackerData.sections[sectionIndex].stats[statIndex].notes = notes;
+            saveData();
+        }
+
+        // Handle notes input with real-time =timenow conversion
+        function handleNotesInput(textarea, sectionIndex, statIndex) {
+            const cursorPosition = textarea.selectionStart;
+            const value = textarea.value;
+            
+            // Check if the user just typed =timenow
+            if (value.includes('=timenow')) {
+                const newValue = value.replace(/=timenow/g, getCurrentDateTime());
+                textarea.value = newValue;
+                
+                // Restore cursor position (adjust for the replacement)
+                const timeStampLength = getCurrentDateTime().length;
+                const timenowLength = '=timenow'.length;
+                const lengthDifference = timeStampLength - timenowLength;
+                
+                // Calculate new cursor position
+                let newCursorPosition = cursorPosition;
+                const beforeCursor = value.substring(0, cursorPosition);
+                const timenowCountBeforeCursor = (beforeCursor.match(/=timenow/g) || []).length;
+                newCursorPosition += timenowCountBeforeCursor * lengthDifference;
+                
+                textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+                
+                // Save the updated notes
+                trackerData.sections[sectionIndex].stats[statIndex].notes = newValue;
+                saveData();
+            }
+        }
+
+        // Get current date/time in the specified format
+        function getCurrentDateTime() {
+            const now = new Date();
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            
+            const day = now.getDate();
+            const month = months[now.getMonth()];
+            const year = now.getFullYear();
+            const dayName = days[now.getDay()];
+            
+            let hours = now.getHours();
+            const minutes = now.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // the hour '0' should be '12'
+            
+            const formattedTime = `${hours}:${minutes.toString().padStart(2, '0')}${ampm}`;
+            
+            return `${day} ${month} ${year} (${dayName}) ${formattedTime}`;
+        }
+
+        // Edit stat
+        function editStatName(sectionIndex, statIndex) {
+            currentEditingStatIndex = statIndex;
+            currentEditingSectionIndex = sectionIndex;
+            const currentName = trackerData.sections[sectionIndex].stats[statIndex].name;
+            const currentValue = trackerData.sections[sectionIndex].stats[statIndex].value;
+            document.getElementById('editStatNameInput').value = currentName;
+            document.getElementById('editStatValueInput').value = currentValue;
+            showModal('editStatModal');
+        }
+
+        function confirmEditStat() {
+            const newName = document.getElementById('editStatNameInput').value.trim();
+            const newValue = parseInt(document.getElementById('editStatValueInput').value);
+            
+            if (newName && currentEditingSectionIndex >= 0 && currentEditingStatIndex >= 0 && newValue >= 0) {
+                trackerData.sections[currentEditingSectionIndex].stats[currentEditingStatIndex].name = newName;
+                trackerData.sections[currentEditingSectionIndex].stats[currentEditingStatIndex].value = newValue;
+                saveData();
+                renderTracker();
+                closeModal('editStatModal');
+                currentEditingSectionIndex = -1;
+                currentEditingStatIndex = -1;
+            } else {
+                alert('Please enter valid stat name and value');
+            }
+        }
+
+        // Update last update display
+        function updateLastUpdate() {
+            document.getElementById('currentDate').textContent = trackerData.lastUpdate;
+        }
+
+        // Handle tracker title editing
+        document.getElementById('trackerTitle').addEventListener('blur', function() {
+            trackerData.title = this.textContent;
+            saveData();
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            updateLastUpdate();
+            
+            // Ensure all modals are hidden on page load
+            const modals = document.querySelectorAll('.modal-overlay');
+            modals.forEach(modal => {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            });
+        });
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal-overlay')) {
+                event.target.classList.add('hidden');
+                event.target.style.display = 'none';
+            }
+        });
+
+        // Handle Enter key in modals
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                if (!document.getElementById('addSectionModal').classList.contains('hidden')) {
+                    confirmAddSection();
+                } else if (!document.getElementById('editSectionModal').classList.contains('hidden')) {
+                    confirmEditSection();
+                } else if (!document.getElementById('editStatModal').classList.contains('hidden')) {
+                    confirmEditStat();
+                } else if (!document.getElementById('deleteConfirmModal').classList.contains('hidden')) {
+                    confirmDelete();
+                }
+            } else if (event.key === 'Escape') {
+                if (!document.getElementById('addSectionModal').classList.contains('hidden')) {
+                    closeModal('addSectionModal');
+                } else if (!document.getElementById('editSectionModal').classList.contains('hidden')) {
+                    closeModal('editSectionModal');
+                } else if (!document.getElementById('editStatModal').classList.contains('hidden')) {
+                    closeModal('editStatModal');
+                } else if (!document.getElementById('deleteConfirmModal').classList.contains('hidden')) {
+                    closeModal('deleteConfirmModal');
+                }
+            }
+        });
+    </script>
+</body>
+</html> 
