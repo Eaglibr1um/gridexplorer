@@ -31,6 +31,32 @@
     <meta property="twitter:title" content="Singapore Grid Explorer - Track Your Exploration Progress" />
     <meta property="twitter:description" content="Explore Singapore grid by grid! Track your exploration progress, mark visited locations, add notes, and discover landmarks across Singapore." />
     <meta property="twitter:image" content="https://justxploring.com/logo.png" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://justxploring.com/" />
+    
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Singapore Grid Explorer",
+      "description": "Explore Singapore grid by grid! Track your exploration progress, mark visited locations, add notes, and discover landmarks across Singapore.",
+      "url": "https://justxploring.com",
+      "applicationCategory": "TravelApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "Singapore Grid Explorer"
+      }
+    }
+    </script>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -39,6 +65,13 @@
      crossorigin=""/>
   </head>
   <body>
+    <noscript>
+      <div style="padding: 2rem; text-align: center; font-family: system-ui, -apple-system, sans-serif;">
+        <h1>Singapore Grid Explorer</h1>
+        <p>Explore Singapore grid by grid! Track your exploration progress, mark visited locations, add notes, and discover landmarks across Singapore.</p>
+        <p>Please enable JavaScript to use this application.</p>
+      </div>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
