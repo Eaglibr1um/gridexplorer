@@ -6,6 +6,7 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import Login from './components/Login'
 import GridExplorer from './components/GridExplorer'
 import Profile from './components/Profile'
+import Tuition from './components/Tuition'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -45,6 +46,7 @@ function AppContent() {
                 </ProtectedRoute>
               } 
             />
+            <Route path="/tuition" element={<Tuition />} />
             <Route path="/" element={<Navigate to="/explorer" replace />} />
           </Routes>
         </main>
