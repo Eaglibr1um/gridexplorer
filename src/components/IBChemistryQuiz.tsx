@@ -112,26 +112,26 @@ const IBChemistryQuiz = ({ onBack }: IBChemistryQuizProps) => {
     const seconds = timeSpent % 60;
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-100 to-teal-100 p-8 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <Award className="w-20 h-20 text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-3xl font-bold mb-2 text-teal-700">IB Chemistry Quiz Result</h2>
-          <p className="text-6xl font-bold text-gray-700 mb-2">{score}/{questions.length}</p>
-          <p className="text-4xl font-bold mb-4 text-teal-600">{percentage}%</p>
-          <p className="text-lg text-gray-600 mb-6">
+      <div className="min-h-screen bg-gradient-to-br from-green-100 to-teal-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-5 sm:p-6 md:p-8 max-w-md w-full text-center mx-2">
+          <Award className="w-16 h-16 sm:w-20 sm:h-20 text-yellow-500 mx-auto mb-3 sm:mb-4" />
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-teal-700 px-2">IB Chemistry Quiz Result</h2>
+          <p className="text-5xl sm:text-6xl font-bold text-gray-700 mb-2">{score}/{questions.length}</p>
+          <p className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4 text-teal-600">{percentage}%</p>
+          <p className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-6 px-2">
             Time: {minutes}m {seconds}s
           </p>
-          <div className="mb-6">
-            {percentage === 100 && <p className="text-xl text-green-600">🌟 Perfect Score! Excellent work!</p>}
-            {percentage >= 80 && percentage < 100 && <p className="text-xl text-blue-600">🎉 Great job! Keep studying!</p>}
-            {percentage >= 60 && percentage < 80 && <p className="text-xl text-purple-600">👍 Good effort! Review the topics!</p>}
-            {percentage < 60 && <p className="text-xl text-orange-600">💪 Keep practicing! You'll improve!</p>}
+          <div className="mb-4 sm:mb-6 px-2">
+            {percentage === 100 && <p className="text-lg sm:text-xl text-green-600">🌟 Perfect Score! Excellent work!</p>}
+            {percentage >= 80 && percentage < 100 && <p className="text-lg sm:text-xl text-blue-600">🎉 Great job! Keep studying!</p>}
+            {percentage >= 60 && percentage < 80 && <p className="text-lg sm:text-xl text-purple-600">👍 Good effort! Review the topics!</p>}
+            {percentage < 60 && <p className="text-lg sm:text-xl text-orange-600">💪 Keep practicing! You'll improve!</p>}
           </div>
           <button
             onClick={restart}
-            className="bg-teal-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-teal-700 transition flex items-center gap-2 mx-auto"
+            className="bg-teal-600 text-white px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-teal-700 active:scale-95 transition-all flex items-center gap-2 mx-auto min-h-[44px] touch-manipulation"
           >
-            <RefreshCw className="w-5 h-5" />
+            <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
             Try Again
           </button>
         </div>
@@ -140,17 +140,17 @@ const IBChemistryQuiz = ({ onBack }: IBChemistryQuizProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 to-teal-100 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-green-100 to-teal-100 p-3 sm:p-4 md:p-8 safe-area-inset">
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-6 h-6 text-teal-600" />
-              <h1 className="text-2xl font-bold text-teal-700">IB Chemistry Quiz</h1>
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-4 sm:p-6 md:p-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="flex items-center gap-2 min-w-0">
+              <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600 flex-shrink-0" />
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-teal-700 truncate">IB Chemistry Quiz</h1>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Question {currentQ + 1}/{questions.length}</p>
-              <p className="text-lg font-bold text-teal-600">Score: {score}</p>
+            <div className="text-right flex-shrink-0 w-full sm:w-auto">
+              <p className="text-xs sm:text-sm text-gray-600">Question {currentQ + 1}/{questions.length}</p>
+              <p className="text-base sm:text-lg font-bold text-teal-600">Score: {score}</p>
             </div>
           </div>
 
@@ -163,19 +163,19 @@ const IBChemistryQuiz = ({ onBack }: IBChemistryQuizProps) => {
             </div>
           </div>
 
-          <div className="bg-teal-50 rounded-xl p-6 mb-6">
-            <p className="text-xl text-gray-800 font-semibold mb-4">
+          <div className="bg-teal-50 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+            <p className="text-base sm:text-lg md:text-xl text-gray-800 font-semibold">
               {questions[currentQ].question}
             </p>
           </div>
 
-          <div className="space-y-3 mb-6">
+          <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
             {questions[currentQ].options.map((option, index) => (
               <button
                 key={index}
                 onClick={() => handleAnswer(index)}
                 disabled={showResult}
-                className={`w-full text-left px-6 py-4 rounded-lg border-2 transition-all ${
+                className={`w-full text-left px-4 sm:px-6 py-3.5 sm:py-4 rounded-lg border-2 transition-all min-h-[44px] touch-manipulation ${
                   showResult
                     ? index === questions[currentQ].correct
                       ? 'bg-green-100 border-green-500 text-green-800'
@@ -184,22 +184,22 @@ const IBChemistryQuiz = ({ onBack }: IBChemistryQuizProps) => {
                       : 'bg-gray-50 border-gray-300 text-gray-600'
                     : selectedAnswer === index
                     ? 'bg-teal-100 border-teal-500 text-teal-800'
-                    : 'bg-white border-gray-300 text-gray-700 hover:border-teal-300 hover:bg-teal-50'
-                } ${showResult ? '' : 'hover:scale-105'}`}
+                    : 'bg-white border-gray-300 text-gray-700 active:border-teal-300 active:bg-teal-50'
+                } ${showResult ? '' : 'active:scale-[0.98]'}`}
               >
-                {option}
+                <span className="text-sm sm:text-base">{option}</span>
               </button>
             ))}
           </div>
 
           {showResult && (
-            <div className="mb-6">
-              <div className={`rounded-xl p-4 ${
+            <div className="mb-4 sm:mb-6">
+              <div className={`rounded-lg sm:rounded-xl p-3 sm:p-4 ${
                 selectedAnswer === questions[currentQ].correct
                   ? 'bg-green-50 border-2 border-green-300'
                   : 'bg-red-50 border-2 border-red-300'
               }`}>
-                <p className={`font-bold ${
+                <p className={`text-sm sm:text-base font-bold ${
                   selectedAnswer === questions[currentQ].correct
                     ? 'text-green-700'
                     : 'text-red-700'
@@ -208,7 +208,7 @@ const IBChemistryQuiz = ({ onBack }: IBChemistryQuizProps) => {
                     ? '✓ Correct!'
                     : '✗ Incorrect'}
                 </p>
-                <p className="text-sm text-gray-700 mt-2">
+                <p className="text-xs sm:text-sm text-gray-700 mt-2">
                   {questions[currentQ].explanation}
                 </p>
               </div>
@@ -218,7 +218,7 @@ const IBChemistryQuiz = ({ onBack }: IBChemistryQuizProps) => {
           {showResult && (
             <button
               onClick={nextQuestion}
-              className="w-full bg-teal-600 text-white px-6 py-3 rounded-lg text-lg font-semibold hover:bg-teal-700 transition"
+              className="w-full bg-teal-600 text-white px-4 sm:px-6 py-3.5 sm:py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-teal-700 active:scale-95 transition-all min-h-[44px] touch-manipulation"
             >
               {currentQ < questions.length - 1 ? 'Next Question →' : 'See Results'}
             </button>

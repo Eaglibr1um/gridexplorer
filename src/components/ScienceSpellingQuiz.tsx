@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Sparkles, Award, RefreshCw, Trophy, Users } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Sparkles, Award, RefreshCw, Trophy, Users, Keyboard, PenTool, X } from 'lucide-react';
 
 interface ScienceSpellingQuizProps {
   onBack?: () => void;
@@ -79,6 +79,12 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
   const [showHint, setShowHint] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [records, setRecords] = useState({ rayne: [], jeffrey: [] });
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [timerActive, setTimerActive] = useState(false);
+  const [inputMode, setInputMode] = useState<'keyboard' | 'handwriting'>('keyboard');
+  const [isDrawing, setIsDrawing] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvasPaths, setCanvasPaths] = useState<Array<{ x: number; y: number }[]>>([]);
 
   useEffect(() => {
     const saved = localStorage.getItem('spellingRecords');
@@ -86,6 +92,126 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
       setRecords(JSON.parse(saved));
     }
   }, []);
+
+  // Timer effect - countdown and auto-submit (30s total per question, not per attempt)
+  useEffect(() => {
+    // Only run timer when active and not showing final feedback
+    const isFinalAnswer = showFeedback && (feedbackMsg.includes('Correct') || attempts >= 3);
+    if (!timerActive || isFinalAnswer || completed || !selectedStudent || questions.length === 0) return;
+
+    if (timeLeft > 0) {
+      const timer = setTimeout(() => {
+        setTimeLeft(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      // Time's up - force final answer
+      setTimerActive(false);
+      const currentAnswer = userAnswer.trim();
+      const correct = currentAnswer.toLowerCase() === questions[currentQ].answer.toLowerCase();
+      
+      if (currentAnswer && correct) {
+        setFeedbackMsg('✓ Correct! Well done!');
+        setShowFeedback(true);
+        setScore(prev => prev + 1);
+        setAttempts(0);
+      } else {
+        // Time's up - show final answer regardless of attempts
+        setAttempts(3); // Set to max attempts to show final answer
+        setFeedbackMsg(`⏰ Time's up! The correct answer is: ${questions[currentQ].answer}`);
+        setShowFeedback(true);
+      }
+    }
+  }, [timeLeft, timerActive, showFeedback, completed, selectedStudent, userAnswer, attempts, currentQ, questions, feedbackMsg]);
+
+  // Reset timer when question changes
+  useEffect(() => {
+    if (selectedStudent && questions.length > 0) {
+      setTimeLeft(30);
+      setTimerActive(true);
+    }
+  }, [currentQ, selectedStudent, questions.length]);
+
+  // Handwriting canvas functions
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+    setCanvasPaths([]);
+    setUserAnswer('');
+  };
+
+  const startDrawing = (e: React.TouchEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDrawing(true);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
+    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+    
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      setCanvasPaths([[{ x, y }]]);
+    }
+  };
+
+  const draw = (e: React.TouchEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
+    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+    
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = '#4c1d95';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+      
+      setCanvasPaths(prev => {
+        const newPaths = [...prev];
+        if (newPaths.length > 0) {
+          newPaths[newPaths.length - 1].push({ x, y });
+        }
+        return newPaths;
+      });
+    }
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+    // Convert handwriting to text using basic recognition
+    // For now, we'll use a simple approach - users can manually type what they drew
+    // Or we can integrate a handwriting recognition API later
+  };
+
+  // Initialize canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas && inputMode === 'handwriting') {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.strokeStyle = '#4c1d95';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+      }
+    }
+  }, [inputMode]);
 
   const selectStudent = (student) => {
     setSelectedStudent(student);
@@ -96,6 +222,8 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
     const correct = userAnswer.toLowerCase().trim() === questions[currentQ].answer.toLowerCase();
     
     if (correct) {
+      // Correct answer - stop timer and show success
+      setTimerActive(false);
       setFeedbackMsg('✓ Correct! Well done!');
       setShowFeedback(true);
       setScore(score + 1);
@@ -105,20 +233,25 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
       setAttempts(newAttempts);
       
       if (newAttempts >= 3) {
+        // Final attempt - stop timer
+        setTimerActive(false);
         setFeedbackMsg(`✗ The correct answer is: ${questions[currentQ].answer}`);
         setShowFeedback(true);
       } else {
+        // Wrong but can retry - timer continues, just show feedback
         setFeedbackMsg(`✗ Not quite right. You have ${3 - newAttempts} ${3 - newAttempts === 1 ? 'try' : 'tries'} left!`);
         setShowFeedback(true);
         setTimeout(() => {
           setShowFeedback(false);
           setUserAnswer('');
+          // Timer continues running - don't reset it
         }, 1500);
       }
     }
   };
 
   const nextQuestion = () => {
+    setTimerActive(false); // Stop current timer
     if (currentQ < questions.length - 1) {
       setCurrentQ(currentQ + 1);
       setUserAnswer('');
@@ -126,6 +259,9 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
       setShowHint(false);
       setAttempts(0);
       setFeedbackMsg('');
+      setTimeLeft(30); // Reset timer for next question
+      setTimerActive(true); // Start timer for next question
+      clearCanvas(); // Clear handwriting canvas
     } else {
       const percentage = Math.round((score / questions.length) * 100);
       const newRecords = { ...records };
@@ -162,63 +298,63 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
 
   if (!selectedStudent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-8 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full">
-          <div className="text-center mb-8">
-            <Users className="w-16 h-16 text-purple-600 mx-auto mb-4" />
-            <h1 className="text-4xl font-bold text-purple-700 mb-2">Science Spelling Quiz</h1>
-            <p className="text-gray-600">Choose your quiz!</p>
+      <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-5 sm:p-6 md:p-8 max-w-2xl w-full mx-2">
+          <div className="text-center mb-6 sm:mb-8">
+            <Users className="w-12 h-12 sm:w-16 sm:h-16 text-purple-600 mx-auto mb-3 sm:mb-4" />
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-purple-700 mb-2 px-2">Science Spelling Quiz</h1>
+            <p className="text-sm sm:text-base text-gray-600 px-2">Choose your quiz!</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <button
               onClick={() => selectStudent('rayne')}
-              className="bg-gradient-to-br from-pink-400 to-purple-500 text-white p-8 rounded-xl hover:scale-105 transition-transform shadow-lg"
+              className="bg-gradient-to-br from-pink-400 to-purple-500 text-white p-5 sm:p-6 md:p-8 rounded-lg sm:rounded-xl active:scale-95 transition-transform shadow-lg min-h-[140px] touch-manipulation"
             >
-              <h2 className="text-3xl font-bold mb-2">Rayne's Quiz</h2>
-              <p className="text-pink-100 mb-4">30 Questions</p>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2">Rayne's Quiz</h2>
+              <p className="text-pink-100 mb-3 sm:mb-4 text-sm sm:text-base">30 Questions</p>
               {records.rayne.length > 0 && (
-                <div className="bg-white/20 rounded-lg p-3 text-sm">
+                <div className="bg-white/20 rounded-lg p-2 sm:p-3 text-xs sm:text-sm">
                   <p className="font-semibold">Best Score:</p>
-                  <p className="text-2xl">{Math.max(...records.rayne.map(r => r.percentage))}%</p>
+                  <p className="text-xl sm:text-2xl">{Math.max(...records.rayne.map(r => r.percentage))}%</p>
                 </div>
               )}
             </button>
 
             <button
               onClick={() => selectStudent('jeffrey')}
-              className="bg-gradient-to-br from-blue-400 to-indigo-500 text-white p-8 rounded-xl hover:scale-105 transition-transform shadow-lg"
+              className="bg-gradient-to-br from-blue-400 to-indigo-500 text-white p-5 sm:p-6 md:p-8 rounded-lg sm:rounded-xl active:scale-95 transition-transform shadow-lg min-h-[140px] touch-manipulation"
             >
-              <h2 className="text-3xl font-bold mb-2">Jeffrey's Quiz</h2>
-              <p className="text-blue-100 mb-4">26 Questions</p>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2">Jeffrey's Quiz</h2>
+              <p className="text-blue-100 mb-3 sm:mb-4 text-sm sm:text-base">26 Questions</p>
               {records.jeffrey.length > 0 && (
-                <div className="bg-white/20 rounded-lg p-3 text-sm">
+                <div className="bg-white/20 rounded-lg p-2 sm:p-3 text-xs sm:text-sm">
                   <p className="font-semibold">Best Score:</p>
-                  <p className="text-2xl">{Math.max(...records.jeffrey.map(r => r.percentage))}%</p>
+                  <p className="text-xl sm:text-2xl">{Math.max(...records.jeffrey.map(r => r.percentage))}%</p>
                 </div>
               )}
             </button>
           </div>
 
           {(records.rayne.length > 0 || records.jeffrey.length > 0) && (
-            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-6 border-2 border-yellow-300">
-              <div className="flex items-center gap-2 mb-6">
-                <Trophy className="w-8 h-8 text-yellow-500" />
-                <h3 className="text-2xl font-bold text-purple-700">🏆 Leaderboard - Who's Winning?</h3>
+            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border-2 border-yellow-300">
+              <div className="flex items-center gap-2 mb-4 sm:mb-6">
+                <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 flex-shrink-0" />
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-purple-700">🏆 Leaderboard - Who's Winning?</h3>
               </div>
               
               {/* Side-by-side comparison */}
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
-                <div className="bg-white rounded-lg p-4 border-2 border-pink-300">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-bold text-pink-600 text-lg">Rayne</h4>
+              <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="bg-white rounded-lg p-3 sm:p-4 border-2 border-pink-300">
+                  <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <h4 className="font-bold text-pink-600 text-base sm:text-lg">Rayne</h4>
                     {records.rayne.length > 0 && (
-                      <span className="text-2xl font-bold text-pink-600">
+                      <span className="text-xl sm:text-2xl font-bold text-pink-600">
                         {Math.max(...records.rayne.map(r => r.percentage))}%
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 mb-3">Best Score</p>
+                  <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Best Score</p>
                   <p className="text-xs text-gray-500">Total Attempts: {records.rayne.length}</p>
                   {records.rayne.length > 0 && (
                     <div className="mt-2 text-xs text-gray-600">
@@ -227,16 +363,16 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
                   )}
                 </div>
                 
-                <div className="bg-white rounded-lg p-4 border-2 border-blue-300">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-bold text-blue-600 text-lg">Jeffrey</h4>
+                <div className="bg-white rounded-lg p-3 sm:p-4 border-2 border-blue-300">
+                  <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <h4 className="font-bold text-blue-600 text-base sm:text-lg">Jeffrey</h4>
                     {records.jeffrey.length > 0 && (
-                      <span className="text-2xl font-bold text-blue-600">
+                      <span className="text-xl sm:text-2xl font-bold text-blue-600">
                         {Math.max(...records.jeffrey.map(r => r.percentage))}%
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 mb-3">Best Score</p>
+                  <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Best Score</p>
                   <p className="text-xs text-gray-500">Total Attempts: {records.jeffrey.length}</p>
                   {records.jeffrey.length > 0 && (
                     <div className="mt-2 text-xs text-gray-600">
@@ -247,21 +383,21 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
               </div>
 
               {/* Recent attempts */}
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <p className="font-semibold text-pink-600 mb-2">Rayne's Recent Attempts</p>
+                  <p className="font-semibold text-pink-600 mb-2 text-sm sm:text-base">Rayne's Recent Attempts</p>
                   {records.rayne.slice(-3).reverse().map((r, i) => (
-                    <div key={i} className="bg-white/60 rounded p-2 mb-1 flex justify-between">
-                      <span className="text-sm text-gray-700">{r.percentage}%</span>
+                    <div key={i} className="bg-white/60 rounded p-2 sm:p-3 mb-1 flex justify-between items-center">
+                      <span className="text-xs sm:text-sm text-gray-700">{r.percentage}%</span>
                       <span className="text-xs text-gray-500">{r.score}/{r.total}</span>
                     </div>
                   ))}
                 </div>
                 <div>
-                  <p className="font-semibold text-blue-600 mb-2">Jeffrey's Recent Attempts</p>
+                  <p className="font-semibold text-blue-600 mb-2 text-sm sm:text-base">Jeffrey's Recent Attempts</p>
                   {records.jeffrey.slice(-3).reverse().map((r, i) => (
-                    <div key={i} className="bg-white/60 rounded p-2 mb-1 flex justify-between">
-                      <span className="text-sm text-gray-700">{r.percentage}%</span>
+                    <div key={i} className="bg-white/60 rounded p-2 sm:p-3 mb-1 flex justify-between items-center">
+                      <span className="text-xs sm:text-sm text-gray-700">{r.percentage}%</span>
                       <span className="text-xs text-gray-500">{r.score}/{r.total}</span>
                     </div>
                   ))}
@@ -279,27 +415,27 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
     const studentColor = selectedStudent === 'rayne' ? 'pink' : 'blue';
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-8 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <Award className="w-20 h-20 text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-3xl font-bold mb-2" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }}>
+      <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-5 sm:p-6 md:p-8 max-w-md w-full text-center mx-2">
+          <Award className="w-16 h-16 sm:w-20 sm:h-20 text-yellow-500 mx-auto mb-3 sm:mb-4" />
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2 px-2" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }}>
             {selectedStudent === 'rayne' ? 'Rayne' : 'Jeffrey'}'s Result
           </h2>
-          <p className="text-6xl font-bold text-gray-700 mb-2">{score}/{questions.length}</p>
-          <p className="text-4xl font-bold mb-6" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }}>
+          <p className="text-5xl sm:text-6xl font-bold text-gray-700 mb-2">{score}/{questions.length}</p>
+          <p className="text-3xl sm:text-4xl font-bold mb-4 sm:mb-6" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }}>
             {percentage}%
           </p>
-          <div className="mb-6">
-            {percentage === 100 && <p className="text-xl text-green-600">🌟 Perfect Score! You're a spelling superstar!</p>}
-            {percentage >= 80 && percentage < 100 && <p className="text-xl text-blue-600">🎉 Excellent work! Keep it up!</p>}
-            {percentage >= 60 && percentage < 80 && <p className="text-xl text-purple-600">👍 Good job! Practice makes perfect!</p>}
-            {percentage < 60 && <p className="text-xl text-orange-600">💪 Keep practicing! You're improving!</p>}
+          <div className="mb-4 sm:mb-6 px-2">
+            {percentage === 100 && <p className="text-lg sm:text-xl text-green-600">🌟 Perfect Score! You're a spelling superstar!</p>}
+            {percentage >= 80 && percentage < 100 && <p className="text-lg sm:text-xl text-blue-600">🎉 Excellent work! Keep it up!</p>}
+            {percentage >= 60 && percentage < 80 && <p className="text-lg sm:text-xl text-purple-600">👍 Good job! Practice makes perfect!</p>}
+            {percentage < 60 && <p className="text-lg sm:text-xl text-orange-600">💪 Keep practicing! You're improving!</p>}
           </div>
           <button
             onClick={restart}
-            className="bg-purple-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-purple-700 transition flex items-center gap-2 mx-auto"
+            className="bg-purple-600 text-white px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-purple-700 active:scale-95 transition-all flex items-center gap-2 mx-auto min-h-[44px] touch-manipulation"
           >
-            <RefreshCw className="w-5 h-5" />
+            <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
             Back to Menu
           </button>
         </div>
@@ -308,19 +444,62 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-3 sm:p-4 md:p-8 safe-area-inset">
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-6 h-6" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }} />
-              <h1 className="text-2xl font-bold" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }}>
-                {selectedStudent === 'rayne' ? 'Rayne' : 'Jeffrey'}'s Quiz
-              </h1>
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-4 sm:p-6 md:p-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
+              {/* Circular Timer - Left Side */}
+              {timerActive && !(showFeedback && (feedbackMsg.includes('Correct') || attempts >= 3)) && (
+                <div className="relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex-shrink-0">
+                  <svg className="transform -rotate-90 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16" viewBox="0 0 64 64">
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r="28"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                      className="text-gray-200"
+                    />
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r="28"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 28}`}
+                      strokeDashoffset={`${2 * Math.PI * 28 * (1 - timeLeft / 30)}`}
+                      className={`transition-all duration-1000 ${
+                        timeLeft > 20 ? 'text-green-500' :
+                        timeLeft > 10 ? 'text-yellow-500' :
+                        'text-red-500'
+                      }`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className={`text-sm sm:text-base md:text-lg font-bold ${
+                      timeLeft > 20 ? 'text-green-600' :
+                      timeLeft > 10 ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                      {timeLeft}
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }} />
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold truncate" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }}>
+                  {selectedStudent === 'rayne' ? 'Rayne' : 'Jeffrey'}'s Quiz
+                </h1>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Question {currentQ + 1}/{questions.length}</p>
-              <p className="text-lg font-bold" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }}>
+            <div className="text-right flex-shrink-0 w-full sm:w-auto">
+              <p className="text-xs sm:text-sm text-gray-600">Question {currentQ + 1}/{questions.length}</p>
+              <p className="text-base sm:text-lg font-bold" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }}>
                 Score: {score}
               </p>
             </div>
@@ -340,23 +519,112 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
             </div>
           </div>
 
-          <div className="bg-purple-50 rounded-xl p-6 mb-6">
-            <p className="text-xl text-gray-800 leading-relaxed">
+          <div className="bg-purple-50 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+            <p className="text-base sm:text-lg md:text-xl text-gray-800 leading-relaxed">
               {questions[currentQ].sentence}
             </p>
           </div>
 
-          <div className="space-y-4">
-            <input
-              type="text"
-              value={userAnswer}
-              onChange={(e) => setUserAnswer(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && userAnswer && !showFeedback && checkAnswer()}
-              placeholder="Type your answer here..."
-              className="w-full px-4 py-3 text-lg text-gray-900 bg-white border-2 border-purple-300 rounded-lg focus:outline-none focus:border-purple-500"
-              autoFocus
-              disabled={showFeedback && (feedbackMsg.includes('Correct') || attempts >= 3)}
-            />
+          <div className="space-y-3 sm:space-y-4">
+            {/* Input Mode Toggle */}
+            <div className="flex gap-2 mb-2">
+              <button
+                onClick={() => setInputMode('keyboard')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  inputMode === 'keyboard'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                } min-h-[44px] touch-manipulation`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <Keyboard className="w-4 h-4" />
+                  <span>Keyboard</span>
+                </div>
+              </button>
+              <button
+                onClick={() => {
+                  setInputMode('handwriting');
+                  clearCanvas();
+                }}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  inputMode === 'handwriting'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                } min-h-[44px] touch-manipulation`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <PenTool className="w-4 h-4" />
+                  <span>Handwriting</span>
+                </div>
+              </button>
+            </div>
+
+            {/* Keyboard Input Mode */}
+            {inputMode === 'keyboard' && (
+              <input
+                type="text"
+                value={userAnswer}
+                onChange={(e) => setUserAnswer(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && userAnswer && !showFeedback && checkAnswer()}
+                placeholder="Type your answer here..."
+                className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-lg text-gray-900 bg-white border-2 border-purple-300 rounded-lg focus:outline-none focus:border-purple-500 min-h-[44px] touch-manipulation"
+                autoFocus
+                disabled={showFeedback && (feedbackMsg.includes('Correct') || attempts >= 3)}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
+                inputMode="text"
+              />
+            )}
+
+            {/* Handwriting Canvas Mode */}
+            {inputMode === 'handwriting' && (
+              <div className="space-y-2">
+                <div className="bg-white border-2 border-purple-300 rounded-lg p-2 relative">
+                  <canvas
+                    ref={canvasRef}
+                    width={600}
+                    height={200}
+                    className="w-full h-32 sm:h-40 md:h-48 border border-gray-200 rounded touch-none"
+                    onMouseDown={startDrawing}
+                    onMouseMove={draw}
+                    onMouseUp={stopDrawing}
+                    onMouseLeave={stopDrawing}
+                    onTouchStart={startDrawing}
+                    onTouchMove={draw}
+                    onTouchEnd={stopDrawing}
+                    style={{ touchAction: 'none' }}
+                  />
+                  <button
+                    onClick={clearCanvas}
+                    className="absolute top-3 right-3 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 active:scale-95 transition-all touch-manipulation"
+                    aria-label="Clear drawing"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-xs sm:text-sm text-blue-800">
+                    💡 <strong>Tip:</strong> Draw your answer above. On iPad, you can also use the handwriting keyboard by long-pressing the globe key on your keyboard.
+                  </p>
+                </div>
+                <input
+                  type="text"
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && userAnswer && !showFeedback && checkAnswer()}
+                  placeholder="Type what you drew (or use iPad handwriting keyboard)"
+                  className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-lg text-gray-900 bg-white border-2 border-purple-300 rounded-lg focus:outline-none focus:border-purple-500 min-h-[44px] touch-manipulation"
+                  disabled={showFeedback && (feedbackMsg.includes('Correct') || attempts >= 3)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
+                  inputMode="text"
+                />
+              </div>
+            )}
             
             {showFeedback && (
               <div className={`rounded-xl p-4 ${
@@ -372,12 +640,12 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               {(!showFeedback || (showFeedback && attempts < 3 && !feedbackMsg.includes('Correct'))) && (
                 <button
                   onClick={checkAnswer}
                   disabled={!userAnswer}
-                  className="flex-1 text-white px-6 py-3 rounded-lg text-lg font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                  className="flex-1 text-white px-4 sm:px-6 py-3.5 sm:py-3 rounded-lg text-base sm:text-lg font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed active:scale-95 transition-all min-h-[44px] touch-manipulation"
                   style={{ 
                     backgroundColor: userAnswer ? (selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6') : undefined
                   }}
@@ -389,7 +657,7 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
               {(showFeedback && (feedbackMsg.includes('Correct') || attempts >= 3)) && (
                 <button
                   onClick={nextQuestion}
-                  className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg text-lg font-semibold hover:bg-green-700 transition"
+                  className="flex-1 bg-green-600 text-white px-4 sm:px-6 py-3.5 sm:py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-green-700 active:scale-95 transition-all min-h-[44px] touch-manipulation"
                 >
                   {currentQ < questions.length - 1 ? 'Next Question →' : 'See Results'}
                 </button>
@@ -397,7 +665,7 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
               
               <button
                 onClick={() => setShowHint(!showHint)}
-                className="px-6 py-3 bg-yellow-500 text-white rounded-lg font-semibold hover:bg-yellow-600 transition"
+                className="px-4 sm:px-6 py-3.5 sm:py-3 bg-yellow-500 text-white rounded-lg font-semibold hover:bg-yellow-600 active:scale-95 transition-all min-h-[44px] touch-manipulation"
               >
                 {showHint ? 'Hide' : 'Hint'}
               </button>
