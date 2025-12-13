@@ -31,6 +31,7 @@ export interface AvailableDate {
   bookedBy?: string; // tutee id if booked
   tuteeId?: string; // tutee id this slot is for
   notes?: string;
+  eventType?: 'time_slot' | 'exam' | 'test'; // Type of event
 }
 
 export interface BookingRequest {

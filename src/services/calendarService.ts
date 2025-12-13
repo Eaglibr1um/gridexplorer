@@ -13,6 +13,7 @@ export interface CreateAvailableDateInput {
   isAvailable?: boolean;
   tuteeId?: string; // tutee id this slot is for
   notes?: string;
+  eventType?: 'time_slot' | 'exam' | 'test'; // Type of event
 }
 
 export interface UpdateAvailableDateInput {
@@ -24,6 +25,7 @@ export interface UpdateAvailableDateInput {
   bookedBy?: string | null;
   tuteeId?: string | null;
   notes?: string;
+  eventType?: 'time_slot' | 'exam' | 'test';
 }
 
 /**
@@ -49,6 +51,7 @@ export const fetchAvailableDates = async (): Promise<AvailableDate[]> => {
       bookedBy: item.booked_by || undefined,
       tuteeId: item.tutee_id || undefined,
       notes: item.notes || undefined,
+      eventType: item.event_type || 'time_slot',
     }));
   } catch (error) {
     console.error('Error fetching available dates:', error);
@@ -83,6 +86,7 @@ export const fetchAvailableDatesByRange = async (
       bookedBy: item.booked_by || undefined,
       tuteeId: item.tutee_id || undefined,
       notes: item.notes || undefined,
+      eventType: item.event_type || 'time_slot',
     }));
   } catch (error) {
     console.error('Error fetching available dates by range:', error);
@@ -106,6 +110,7 @@ export const createAvailableDate = async (
         is_available: input.isAvailable ?? true,
         tutee_id: input.tuteeId || null,
         notes: input.notes || null,
+        event_type: input.eventType || 'time_slot',
       })
       .select()
       .single();
@@ -121,6 +126,7 @@ export const createAvailableDate = async (
       bookedBy: data.booked_by || undefined,
       tuteeId: data.tutee_id || undefined,
       notes: data.notes || undefined,
+      eventType: data.event_type || 'time_slot',
     };
   } catch (error) {
     console.error('Error creating available date:', error);
@@ -142,6 +148,7 @@ export const updateAvailableDate = async (
     if (input.isAvailable !== undefined) updateData.is_available = input.isAvailable;
     if (input.bookedBy !== undefined) updateData.booked_by = input.bookedBy;
     if (input.tuteeId !== undefined) updateData.tutee_id = input.tuteeId;
+    if (input.eventType !== undefined) updateData.event_type = input.eventType;
     // Handle notes: empty string becomes null, undefined means don't update
     if (input.notes !== undefined) {
       updateData.notes = input.notes && input.notes.trim() ? input.notes.trim() : null;
@@ -165,6 +172,7 @@ export const updateAvailableDate = async (
       bookedBy: data.booked_by || undefined,
       tuteeId: data.tutee_id || undefined,
       notes: data.notes || undefined,
+      eventType: data.event_type || 'time_slot',
     };
   } catch (error) {
     console.error('Error updating available date:', error);

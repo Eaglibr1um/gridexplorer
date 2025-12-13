@@ -235,6 +235,174 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
     setFormData({ ...formData, bulletPoints: newPoints });
   };
 
+  // Parse pasted text into bullet points and extract date
+  const parsePastedText = (text: string): { points: string[]; date?: string } => {
+    // Remove zero-width spaces and other invisible characters
+    text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
+    
+    // Split by newlines
+    const lines = text.split(/\r?\n/);
+    
+    const points: string[] = [];
+    let detectedDate: string | undefined;
+    
+    const monthNames: Record<string, number> = {
+      'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
+      'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+    };
+    
+    // Function to parse and validate date
+    const parseDate = (line: string): string | null => {
+      let trimmed = line.trim();
+      
+      // Remove common prefixes like "learning points", "for", etc.
+      trimmed = trimmed.replace(/^(learning\s+points?|for|date:?)\s*/i, '');
+      trimmed = trimmed.trim();
+      
+      // Pattern 1: 6/12/25 or 6/12/2025 (with optional text after)
+      let match = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s|$)/i);
+      if (match) {
+        try {
+          let day = parseInt(match[1]);
+          let month = parseInt(match[2]) - 1; // 0-indexed
+          let year = parseInt(match[3]);
+          if (year < 100) year += 2000; // Convert 25 to 2025
+          
+          const date = new Date(year, month, day);
+          if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
+            return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          }
+        } catch (e) {
+          // Invalid date
+        }
+      }
+      
+      // Pattern 2: 6 Dec 2025 or 6 December 2025 (with optional text after)
+      match = trimmed.match(/^(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{2,4})(?:\s|$)/i);
+      if (match) {
+        try {
+          const day = parseInt(match[1]);
+          const monthName = match[2].toLowerCase().substring(0, 3);
+          const month = monthNames[monthName] ?? -1;
+          let year = parseInt(match[3]);
+          if (year < 100) year += 2000;
+          
+          if (month >= 0) {
+            const date = new Date(year, month, day);
+            if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
+              return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            }
+          }
+        } catch (e) {
+          // Invalid date
+        }
+      }
+      
+      // Pattern 3: 2025-12-06 or 2025/12/06
+      match = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:\s|$)/i);
+      if (match) {
+        try {
+          const year = parseInt(match[1]);
+          const month = parseInt(match[2]) - 1;
+          const day = parseInt(match[3]);
+          
+          const date = new Date(year, month, day);
+          if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
+            return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          }
+        } catch (e) {
+          // Invalid date
+        }
+      }
+      
+      return null;
+    };
+    
+    for (let i = 0; i < lines.length; i++) {
+      let trimmed = lines[i].trim();
+      
+      // Skip empty lines
+      if (!trimmed) continue;
+      
+      // Check if this line contains a date (only check first 2 lines)
+      if (i < 2 && !detectedDate) {
+        const date = parseDate(trimmed);
+        if (date) {
+          detectedDate = date;
+          continue; // Skip this line, it's a date
+        }
+      }
+      
+      // Remove bullet point markers
+      // Match: - , • , 1. , 1) , etc.
+      trimmed = trimmed.replace(/^[-•]\s*/, ''); // Remove - or • at start
+      trimmed = trimmed.replace(/^\d+[.)]\s*/, ''); // Remove numbered lists (1. or 1))
+      trimmed = trimmed.replace(/^[⁠\u200B-\u200D\uFEFF]+/, ''); // Remove any remaining invisible chars at start
+      
+      // Clean up any remaining leading/trailing whitespace
+      trimmed = trimmed.trim();
+      
+      // Skip if it looks like a date line (already processed)
+      if (trimmed.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/i) || 
+          trimmed.match(/^\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{2,4}/i) ||
+          trimmed.match(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/i)) {
+        continue;
+      }
+      
+      if (trimmed) {
+        // Convert molecular formulas to subscripts automatically
+        // Pattern: Letter(s) followed by number(s) - like C4H8, H2O, CO2, C4H10
+        // Match: [A-Z][a-z]? followed by [0-9]+ (one or more digits)
+        trimmed = trimmed.replace(/([A-Z][a-z]?)(\d+)/g, (match, element, number) => {
+          // Convert all digits in the number to subscripts
+          const subscriptMap: Record<string, string> = {
+            '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+            '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉'
+          };
+          const subscriptNumber = number.split('').map((digit: string) => subscriptMap[digit] || digit).join('');
+          return element + subscriptNumber;
+        });
+        
+        points.push(trimmed);
+      }
+    }
+    
+    return { points, date: detectedDate };
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>, index: number) => {
+    // Only process paste in the first textarea (index 0) or if it's empty
+    if (index !== 0 && formData.bulletPoints[0].trim() !== '') {
+      return; // Let default paste behavior happen for other fields
+    }
+    
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text');
+    const { points: parsedPoints, date: detectedDate } = parsePastedText(pastedText);
+    
+    if (parsedPoints.length === 0) {
+      return; // No valid points found
+    }
+    
+    // Update form data with parsed points and detected date
+    const updatedFormData = {
+      ...formData,
+      bulletPoints: parsedPoints.length > 1 ? parsedPoints : parsedPoints,
+      ...(detectedDate && { sessionDate: detectedDate }),
+    };
+    
+    setFormData(updatedFormData);
+    
+    // Auto-expand all textareas after a brief delay
+    setTimeout(() => {
+      const textareas = document.querySelectorAll('textarea[placeholder*="Learning point"]') as NodeListOf<HTMLTextAreaElement>;
+      textareas.forEach((textarea) => {
+        textarea.style.height = 'auto';
+        textarea.style.height = `${Math.max(44, textarea.scrollHeight)}px`;
+      });
+    }, 10);
+  };
+
   const removeBulletPoint = (index: number) => {
     if (formData.bulletPoints.length > 1) {
       const newPoints = formData.bulletPoints.filter((_, i) => i !== index);
@@ -283,10 +451,28 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
       const ids = sessionPoints.map(p => p.id);
 
       sessionPoints.forEach(point => {
-        const bulletPoints = point.points
-          .split(/\n|•|-\s*/)
-          .map(p => p.trim())
-          .filter(p => p.length > 0);
+        // Split by newlines first, then process each line
+        const lines = point.points.split(/\n/);
+        const bulletPoints: string[] = [];
+        
+        for (const line of lines) {
+          let trimmed = line.trim();
+          
+          // Skip empty lines
+          if (!trimmed) continue;
+          
+          // Remove bullet markers only at the START of the line
+          // Match: - or • at the beginning, followed by optional space
+          trimmed = trimmed.replace(/^[-•]\s+/, ''); // Only match - or • at start with space after
+          trimmed = trimmed.replace(/^•\s*/, ''); // Also handle • without space
+          
+          // Don't split on -> arrows or other dashes in the middle of text
+          // Only process if this line starts with a bullet marker
+          if (trimmed) {
+            bulletPoints.push(trimmed);
+          }
+        }
+        
         allBulletPoints.push(...bulletPoints);
         
         if (point.tags) {
@@ -479,10 +665,15 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
 
             {/* Bullet Points Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                <BookOpen className="w-4 h-4" />
-                Learning Points *
-              </label>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Learning Points *
+                </label>
+                <span className="text-xs text-gray-500 italic">
+                  💡 Tip: Paste multiple points in the first field!
+                </span>
+              </div>
               <div className="space-y-3">
                 {formData.bulletPoints.map((point, index) => (
                   <div key={index} className="flex items-start gap-3 group animate-fade-in">
@@ -492,6 +683,7 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
                     <textarea
                       value={point}
                       onChange={(e) => updateBulletPoint(index, e.target.value)}
+                      onPaste={(e) => handlePaste(e, index)}
                       onBlur={(e) => {
                         // Process chemistry notation on blur (when user finishes typing)
                         const processed = convertChemistryNotation(e.target.value);
@@ -499,7 +691,7 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
                           updateBulletPoint(index, processed);
                         }
                       }}
-                      placeholder={`Learning point ${index + 1}...`}
+                      placeholder={index === 0 ? `Learning point ${index + 1}... (Paste multiple points here!)` : `Learning point ${index + 1}...`}
                       className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-y min-h-[44px]"
                       rows={1}
                       style={{

@@ -57,6 +57,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
     endTime: '10:00',
     tuteeId: '',
     notes: '',
+    eventType: 'time_slot' as 'time_slot' | 'exam' | 'test',
   });
 
   // Load tutee options
@@ -86,7 +87,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
     if (!isAdmin && tutee) {
       loadBookingRequests();
     }
-  }, [isAdmin, tutee]);
+  }, [isAdmin, tutee?.id]); // Only reload when tutee ID changes
 
   const loadAvailableDates = async () => {
     try {
@@ -147,8 +148,10 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
     if (!isAdmin && tutee) {
       slots = slots.map((slot) => {
         const isOwnSlot = !slot.tuteeId || slot.tuteeId === tutee.id;
-        // If it's not their slot, mark it as unavailable
-        if (!isOwnSlot) {
+        // Exam and test dates are always visible to their owner
+        const isExamOrTest = slot.eventType === 'exam' || slot.eventType === 'test';
+        // If it's not their slot and not an exam/test, mark it as unavailable
+        if (!isOwnSlot && !isExamOrTest) {
           return {
             ...slot,
             isAvailable: false, // Mark as not available
@@ -184,13 +187,19 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
   const handleAddSlot = async () => {
     try {
       setError('');
+      // For tutees, automatically set tuteeId to current tutee
+      const tuteeIdForSlot = isAdmin 
+        ? (newSlot.tuteeId || undefined)
+        : (tutee ? tutee.id : undefined);
+      
       const input: CreateAvailableDateInput = {
         date: newSlot.date,
         startTime: newSlot.startTime,
         endTime: newSlot.endTime,
-        tuteeId: newSlot.tuteeId || undefined,
+        tuteeId: tuteeIdForSlot,
         notes: newSlot.notes || undefined,
         isAvailable: true,
+        eventType: newSlot.eventType,
       };
 
       await createAvailableDate(input);
@@ -202,6 +211,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
         endTime: '10:00',
         tuteeId: '',
         notes: '',
+        eventType: 'time_slot',
       });
     } catch (err) {
       setError('Failed to add time slot. Please try again.');
@@ -212,13 +222,19 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
   const handleUpdateSlot = async (slot: AvailableDate) => {
     try {
       setError('');
+      // For tutees, automatically set tuteeId to current tutee
+      const tuteeIdForSlot = isAdmin 
+        ? (newSlot.tuteeId || null)
+        : (tutee ? tutee.id : null);
+      
       await updateAvailableDate({
         id: slot.id,
         date: newSlot.date,
         startTime: newSlot.startTime,
         endTime: newSlot.endTime,
-        tuteeId: newSlot.tuteeId || null,
+        tuteeId: tuteeIdForSlot,
         notes: newSlot.notes !== undefined ? (newSlot.notes.trim() || null) : undefined,
+        eventType: newSlot.eventType,
       });
       await loadAvailableDates();
       setEditingSlot(null);
@@ -229,6 +245,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
         endTime: '10:00',
         tuteeId: '',
         notes: '',
+        eventType: 'time_slot',
       });
     } catch (err) {
       setError('Failed to update time slot. Please try again.');
@@ -286,6 +303,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
       endTime: slot.endTime,
       tuteeId: slot.tuteeId || '',
       notes: slot.notes || '',
+      eventType: slot.eventType || 'time_slot',
     });
     setShowAddModal(true);
   };
@@ -299,6 +317,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
       endTime: '10:00',
       tuteeId: '',
       notes: '',
+      eventType: 'time_slot',
     });
   };
 
@@ -634,7 +653,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
             ) : slotsForSelectedDate.length === 0 && (!tutee || requestsForSelectedDate.length === 0) ? (
               <div className="text-center py-8 text-gray-500">
                 <Clock className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                <p>No available slots for this date</p>
+                <p>No tuition for this date as of now</p>
                 {isAdmin ? (
                   <button
                     onClick={() => setShowAddModal(true)}
@@ -643,30 +662,79 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                     Add a time slot
                   </button>
                 ) : tutee ? (
-                  <button
-                    onClick={() => {
-                      setEditingRequest(null);
-                      setShowBookingRequest(true);
-                    }}
-                    className={`mt-4 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r ${tutee?.colorScheme.gradient || 'from-indigo-500 to-indigo-600'} text-white rounded-lg hover:opacity-90 transition-colors-smooth press-effect mx-auto`}
-                  >
-                    <CalendarPlus className="w-4 h-4" />
-                    <span>Request Time Slot</span>
-                  </button>
+                  <div className="mt-4 space-y-2">
+                    <button
+                      onClick={() => {
+                        setEditingRequest(null);
+                        setShowBookingRequest(true);
+                      }}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r ${tutee?.colorScheme.gradient || 'from-indigo-500 to-indigo-600'} text-white rounded-lg hover:opacity-90 transition-colors-smooth press-effect`}
+                    >
+                      <CalendarPlus className="w-4 h-4" />
+                      <span>Request Time Slot</span>
+                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingSlot(null);
+                          setNewSlot({
+                            date: format(selectedDate, 'yyyy-MM-dd'),
+                            startTime: '09:00',
+                            endTime: '10:00',
+                            tuteeId: tutee.id,
+                            notes: '',
+                            eventType: 'exam',
+                          });
+                          setShowAddModal(true);
+                        }}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors-smooth press-effect"
+                      >
+                        <CalendarPlus className="w-4 h-4" />
+                        <span>Add Exam</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingSlot(null);
+                          setNewSlot({
+                            date: format(selectedDate, 'yyyy-MM-dd'),
+                            startTime: '09:00',
+                            endTime: '10:00',
+                            tuteeId: tutee.id,
+                            notes: '',
+                            eventType: 'test',
+                          });
+                          setShowAddModal(true);
+                        }}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors-smooth press-effect"
+                      >
+                        <CalendarPlus className="w-4 h-4" />
+                        <span>Add Test</span>
+                      </button>
+                    </div>
+                  </div>
                 ) : null}
               </div>
             ) : (
               <div className="space-y-3">
                 {slotsForSelectedDate.map((slot, index) => {
                   const isOtherTuteeSlot = (slot as any).isOtherTuteeSlot;
-                  const slotTutee = slot.tuteeId ? getTuteeByIdSync(slot.tuteeId) : null;
+                  // Use the updated tutee from props if it matches, otherwise get from sync
+                  const slotTutee = slot.tuteeId 
+                    ? (tutee && slot.tuteeId === tutee.id ? tutee : getTuteeByIdSync(slot.tuteeId))
+                    : null;
                   const isOwnSlot = !isAdmin && tutee && (!slot.tuteeId || slot.tuteeId === tutee.id);
+                  const isExamOrTest = slot.eventType === 'exam' || slot.eventType === 'test';
+                  const canEdit = isAdmin || (isOwnSlot && isExamOrTest);
                   
                   return (
                     <div
                     key={slot.id}
                     className={`p-4 rounded-lg border-2 transition-smooth animate-fade-in-up ${
-                      slot.isAvailable && !isOtherTuteeSlot
+                      isExamOrTest
+                        ? slot.eventType === 'exam' 
+                          ? 'border-red-200 bg-red-50'
+                          : 'border-blue-200 bg-blue-50'
+                        : slot.isAvailable && !isOtherTuteeSlot
                         ? 'border-green-200 bg-green-50'
                         : isOtherTuteeSlot
                         ? 'border-orange-200 bg-orange-50 opacity-75'
@@ -681,6 +749,17 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                           <span className="font-semibold text-gray-800">
                             {slot.startTime} - {slot.endTime}
                           </span>
+                          {isExamOrTest && (
+                            <span 
+                              className={`text-xs px-2 py-1 rounded font-medium ${
+                                slot.eventType === 'exam' 
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}
+                            >
+                              {slot.eventType === 'exam' ? 'Exam' : 'Test'}
+                            </span>
+                          )}
                           {slot.tuteeId && slotTutee && (
                             <span 
                               className={`text-xs px-2 py-1 rounded flex items-center gap-1 text-white bg-gradient-to-r ${slotTutee.colorScheme.gradient}`}
@@ -689,12 +768,12 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                               {slotTutee.name}
                             </span>
                           )}
-                          {isOtherTuteeSlot && (
+                          {isOtherTuteeSlot && !isExamOrTest && (
                             <span className="text-xs px-2 py-1 bg-orange-200 text-orange-800 rounded font-medium">
                               Not Available
                             </span>
                           )}
-                          {!slot.isAvailable && !isOtherTuteeSlot && (
+                          {!slot.isAvailable && !isOtherTuteeSlot && !isExamOrTest && (
                             <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded">
                               Booked
                             </span>
@@ -705,7 +784,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                         )}
                       </div>
                       <div className="flex gap-2 ml-4">
-                        {isAdmin && (
+                        {canEdit && (
                           <>
                             <button
                               onClick={() => startEdit(slot)}
@@ -723,7 +802,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                             </button>
                           </>
                         )}
-                        {!isAdmin && slot.isAvailable && !isOtherTuteeSlot && tutee && isOwnSlot && (
+                        {!isAdmin && slot.isAvailable && !isOtherTuteeSlot && tutee && isOwnSlot && !isExamOrTest && (
                           <button
                             onClick={() => {
                               setEditingRequest(null);
@@ -747,7 +826,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                             <CalendarPlus className="w-4 h-4" />
                           </button>
                         )}
-                        {isOtherTuteeSlot && (
+                        {isOtherTuteeSlot && !isExamOrTest && (
                           <span className="text-xs text-orange-700 font-medium px-2 py-1">
                             Another tutee's slot
                           </span>
@@ -758,16 +837,56 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                   );
                 })}
                 {!isAdmin && tutee && (
-                  <button
-                    onClick={() => {
-                      setEditingRequest(null);
-                      setShowBookingRequest(true);
-                    }}
-                    className={`w-full mt-3 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r ${tutee?.colorScheme.gradient || 'from-indigo-500 to-indigo-600'} text-white rounded-lg hover:opacity-90 transition-colors-smooth press-effect animate-fade-in-up`}
-                  >
-                    <CalendarPlus className="w-4 h-4" />
-                    <span>Request Different Time</span>
-                  </button>
+                  <div className="mt-3 space-y-2">
+                    <button
+                      onClick={() => {
+                        setEditingRequest(null);
+                        setShowBookingRequest(true);
+                      }}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r ${tutee?.colorScheme.gradient || 'from-indigo-500 to-indigo-600'} text-white rounded-lg hover:opacity-90 transition-colors-smooth press-effect animate-fade-in-up`}
+                    >
+                      <CalendarPlus className="w-4 h-4" />
+                      <span>Request Different Time</span>
+                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingSlot(null);
+                          setNewSlot({
+                            date: format(selectedDate, 'yyyy-MM-dd'),
+                            startTime: '09:00',
+                            endTime: '10:00',
+                            tuteeId: tutee.id,
+                            notes: '',
+                            eventType: 'exam',
+                          });
+                          setShowAddModal(true);
+                        }}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors-smooth press-effect"
+                      >
+                        <CalendarPlus className="w-4 h-4" />
+                        <span>Add Exam</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingSlot(null);
+                          setNewSlot({
+                            date: format(selectedDate, 'yyyy-MM-dd'),
+                            startTime: '09:00',
+                            endTime: '10:00',
+                            tuteeId: tutee.id,
+                            notes: '',
+                            eventType: 'test',
+                          });
+                          setShowAddModal(true);
+                        }}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors-smooth press-effect"
+                      >
+                        <CalendarPlus className="w-4 h-4" />
+                        <span>Add Test</span>
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -896,7 +1015,13 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
           <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full animate-modal-content">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-gray-800">
-                {editingSlot ? 'Edit Time Slot' : 'Add Time Slot'}
+                {editingSlot 
+                  ? editingSlot.eventType === 'exam' 
+                    ? 'Edit Exam' 
+                    : editingSlot.eventType === 'test'
+                    ? 'Edit Test'
+                    : 'Edit Time Slot'
+                  : 'Add Time Slot'}
               </h3>
               <button
                 onClick={cancelEdit}
@@ -946,14 +1071,38 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                 </div>
               </div>
 
+              {isAdmin && (
+                <div>
+                  <Select
+                    value={newSlot.tuteeId}
+                    onChange={(value) => setNewSlot({ ...newSlot, tuteeId: value })}
+                    options={tuteeOptions}
+                    placeholder="All Tutees"
+                    label="For Tutee (optional)"
+                    searchable={tuteeOptions.length > 5}
+                  />
+                </div>
+              )}
+
               <div>
                 <Select
-                  value={newSlot.tuteeId}
-                  onChange={(value) => setNewSlot({ ...newSlot, tuteeId: value })}
-                  options={tuteeOptions}
-                  placeholder="All Tutees"
-                  label="For Tutee (optional)"
-                  searchable={tuteeOptions.length > 5}
+                  value={newSlot.eventType}
+                  onChange={(value) => setNewSlot({ ...newSlot, eventType: value as 'time_slot' | 'exam' | 'test' })}
+                  options={
+                    isAdmin
+                      ? [
+                          { value: 'time_slot', label: 'Time Slot' },
+                          { value: 'exam', label: 'Exam' },
+                          { value: 'test', label: 'Test' },
+                        ]
+                      : [
+                          { value: 'time_slot', label: 'Time Slot' },
+                          { value: 'exam', label: 'Exam' },
+                          { value: 'test', label: 'Test' },
+                        ]
+                  }
+                  placeholder="Select event type"
+                  label="Event Type"
                 />
               </div>
 
@@ -979,7 +1128,11 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                 </button>
                 <button
                   onClick={editingSlot ? () => handleUpdateSlot(editingSlot) : handleAddSlot}
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors-smooth press-effect"
+                  className={`flex-1 px-4 py-2 text-white rounded-lg font-semibold hover:opacity-90 transition-colors-smooth press-effect ${
+                    tutee && !isAdmin
+                      ? `bg-gradient-to-r ${tutee.colorScheme.gradient}`
+                      : 'bg-indigo-600 hover:bg-indigo-700'
+                  }`}
                 >
                   {editingSlot ? 'Update' : 'Add'} Slot
                 </button>
