@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { GraduationCap, Lock, Users, Calendar, BookOpen, Shield, LogOut } from 'lucide-react';
+import { GraduationCap, Lock, BookOpen, Shield, LogOut } from 'lucide-react';
 import { getTutees, verifyPin } from '../config/tutees';
 import { verifyAdminPin, ADMIN_CONFIG } from '../config/admin';
 import { Tutee } from '../types/tuition';
 import PinProtection from './tuition/PinProtection';
 import AdminPinProtection from './tuition/AdminPinProtection';
 import TuteeDashboard from './tuition/TuteeDashboard';
-import TuitionCalendar from './tuition/TuitionCalendar';
 import BookingRequestsAdmin from './tuition/BookingRequestsAdmin';
 import TuteeEditor from './tuition/admin/TuteeEditor';
 import ComponentManager from './tuition/admin/ComponentManager';
@@ -94,9 +93,9 @@ const Tuition = () => {
       }
     };
 
-    window.addEventListener('pinEntered' as any, handlePinEntered as EventListener);
+    window.addEventListener('pinEntered' as any, handlePinEntered as unknown as EventListener);
     return () => {
-      window.removeEventListener('pinEntered' as any, handlePinEntered as EventListener);
+      window.removeEventListener('pinEntered' as any, handlePinEntered as unknown as EventListener);
     };
   }, [pendingTutee, tutees]);
 
@@ -167,6 +166,14 @@ const Tuition = () => {
 
   // Update document title
   useDocumentTitle(selectedTutee ? `Tuition - ${selectedTutee.name}` : 'Tuition Portal');
+
+  // Force light theme for tuition pages
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+    return () => {
+      // Don't restore theme on unmount - let ThemeContext handle it
+    };
+  }, []);
 
   // Show tutee dashboard if one is selected
   if (selectedTutee) {

@@ -7,7 +7,7 @@ import {
   rejectBookingRequest,
   deleteBookingRequest,
 } from '../../services/bookingService';
-import { createAvailableDate } from '../../services/calendarService';
+import { createAvailableDate, fetchAvailableDates, updateAvailableDate } from '../../services/calendarService';
 import { getTuteeByIdSync } from '../../config/tutees';
 import { format, parseISO } from 'date-fns';
 import ConfirmationModal from '../ui/ConfirmationModal';
@@ -53,15 +53,35 @@ const BookingRequestsAdmin = () => {
       // Approve the booking request
       await approveBookingRequest(selectedRequest.id, adminNotes || undefined);
       
-      // Create an available slot for the approved request
-      await createAvailableDate({
-        date: selectedRequest.requestedDate,
-        startTime: selectedRequest.requestedStartTime,
-        endTime: selectedRequest.requestedEndTime,
-        tuteeId: selectedRequest.tuteeId,
-        notes: adminNotes || selectedRequest.tuteeNotes || undefined,
-        isAvailable: true,
-      });
+      // Check if there's an existing slot for this date and tutee
+      const existingDates = await fetchAvailableDates();
+      const existingSlot = existingDates.find(
+        slot => 
+          slot.date === selectedRequest.requestedDate &&
+          slot.tuteeId === selectedRequest.tuteeId &&
+          slot.isAvailable
+      );
+      
+      if (existingSlot) {
+        // Update existing slot with new timing
+        await updateAvailableDate({
+          id: existingSlot.id,
+          startTime: selectedRequest.requestedStartTime,
+          endTime: selectedRequest.requestedEndTime,
+          notes: adminNotes || selectedRequest.tuteeNotes || existingSlot.notes || undefined,
+          isAvailable: true,
+        });
+      } else {
+        // Create a new available slot for the approved request
+        await createAvailableDate({
+          date: selectedRequest.requestedDate,
+          startTime: selectedRequest.requestedStartTime,
+          endTime: selectedRequest.requestedEndTime,
+          tuteeId: selectedRequest.tuteeId,
+          notes: adminNotes || selectedRequest.tuteeNotes || undefined,
+          isAvailable: true,
+        });
+      }
       
       await loadRequests();
       setShowApproveModal(false);

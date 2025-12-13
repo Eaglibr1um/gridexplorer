@@ -11,6 +11,7 @@ interface BookingRequestModalProps {
   selectedDate: Date;
   tutee: Tutee;
   existingRequest?: BookingRequest | null; // For editing
+  onDateChange?: (date: Date) => void; // Optional callback when date changes
 }
 
 const BookingRequestModal = ({
@@ -29,7 +30,24 @@ const BookingRequestModal = ({
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize form with existing request data if editing
+  // Get current time in HH:mm format
+  const getCurrentTime = () => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  // Get time 1 hour from now
+  const getOneHourLater = () => {
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  // Initialize form with existing request data if editing, or current time if new
   useEffect(() => {
     if (existingRequest) {
       setCurrentDate(parseISO(existingRequest.requestedDate));
@@ -38,8 +56,15 @@ const BookingRequestModal = ({
       setNotes(existingRequest.tuteeNotes || '');
     } else {
       setCurrentDate(selectedDate);
-      setStartTime('09:00');
-      setEndTime('10:00');
+      // Use current time for today, or default times for future dates
+      const isToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+      if (isToday) {
+        setStartTime(getCurrentTime());
+        setEndTime(getOneHourLater());
+      } else {
+        setStartTime('09:00');
+        setEndTime('10:00');
+      }
       setNotes('');
     }
   }, [existingRequest, selectedDate, isOpen]);

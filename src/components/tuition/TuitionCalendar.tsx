@@ -409,7 +409,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
 
   return (
     <>
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-5 sm:p-6 md:p-8">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-4 sm:p-5 md:p-6 lg:p-8">
         {/* Greeting & Status Banner */}
         {!isAdmin && tutee && (
           <div className={`mb-6 p-4 rounded-xl border-2 bg-gradient-to-r ${tutee.colorScheme.gradient} bg-opacity-10 border-opacity-30 animate-fade-in-up`} style={{
@@ -495,23 +495,23 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-100 rounded-lg">
-            <CalendarIcon className="w-6 h-6 text-indigo-600" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 sm:mb-6">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-2 bg-indigo-100 rounded-lg flex-shrink-0">
+            <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Available Dates</h2>
-            <p className="text-sm text-gray-600">View and book available time slots</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Available Dates</h2>
+            <p className="text-xs sm:text-sm text-gray-600">View and book available time slots</p>
           </div>
         </div>
         {isAdmin && (
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors-smooth press-effect"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors-smooth press-effect text-sm sm:text-base w-full sm:w-auto justify-center"
           >
             <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Add Slot</span>
+            <span>Add Slot</span>
           </button>
         )}
       </div>
@@ -523,7 +523,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Calendar */}
         <div>
           <div className="mb-4">
@@ -540,40 +540,74 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
               width: 100%;
               border: none;
               font-family: inherit;
+              background: white !important;
+              color: #111827 !important;
+            }
+            .react-calendar__navigation {
+              background: white !important;
+            }
+            .react-calendar__navigation button {
+              color: #111827 !important;
+              background: white !important;
+            }
+            .react-calendar__navigation button:enabled:hover,
+            .react-calendar__navigation button:enabled:focus {
+              background: #f3f4f6 !important;
+            }
+            .react-calendar__month-view__weekdays {
+              background: white !important;
+            }
+            .react-calendar__month-view__weekdays__weekday {
+              color: #111827 !important;
+            }
+            .react-calendar__month-view__days__day {
+              color: #111827 !important;
+            }
+            .react-calendar__month-view__days__day--neighboringMonth {
+              color: #9ca3af !important;
             }
             .react-calendar__tile {
               padding: 0.75em 0.5em;
               position: relative;
+              color: #111827 !important;
+              background: white !important;
+            }
+            .react-calendar__tile:enabled:hover {
+              background: #f3f4f6 !important;
             }
             .react-calendar__tile--active {
-              background: #4f46e5;
-              color: white;
+              background: #4f46e5 !important;
+              color: white !important;
             }
             .react-calendar__tile--active:enabled:hover {
-              background: #4338ca;
+              background: #4338ca !important;
             }
             .react-calendar__tile.has-available-slots {
-              background: #f0fdf4;
+              background: #f0fdf4 !important;
+              color: #111827 !important;
             }
             .react-calendar__tile.has-available-slots:hover {
-              background: #dcfce7;
+              background: #dcfce7 !important;
             }
             .react-calendar__tile.has-requests {
-              background: #fef3c7;
+              background: #fef3c7 !important;
+              color: #111827 !important;
             }
             .react-calendar__tile.has-requests:hover {
-              background: #fde68a;
+              background: #fde68a !important;
             }
             .react-calendar__tile.has-available-slots.has-requests {
-              background: #f0fdf4;
+              background: #f0fdf4 !important;
+              color: #111827 !important;
             }
             .react-calendar__tile.has-available-slots.has-requests:hover {
-              background: #dcfce7;
+              background: #dcfce7 !important;
             }
             .react-calendar__tile--now {
               background: #dbeafe !important;
               border: 2px solid #3b82f6 !important;
               font-weight: 600;
+              color: #111827 !important;
             }
             .react-calendar__tile--now:enabled:hover {
               background: #bfdbfe !important;
@@ -581,6 +615,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
             .react-calendar__tile--now.has-available-slots {
               background: #dcfce7 !important;
               border: 2px solid #10b981 !important;
+              color: #111827 !important;
             }
             .react-calendar__tile--now.has-available-slots:enabled:hover {
               background: #bbf7d0 !important;
@@ -591,7 +626,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
         {/* Time Slots */}
         <div>
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-2">
               {format(selectedDate, 'EEEE, d MMMM yyyy')}
             </h3>
             {loading ? (

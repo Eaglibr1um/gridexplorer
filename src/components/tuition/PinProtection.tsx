@@ -111,7 +111,7 @@ const PinProtection = ({
   if (isLocked) {
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+        <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full">
           <div className="text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-red-600" />
@@ -134,7 +134,7 @@ const PinProtection = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-modal-backdrop">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full animate-modal-content">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full animate-modal-content">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -167,9 +167,10 @@ const PinProtection = ({
                 onChange={(e) => handlePinChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={index === 0 ? handlePaste : undefined}
-                className="w-14 h-14 sm:w-16 sm:h-16 text-center text-2xl font-bold border-2 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                className="w-14 h-14 sm:w-16 sm:h-16 text-center text-2xl font-bold border-2 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none bg-white text-gray-900"
                 style={{
-                  borderColor: error ? '#ef4444' : '#e5e7eb'
+                  borderColor: error ? '#ef4444' : '#e5e7eb',
+                  color: '#111827'
                 }}
                 disabled={isLocked}
               />

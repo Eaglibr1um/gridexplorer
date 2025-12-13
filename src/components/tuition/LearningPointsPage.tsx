@@ -10,6 +10,7 @@ import {
 } from '../../services/componentService';
 import { format, parseISO } from 'date-fns';
 import ConfirmationModal from '../ui/ConfirmationModal';
+import { convertChemistryNotation, processChemistryInput } from '../../utils/chemistryNotation';
 
 interface LearningPointsPageProps {
   tutee: Tutee;
@@ -17,6 +18,14 @@ interface LearningPointsPageProps {
 }
 
 const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
+  // Force light theme for tuition pages
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+    return () => {
+      // Don't restore theme on unmount
+    };
+  }, []);
+
   const [points, setPoints] = useState<LearningPointType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -34,10 +43,9 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
   const [tagInput, setTagInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-
-  useEffect(() => {
-    loadPoints();
-  }, [tutee.id]);
+  
+  // Spaced Repetition System - must be declared before useMemo hooks
+  const [reviewData, setReviewData] = useState<Record<string, { lastReviewed: string; reviewCount: number }>>({});
 
   const loadPoints = async () => {
     try {
@@ -52,6 +60,23 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadPoints();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutee.id]);
+  
+  useEffect(() => {
+    // Load review data from localStorage
+    const stored = localStorage.getItem(`learning_points_reviews_${tutee.id}`);
+    if (stored) {
+      try {
+        setReviewData(JSON.parse(stored));
+      } catch (e) {
+        console.error('Failed to load review data:', e);
+      }
+    }
+  }, [tutee.id]);
 
   const handleAddNew = () => {
     setEditingPoint(null);
@@ -105,8 +130,11 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
       setIsSaving(true);
       setError('');
       
-      // Format bullet points with bullet symbols
-      const formattedPoints = validPoints.map(p => `• ${p.trim()}`).join('\n');
+      // Format bullet points with bullet symbols and apply chemistry notation
+      const formattedPoints = validPoints.map(p => {
+        const processed = convertChemistryNotation(p.trim());
+        return `• ${processed}`;
+      }).join('\n');
       
       if (editingPoint) {
         // Check if we're editing a merged session (multiple points for same date)
@@ -273,21 +301,6 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
     return sum + session.bulletPoints.length;
   }, 0);
 
-  // Spaced Repetition System
-  const [reviewData, setReviewData] = useState<Record<string, { lastReviewed: string; reviewCount: number }>>({});
-  
-  useEffect(() => {
-    // Load review data from localStorage
-    const stored = localStorage.getItem(`learning_points_reviews_${tutee.id}`);
-    if (stored) {
-      try {
-        setReviewData(JSON.parse(stored));
-      } catch (e) {
-        console.error('Failed to load review data:', e);
-      }
-    }
-  }, [tutee.id]);
-
   const saveReviewData = (data: Record<string, { lastReviewed: string; reviewCount: number }>) => {
     setReviewData(data);
     localStorage.setItem(`learning_points_reviews_${tutee.id}`, JSON.stringify(data));
@@ -310,7 +323,7 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
     
     if (!review) {
       // Never reviewed - due immediately
-      return { isDue: true, nextReview: null, daysUntil: 0 };
+      return { isDue: true, nextReview: null, daysUntil: 0, lastReviewed: null };
     }
 
     const nextReview = getNextReviewDate(review.reviewCount, review.lastReviewed);
@@ -321,6 +334,7 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
       nextReview,
       daysUntil: Math.max(0, daysUntil),
       reviewCount: review.reviewCount,
+      lastReviewed: review.lastReviewed,
     };
   };
 
@@ -436,21 +450,87 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
                     <div className={`flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br ${gradientClass} flex items-center justify-center mt-1`}>
                       <span className="text-white font-bold text-sm">{index + 1}</span>
                     </div>
-                    <input
-                      type="text"
+                    <textarea
                       value={point}
                       onChange={(e) => updateBulletPoint(index, e.target.value)}
+                      onBlur={(e) => {
+                        // Process chemistry notation on blur (when user finishes typing)
+                        const processed = convertChemistryNotation(e.target.value);
+                        if (processed !== e.target.value) {
+                          updateBulletPoint(index, processed);
+                        }
+                      }}
                       placeholder={`Learning point ${index + 1}...`}
-                      className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                      className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-y min-h-[44px]"
+                      rows={1}
+                      style={{
+                        height: 'auto',
+                        minHeight: '44px',
+                      }}
+                      onInput={(e) => {
+                        // Auto-expand textarea
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = `${Math.max(44, target.scrollHeight)}px`;
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
                           addBulletPoint();
-                          // Focus next input after a brief delay
+                          // Focus next textarea after a brief delay
                           setTimeout(() => {
-                            const nextInput = document.querySelector(`input[placeholder*="${index + 2}"]`) as HTMLInputElement;
-                            nextInput?.focus();
+                            const nextTextarea = document.querySelectorAll('textarea[placeholder*="Learning point"]')[index + 1] as HTMLTextAreaElement;
+                            nextTextarea?.focus();
                           }, 50);
+                        }
+                        
+                        const target = e.target as HTMLTextAreaElement;
+                        const cursorPos = target.selectionStart;
+                        const textBefore = target.value.substring(0, cursorPos);
+                        
+                        // If closing slash is typed, check if we have a complete /formula/ pattern
+                        if (e.key === '/') {
+                          // Check if there's an opening slash before cursor
+                          const lastOpenSlash = textBefore.lastIndexOf('/');
+                          if (lastOpenSlash !== -1) {
+                            const formula = textBefore.substring(lastOpenSlash + 1);
+                            // If we have a valid formula pattern, convert it immediately
+                            if (formula.length > 0 && /^[A-Z][A-Za-z0-9]*$/.test(formula)) {
+                              setTimeout(() => {
+                                const textAfter = target.value.substring(cursorPos + 1); // +1 to skip the / we just typed
+                                const beforeFormula = target.value.substring(0, lastOpenSlash);
+                                const convertedFormula = formula.replace(/\d/g, (digit: string) => {
+                                  const subscriptMap: Record<string, string> = {
+                                    '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+                                    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉'
+                                  };
+                                  return subscriptMap[digit] || digit;
+                                });
+                                const newValue = beforeFormula + convertedFormula + textAfter;
+                                updateBulletPoint(index, newValue);
+                                // Position cursor after converted formula
+                                setTimeout(() => {
+                                  const newCursorPos = beforeFormula.length + convertedFormula.length;
+                                  target.setSelectionRange(newCursorPos, newCursorPos);
+                                }, 0);
+                              }, 0);
+                            }
+                          }
+                        }
+                        
+                        // Process chemistry notation on space
+                        if (e.key === ' ') {
+                          setTimeout(() => {
+                            const processed = convertChemistryNotation(target.value);
+                            if (processed !== target.value) {
+                              updateBulletPoint(index, processed);
+                              // Restore cursor position (adjust for length change)
+                              const lengthDiff = processed.length - target.value.length;
+                              setTimeout(() => {
+                                target.setSelectionRange(cursorPos + lengthDiff, cursorPos + lengthDiff);
+                              }, 0);
+                            }
+                          }, 10);
                         }
                       }}
                     />
@@ -656,6 +736,12 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
                               Edited: {format(parseISO(session.updatedAt), 'd MMM yyyy, h:mm a')}
                             </span>
                           )}
+                          {reviewStatus.lastReviewed && (
+                            <span className="flex items-center gap-1 text-blue-600">
+                              <RotateCcw className="w-3 h-3" />
+                              Last reviewed: {format(parseISO(reviewStatus.lastReviewed), 'd MMM yyyy, h:mm a')}
+                            </span>
+                          )}
                           {reviewStatus.nextReview && !reviewStatus.isDue && (
                             <span className="flex items-center gap-1 text-green-600">
                               <CheckCircle2 className="w-3 h-3" />
@@ -695,7 +781,7 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
                           <div className={`flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br ${gradientClass} flex items-center justify-center mt-0.5`}>
                             <span className="text-white text-xs font-bold">•</span>
                           </div>
-                          <p className="text-gray-700 flex-1">{bp}</p>
+                          <p className="text-gray-700 flex-1 whitespace-pre-wrap">{convertChemistryNotation(bp)}</p>
                         </div>
                       ))}
                     </div>

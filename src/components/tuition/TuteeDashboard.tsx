@@ -145,6 +145,14 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
     setSearchParams({});
   };
 
+  // Force light theme for tuition pages - MUST be before any early returns
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+    return () => {
+      // Don't restore theme on unmount
+    };
+  }, []);
+
   // Show quiz if selected
   if (currentQuiz === 'spelling' && tutee.id === 'primary-school') {
     return <ScienceSpellingQuiz onBack={navigateToMenu} />;
