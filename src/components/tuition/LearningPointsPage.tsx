@@ -11,6 +11,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import { convertChemistryNotation, processChemistryInput } from '../../utils/chemistryNotation';
+import { fetchLearningPointReviews, upsertLearningPointReview } from '../../services/learningPointReviewService';
 
 interface LearningPointsPageProps {
   tutee: Tutee;
@@ -63,20 +64,35 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
 
   useEffect(() => {
     loadPoints();
+    loadReviewData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tutee.id]);
   
-  useEffect(() => {
-    // Load review data from localStorage
-    const stored = localStorage.getItem(`learning_points_reviews_${tutee.id}`);
-    if (stored) {
-      try {
-        setReviewData(JSON.parse(stored));
-      } catch (e) {
-        console.error('Failed to load review data:', e);
+  const loadReviewData = async () => {
+    try {
+      const reviews = await fetchLearningPointReviews(tutee.id);
+      // Convert array to object keyed by sessionDate
+      const reviewDataMap: Record<string, { lastReviewed: string; reviewCount: number }> = {};
+      reviews.forEach(review => {
+        reviewDataMap[review.sessionDate] = {
+          lastReviewed: review.lastReviewed,
+          reviewCount: review.reviewCount,
+        };
+      });
+      setReviewData(reviewDataMap);
+    } catch (e) {
+      console.error('Failed to load review data:', e);
+      // Fallback to localStorage if Supabase fails
+      const stored = localStorage.getItem(`learning_points_reviews_${tutee.id}`);
+      if (stored) {
+        try {
+          setReviewData(JSON.parse(stored));
+        } catch (err) {
+          console.error('Failed to load review data from localStorage:', err);
+        }
       }
     }
-  }, [tutee.id]);
+  };
 
   const handleAddNew = () => {
     setEditingPoint(null);
@@ -301,9 +317,35 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
     return sum + session.bulletPoints.length;
   }, 0);
 
-  const saveReviewData = (data: Record<string, { lastReviewed: string; reviewCount: number }>) => {
-    setReviewData(data);
-    localStorage.setItem(`learning_points_reviews_${tutee.id}`, JSON.stringify(data));
+  const saveReviewData = async (sessionDate: string, reviewInfo: { lastReviewed: string; reviewCount: number }) => {
+    try {
+      // Update local state immediately
+      const newData = {
+        ...reviewData,
+        [sessionDate]: reviewInfo,
+      };
+      setReviewData(newData);
+      
+      // Save to Supabase
+      await upsertLearningPointReview({
+        tuteeId: tutee.id,
+        sessionDate,
+        lastReviewed: reviewInfo.lastReviewed,
+        reviewCount: reviewInfo.reviewCount,
+      });
+      
+      // Also save to localStorage as backup
+      localStorage.setItem(`learning_points_reviews_${tutee.id}`, JSON.stringify(newData));
+    } catch (error) {
+      console.error('Failed to save review data to Supabase:', error);
+      // Fallback to localStorage only
+      const newData = {
+        ...reviewData,
+        [sessionDate]: reviewInfo,
+      };
+      setReviewData(newData);
+      localStorage.setItem(`learning_points_reviews_${tutee.id}`, JSON.stringify(newData));
+    }
   };
 
   // Spaced repetition intervals (in days): 1, 3, 7, 14, 30, 60, 90
@@ -338,17 +380,14 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
     };
   };
 
-  const markAsReviewed = (sessionDate: string) => {
+  const markAsReviewed = async (sessionDate: string) => {
     const sessionKey = sessionDate;
     const current = reviewData[sessionKey];
-    const newData = {
-      ...reviewData,
-      [sessionKey]: {
-        lastReviewed: new Date().toISOString(),
-        reviewCount: current ? current.reviewCount + 1 : 1,
-      },
+    const reviewInfo = {
+      lastReviewed: new Date().toISOString(),
+      reviewCount: current ? current.reviewCount + 1 : 1,
     };
-    saveReviewData(newData);
+    await saveReviewData(sessionKey, reviewInfo);
   };
 
   return (
@@ -660,7 +699,14 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
                           )}
                         </div>
                         <button
-                          onClick={() => markAsReviewed(session.sessionDate)}
+                          onClick={async () => {
+                            try {
+                              await markAsReviewed(session.sessionDate);
+                            } catch (err) {
+                              console.error('Failed to mark as reviewed:', err);
+                              setError('Failed to save review status. Please try again.');
+                            }
+                          }}
                           className={`px-4 py-2 bg-gradient-to-r ${gradientClass} text-white rounded-lg hover:opacity-90 transition-all font-medium text-sm flex items-center gap-2`}
                         >
                           <CheckCircle2 className="w-4 h-4" />
