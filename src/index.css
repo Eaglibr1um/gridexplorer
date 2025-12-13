@@ -6,17 +6,19 @@
   html {
     font-family: 'Inter', system-ui, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
   
   body {
     @apply bg-gray-50 text-gray-900 transition-colors duration-200;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     margin: 0;
     padding: 0;
-    height: 100vh;
+    min-height: 100vh;
     width: 100vw;
   }
   
@@ -25,9 +27,10 @@
   }
   
   #root {
-    height: 100vh;
+    min-height: 100vh;
     width: 100vw;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 }
 
@@ -312,12 +315,10 @@
 /* Better mobile scrolling */
 @media (max-width: 640px) {
   body {
-    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
   
   #root {
-    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
 } 

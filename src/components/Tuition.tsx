@@ -1,277 +1,332 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { BookOpen, GraduationCap, Clock, Trophy, BarChart3 } from 'lucide-react';
-import ScienceSpellingQuiz from './ScienceSpellingQuiz';
-import IBChemistryQuiz from './IBChemistryQuiz';
+import { GraduationCap, Lock, Users, Calendar, BookOpen, Shield, LogOut } from 'lucide-react';
+import { getTutees, verifyPin } from '../config/tutees';
+import { verifyAdminPin, ADMIN_CONFIG } from '../config/admin';
+import { Tutee } from '../types/tuition';
+import PinProtection from './tuition/PinProtection';
+import AdminPinProtection from './tuition/AdminPinProtection';
+import TuteeDashboard from './tuition/TuteeDashboard';
+import TuitionCalendar from './tuition/TuitionCalendar';
+import BookingRequestsAdmin from './tuition/BookingRequestsAdmin';
+import TuteeEditor from './tuition/admin/TuteeEditor';
+import ComponentManager from './tuition/admin/ComponentManager';
+import FeedbackAdmin from './tuition/admin/FeedbackAdmin';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
-type QuizType = 'menu' | 'spelling' | 'chemistry';
+// Icon mapping for tutees - dynamically import icons as needed
+import * as LucideIcons from 'lucide-react';
 
-interface QuizRecord {
-  date: string;
-  timestamp?: string;
-  score: number;
-  total: number;
-  percentage: number;
-  student?: string;
-  timeSpent?: number;
-}
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  BookOpen,
+  GraduationCap,
+  // Add more icons dynamically
+  User: LucideIcons.User,
+  Star: LucideIcons.Star,
+  Heart: LucideIcons.Heart,
+  Zap: LucideIcons.Zap,
+  Target: LucideIcons.Target,
+  Award: LucideIcons.Award,
+  Trophy: LucideIcons.Trophy,
+  Lightbulb: LucideIcons.Lightbulb,
+  Brain: LucideIcons.Brain,
+  Rocket: LucideIcons.Rocket,
+  Sparkles: LucideIcons.Sparkles,
+  BookMarked: LucideIcons.BookMarked,
+  School: LucideIcons.School,
+  PenTool: LucideIcons.PenTool,
+  Calculator: LucideIcons.Calculator,
+  FlaskConical: LucideIcons.FlaskConical,
+  Atom: LucideIcons.Atom,
+  Music: LucideIcons.Music,
+  Palette: LucideIcons.Palette,
+  Camera: LucideIcons.Camera,
+  Gamepad2: LucideIcons.Gamepad2,
+  Code: LucideIcons.Code,
+  Globe: LucideIcons.Globe,
+  Coffee: LucideIcons.Coffee,
+  Smile: LucideIcons.Smile,
+};
 
 const Tuition = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const quizParam = searchParams.get('quiz') as QuizType | null;
-  const currentQuiz: QuizType = (quizParam && ['spelling', 'chemistry'].includes(quizParam)) ? quizParam : 'menu';
-  const [allRecords, setAllRecords] = useState<{
-    spelling: { rayne: QuizRecord[]; jeffrey: QuizRecord[] };
-    chemistry: QuizRecord[];
-  }>({
-    spelling: { rayne: [], jeffrey: [] },
-    chemistry: []
-  });
+  const [selectedTutee, setSelectedTutee] = useState<Tutee | null>(null);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pendingTutee, setPendingTutee] = useState<Tutee | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdminPinModal, setShowAdminPinModal] = useState(false);
+  const [tutees, setTutees] = useState<Tutee[]>([]);
+  const [loadingTutees, setLoadingTutees] = useState(true);
 
+  // Load tutees from Supabase
   useEffect(() => {
-    // Load all quiz records
-    const spellingRecords = localStorage.getItem('spellingRecords');
-    const chemistryRecords = localStorage.getItem('ibChemistryRecords');
-    
-    if (spellingRecords) {
-      setAllRecords(prev => ({
-        ...prev,
-        spelling: JSON.parse(spellingRecords)
-      }));
-    }
-    
-    if (chemistryRecords) {
-      setAllRecords(prev => ({
-        ...prev,
-        chemistry: JSON.parse(chemistryRecords)
-      }));
-    }
+    const loadTutees = async () => {
+      try {
+        setLoadingTutees(true);
+        const loadedTutees = await getTutees();
+        setTutees(loadedTutees);
+      } catch (error) {
+        console.error('Failed to load tutees:', error);
+      } finally {
+        setLoadingTutees(false);
+      }
+    };
+    loadTutees();
   }, []);
 
-  const getBestScore = (quizType: 'spelling' | 'chemistry') => {
-    if (quizType === 'spelling') {
-      const rayneScores = allRecords.spelling.rayne.map((r) => r.percentage);
-      const jeffreyScores = allRecords.spelling.jeffrey.map((r) => r.percentage);
-      const allScores = [...rayneScores, ...jeffreyScores];
-      return allScores.length > 0 ? Math.max(...allScores) : null;
-    } else {
-      const scores = allRecords.chemistry.map((r) => r.percentage);
-      return scores.length > 0 ? Math.max(...scores) : null;
+  // Listen for PIN entered event (tutee PIN)
+  useEffect(() => {
+    const handlePinEntered = async (e: CustomEvent<{ pin: string }>) => {
+      if (pendingTutee) {
+        const isValid = await verifyPin(pendingTutee.id, e.detail.pin);
+        
+        // Dispatch result back to PinProtection component
+        const resultEvent = new CustomEvent('pinResult', { 
+          detail: { verified: isValid } 
+        });
+        window.dispatchEvent(resultEvent);
+
+        if (isValid) {
+          // Reload tutee to get latest colors
+          const updatedTutee = tutees.find(t => t.id === pendingTutee.id) || pendingTutee;
+          setSelectedTutee(updatedTutee);
+          setShowPinModal(false);
+          setPendingTutee(null);
+        }
+      }
+    };
+
+    window.addEventListener('pinEntered' as any, handlePinEntered as EventListener);
+    return () => {
+      window.removeEventListener('pinEntered' as any, handlePinEntered as EventListener);
+    };
+  }, [pendingTutee, tutees]);
+
+  // Listen for admin PIN entered event
+  useEffect(() => {
+    const handleAdminPinEntered = (e: CustomEvent<{ pin: string }>) => {
+      const isValid = verifyAdminPin(e.detail.pin);
+      
+      // Dispatch result back to AdminPinProtection component
+      const resultEvent = new CustomEvent('adminPinResult', { 
+        detail: { verified: isValid } 
+      });
+      window.dispatchEvent(resultEvent);
+
+      if (isValid) {
+        setIsAdmin(true);
+        setShowAdminPinModal(false);
+      }
+    };
+
+    window.addEventListener('adminPinEntered' as any, handleAdminPinEntered as EventListener);
+    return () => {
+      window.removeEventListener('adminPinEntered' as any, handleAdminPinEntered as EventListener);
+    };
+  }, []);
+
+  const handleTuteeClick = (tutee: Tutee) => {
+    setPendingTutee(tutee);
+    setShowPinModal(true);
+  };
+
+  const handlePinCancel = () => {
+    setShowPinModal(false);
+    setPendingTutee(null);
+  };
+
+  const handlePinVerified = () => {
+    // This is called after PIN is verified
+    // The state is already updated in the event handler
+  };
+
+  const handleBackToPortal = async () => {
+    setSelectedTutee(null);
+    // Reload tutees to get updated icons/names/descriptions
+    try {
+      const loadedTutees = await getTutees();
+      setTutees(loadedTutees);
+    } catch (error) {
+      console.error('Failed to reload tutees:', error);
     }
   };
 
-  const getTotalAttempts = (quizType: 'spelling' | 'chemistry') => {
-    if (quizType === 'spelling') {
-      return allRecords.spelling.rayne.length + allRecords.spelling.jeffrey.length;
-    } else {
-      return allRecords.chemistry.length;
-    }
+  const handleAdminClick = () => {
+    setShowAdminPinModal(true);
   };
 
-  const getRecentAttempts = (quizType: 'spelling' | 'chemistry', limit: number = 5): QuizRecord[] => {
-    if (quizType === 'spelling') {
-      const allAttempts: QuizRecord[] = [
-        ...allRecords.spelling.rayne.map((r) => ({ ...r, student: 'Rayne' })),
-        ...allRecords.spelling.jeffrey.map((r) => ({ ...r, student: 'Jeffrey' }))
-      ];
-      return allAttempts
-        .sort((a, b) => new Date(b.timestamp || b.date).getTime() - new Date(a.timestamp || a.date).getTime())
-        .slice(0, limit);
-    } else {
-      return allRecords.chemistry
-        .sort((a, b) => new Date(b.timestamp || b.date).getTime() - new Date(a.timestamp || a.date).getTime())
-        .slice(0, limit);
-    }
+  const handleAdminPinCancel = () => {
+    setShowAdminPinModal(false);
   };
 
-  const refreshRecords = () => {
-    const spellingRecords = localStorage.getItem('spellingRecords');
-    const chemistryRecords = localStorage.getItem('ibChemistryRecords');
-    
-    if (spellingRecords) {
-      setAllRecords(prev => ({
-        ...prev,
-        spelling: JSON.parse(spellingRecords)
-      }));
-    }
-    
-    if (chemistryRecords) {
-      setAllRecords(prev => ({
-        ...prev,
-        chemistry: JSON.parse(chemistryRecords)
-      }));
-    }
+  const handleAdminPinVerified = () => {
+    // State is already updated in the event handler
   };
 
-  const navigateToQuiz = (quiz: 'spelling' | 'chemistry') => {
-    setSearchParams({ quiz });
+  const handleExitAdmin = () => {
+    setIsAdmin(false);
   };
 
-  const navigateToMenu = () => {
-    refreshRecords();
-    setSearchParams({});
-  };
+  // Update document title
+  useDocumentTitle(selectedTutee ? `Tuition - ${selectedTutee.name}` : 'Tuition Portal');
 
-  if (currentQuiz === 'spelling') {
-    return <ScienceSpellingQuiz onBack={navigateToMenu} />;
+  // Show tutee dashboard if one is selected
+  if (selectedTutee) {
+    return <TuteeDashboard tutee={selectedTutee} onBack={handleBackToPortal} />;
   }
 
-  if (currentQuiz === 'chemistry') {
-    return <IBChemistryQuiz onBack={navigateToMenu} />;
-  }
+  // Get icon component
+  const getIcon = (iconName: string) => {
+    // Try direct mapping first
+    if (iconMap[iconName]) {
+      return iconMap[iconName];
+    }
+    // Try dynamic lookup from LucideIcons
+    const IconComponent = (LucideIcons as any)[iconName];
+    return IconComponent || GraduationCap;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4 sm:p-6 md:p-8 safe-area-inset">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-6 sm:mb-8">
-          <GraduationCap className="w-12 h-12 sm:w-16 sm:h-16 text-indigo-600 mx-auto mb-3 sm:mb-4" />
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-indigo-700 mb-2 px-2">Tuition Homepage</h1>
-          <p className="text-gray-600 text-base sm:text-lg px-2">Practice and improve your knowledge!</p>
+        {/* Header */}
+        <div className="text-center mb-8 sm:mb-12">
+          <GraduationCap className="w-16 h-16 sm:w-20 sm:h-20 text-indigo-600 mx-auto mb-4 sm:mb-6" />
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-indigo-700 mb-3 px-2">
+            Tuition Portal
+          </h1>
+          <p className="text-gray-600 text-lg sm:text-xl px-2">
+            Select your tutee page to access quizzes and learning materials
+          </p>
         </div>
 
-        <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          {/* Spelling Quiz Card */}
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-5 sm:p-6 md:p-8 hover:shadow-2xl transition-shadow">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 sm:p-3 bg-gradient-to-br from-pink-400 to-purple-500 rounded-lg sm:rounded-xl flex-shrink-0">
-                <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-              </div>
-              <div className="min-w-0">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Science Spelling Quiz</h2>
-                <p className="text-sm sm:text-base text-gray-600">Rayne & Jeffrey's Quizzes</p>
-              </div>
-            </div>
+        {/* Tutee Selection Grid */}
+        {loadingTutees ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading tutees...</p>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
+            {tutees.map((tutee) => {
+            const IconComponent = getIcon(tutee.icon);
+            const gradientClass = `bg-gradient-to-br ${tutee.colorScheme.gradient}`;
             
-            <p className="text-sm sm:text-base text-gray-700 mb-4 sm:mb-6">
-              Practice spelling science-related words with interactive quizzes designed for Rayne and Jeffrey.
-            </p>
+            // Update tutee in list when edited
+            const handleTuteeUpdate = (updatedTutee: Tutee) => {
+              setTutees(prev => prev.map(t => t.id === updatedTutee.id ? updatedTutee : t));
+            };
+            
+            return (
+              <div
+                key={tutee.id}
+                className="relative bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-6 sm:p-8 hover:shadow-2xl transition-smooth card-hover animate-fade-in-up"
+                style={{ animationDelay: `${tutees.indexOf(tutee) * 100}ms` }}
+              >
+                {isAdmin && (
+                  <div className="absolute top-2 right-2 z-10 flex gap-1">
+                    <ComponentManager tutee={tutee} />
+                    <TuteeEditor tutee={tutee} onUpdate={handleTuteeUpdate} />
+                  </div>
+                )}
+                <button
+                  onClick={() => handleTuteeClick(tutee)}
+                  className="w-full text-left group"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className={`p-3 sm:p-4 ${gradientClass} rounded-xl sm:rounded-2xl flex-shrink-0 group-hover:scale-110 transition-transform-smooth`}>
+                      <IconComponent className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">
+                        {tutee.name}
+                      </h2>
+                      {tutee.description && (
+                        <p className="text-sm sm:text-base text-gray-600 truncate">
+                          {tutee.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-              <div className="bg-purple-50 rounded-lg p-3 sm:p-4">
-                <p className="text-xs sm:text-sm text-gray-600 mb-1">Best Score</p>
-                <p className="text-xl sm:text-2xl font-bold text-purple-600">
-                  {getBestScore('spelling') ? `${getBestScore('spelling')}%` : 'N/A'}
-                </p>
+                  <div className="flex items-center gap-2 text-sm text-gray-500 mt-4">
+                    <Lock className="w-4 h-4" />
+                    <span>PIN Protected</span>
+                  </div>
+                </button>
               </div>
-              <div className="bg-pink-50 rounded-lg p-3 sm:p-4">
-                <p className="text-xs sm:text-sm text-gray-600 mb-1">Total Attempts</p>
-                <p className="text-xl sm:text-2xl font-bold text-pink-600">{getTotalAttempts('spelling')}</p>
+            );
+          })}
+          </div>
+        )}
+
+        {/* Admin Banner */}
+        {isAdmin && (
+          <div className="mb-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl p-4 flex items-center justify-between shadow-lg">
+            <div className="flex items-center gap-3">
+              <Shield className="w-6 h-6" />
+              <div>
+                <h3 className="font-bold text-lg">Admin Mode Active</h3>
+                <p className="text-sm text-purple-100">You can now manage calendar dates</p>
               </div>
             </div>
-
             <button
-              onClick={() => navigateToQuiz('spelling')}
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3.5 sm:py-3 rounded-lg font-semibold text-base sm:text-lg hover:from-pink-600 hover:to-purple-700 active:scale-95 transition-all min-h-[44px] touch-manipulation"
+              onClick={handleExitAdmin}
+              className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors-smooth press-effect"
             >
-              Start Spelling Quiz
+              <LogOut className="w-4 h-4" />
+              <span>Exit Admin</span>
             </button>
           </div>
+        )}
 
-          {/* IB Chemistry Quiz Card */}
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-5 sm:p-6 md:p-8 hover:shadow-2xl transition-shadow">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 sm:p-3 bg-gradient-to-br from-green-400 to-teal-500 rounded-lg sm:rounded-xl flex-shrink-0">
-                <GraduationCap className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-              </div>
-              <div className="min-w-0">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">IB Chemistry Quiz</h2>
-                <p className="text-sm sm:text-base text-gray-600">International Baccalaureate</p>
-              </div>
-            </div>
-            
-            <p className="text-sm sm:text-base text-gray-700 mb-4 sm:mb-6">
-              Test your knowledge of IB Chemistry concepts with multiple-choice questions and detailed explanations.
-            </p>
-
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-              <div className="bg-teal-50 rounded-lg p-3 sm:p-4">
-                <p className="text-xs sm:text-sm text-gray-600 mb-1">Best Score</p>
-                <p className="text-xl sm:text-2xl font-bold text-teal-600">
-                  {getBestScore('chemistry') ? `${getBestScore('chemistry')}%` : 'N/A'}
-                </p>
-              </div>
-              <div className="bg-green-50 rounded-lg p-3 sm:p-4">
-                <p className="text-xs sm:text-sm text-gray-600 mb-1">Total Attempts</p>
-                <p className="text-xl sm:text-2xl font-bold text-green-600">{getTotalAttempts('chemistry')}</p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => navigateToQuiz('chemistry')}
-              className="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white py-3.5 sm:py-3 rounded-lg font-semibold text-base sm:text-lg hover:from-green-600 hover:to-teal-700 active:scale-95 transition-all min-h-[44px] touch-manipulation"
-            >
-              Start Chemistry Quiz
-            </button>
-          </div>
+        {/* Calendar Section */}
+        <div className="mb-8">
         </div>
 
-        {/* Recent Activity Section */}
-        {(getTotalAttempts('spelling') > 0 || getTotalAttempts('chemistry') > 0) && (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-5 sm:p-6 md:p-8">
-            <div className="flex items-center gap-2 mb-4 sm:mb-6">
-              <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 flex-shrink-0" />
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-800">Recent Activity</h3>
-            </div>
+        {/* Booking Requests Admin (only in admin mode) */}
+        {isAdmin && (
+          <div className="mb-8">
+            <BookingRequestsAdmin />
+          </div>
+        )}
 
-            <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {/* Spelling Recent */}
-              {getTotalAttempts('spelling') > 0 && (
-                <div>
-                  <h4 className="font-semibold text-purple-700 mb-3 flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    Spelling Quiz History
-                  </h4>
-                  <div className="space-y-2">
-                    {getRecentAttempts('spelling', 5).map((record, index) => (
-                      <div key={index} className="bg-purple-50 rounded-lg p-3 sm:p-4 flex justify-between items-center gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm sm:text-base font-medium text-gray-700 truncate">
-                            {record.student || 'Student'}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {new Date(record.timestamp || record.date).toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-base sm:text-lg font-bold text-purple-600">{record.percentage}%</p>
-                          <p className="text-xs text-gray-500">{record.score}/{record.total}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+        {/* Feedback Admin (only in admin mode) */}
+        {isAdmin && (
+          <div className="mb-8">
+            <FeedbackAdmin />
+          </div>
+        )}
 
-              {/* Chemistry Recent */}
-              {getTotalAttempts('chemistry') > 0 && (
-                <div>
-                  <h4 className="font-semibold text-teal-700 mb-3 flex items-center gap-2">
-                    <Trophy className="w-5 h-5" />
-                    IB Chemistry
-                  </h4>
-                  <div className="space-y-2">
-                    {getRecentAttempts('chemistry', 5).map((record, index) => (
-                      <div key={index} className="bg-teal-50 rounded-lg p-3 sm:p-4 flex justify-between items-center gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm sm:text-base font-medium text-gray-700">Quiz Attempt</p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {new Date(record.timestamp || record.date).toLocaleString()}
-                            {record.timeSpent && ` • ${Math.floor(record.timeSpent / 60)}m ${record.timeSpent % 60}s`}
-                          </p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-base sm:text-lg font-bold text-teal-600">{record.percentage}%</p>
-                          <p className="text-xs text-gray-500">{record.score}/{record.total}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+        {/* Admin Access Button (only when not in admin mode) */}
+        {!isAdmin && (
+          <div className="text-center mb-8">
+            <button
+              onClick={handleAdminClick}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors-smooth press-effect text-sm font-medium mx-auto"
+            >
+              <Shield className="w-4 h-4" />
+              <span>Admin Access</span>
+            </button>
           </div>
         )}
       </div>
+
+      {/* PIN Protection Modal */}
+      {showPinModal && pendingTutee && (
+        <PinProtection
+          tuteeName={pendingTutee.name}
+          onPinVerified={handlePinVerified}
+          onCancel={handlePinCancel}
+        />
+      )}
+
+      {/* Admin PIN Protection Modal */}
+      {showAdminPinModal && (
+        <AdminPinProtection
+          onPinVerified={handleAdminPinVerified}
+          onCancel={handleAdminPinCancel}
+          pinLength={ADMIN_CONFIG.pinLength}
+        />
+      )}
     </div>
   );
 };
