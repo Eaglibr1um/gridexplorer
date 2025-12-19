@@ -30,6 +30,17 @@ export interface UpdateTuteeInfoInput {
   description?: string;
 }
 
+export interface CreateTuteeInput {
+  id: string;
+  name: string;
+  pin: string;
+  description?: string;
+  icon?: string;
+  colorPrimary?: string;
+  colorSecondary?: string;
+  colorGradient?: string;
+}
+
 /**
  * Fetch all tutees
  */
@@ -259,4 +270,65 @@ export const updateTuteePin = async (
     throw error;
   }
 };
+
+/**
+ * Create a new tutee
+ */
+export const createTutee = async (
+  input: CreateTuteeInput
+): Promise<Tutee> => {
+  try {
+    const { data, error } = await supabase
+      .from('tutees')
+      .insert({
+        id: input.id,
+        name: input.name,
+        pin: input.pin,
+        description: input.description,
+        icon: input.icon || 'BookOpen',
+        color_primary: input.colorPrimary || 'pink',
+        color_secondary: input.colorSecondary || 'purple',
+        color_gradient: input.colorGradient || 'from-pink-500 to-purple-600',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return {
+      id: data.id,
+      name: data.name,
+      pin: data.pin,
+      description: data.description || undefined,
+      icon: data.icon || 'BookOpen',
+      colorScheme: {
+        primary: data.color_primary || 'pink',
+        secondary: data.color_secondary || 'purple',
+        gradient: data.color_gradient || 'from-pink-500 to-purple-600',
+      },
+    };
+  } catch (error) {
+    console.error('Error creating tutee:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a tutee
+ */
+export const deleteTutee = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('tutees')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting tutee:', error);
+    throw error;
+  }
+};
+
+
 

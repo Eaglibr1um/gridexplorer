@@ -305,3 +305,94 @@ export const deleteLearningPoint = async (id: string): Promise<void> => {
   }
 };
 
+/**
+ * Check if a component has user content for a tutee
+ */
+export const checkComponentContent = async (
+  tuteeId: string,
+  componentType: string
+): Promise<{ hasContent: boolean; summary: string }> => {
+  try {
+    let hasContent = false;
+    let summary = '';
+
+    switch (componentType) {
+      case 'learning_points': {
+        const { count, error } = await supabase
+          .from('learning_points')
+          .select('*', { count: 'exact', head: true })
+          .eq('tutee_id', tuteeId);
+        if (error) throw error;
+        hasContent = (count || 0) > 0;
+        summary = `${count} learning point${count !== 1 ? 's' : ''}`;
+        break;
+      }
+      case 'worksheet_tracker': {
+        const { count, error } = await supabase
+          .from('worksheets')
+          .select('*', { count: 'exact', head: true })
+          .eq('tutee_id', tuteeId);
+        if (error) throw error;
+        hasContent = (count || 0) > 0;
+        summary = `${count} worksheet${count !== 1 ? 's' : ''}`;
+        break;
+      }
+      case 'spelling_quiz': {
+        // Check for words and stats
+        const { count: wordCount, error: wordError } = await supabase
+          .from('spelling_words')
+          .select('*', { count: 'exact', head: true })
+          .eq('tutee_id', tuteeId);
+        if (wordError) throw wordError;
+
+        const { count: statCount, error: statError } = await supabase
+          .from('spelling_word_stats')
+          .select('*', { count: 'exact', head: true })
+          .eq('tutee_id', tuteeId);
+        if (statError) throw statError;
+
+        hasContent = (wordCount || 0) > 0 || (statCount || 0) > 0;
+        
+        const parts = [];
+        if ((wordCount || 0) > 0) parts.push(`${wordCount} word${wordCount !== 1 ? 's' : ''}`);
+        if ((statCount || 0) > 0) parts.push(`${statCount} quiz attempt${statCount !== 1 ? 's' : ''}`);
+        summary = parts.join(' and ');
+        break;
+      }
+      case 'chemistry_quiz': {
+        // Chemistry quiz currently uses localStorage for records
+        let count = 0;
+        if (typeof window !== 'undefined') {
+          const saved = localStorage.getItem(`ibChemistryRecords_${tuteeId}`);
+          if (saved) {
+            try {
+              const records = JSON.parse(saved);
+              count = Array.isArray(records) ? records.length : 0;
+            } catch (e) {
+              console.error('Error parsing chemistry records:', e);
+            }
+          }
+        }
+        hasContent = count > 0;
+        summary = `${count} quiz attempt${count !== 1 ? 's' : ''}`;
+        break;
+      }
+      case 'shared_files': {
+        const { count, error } = await supabase
+          .from('shared_files')
+          .select('*', { count: 'exact', head: true })
+          .eq('tutee_id', tuteeId);
+        if (error) throw error;
+        hasContent = (count || 0) > 0;
+        summary = `${count} shared file${count !== 1 ? 's' : ''}`;
+        break;
+      }
+    }
+
+    return { hasContent, summary };
+  } catch (error) {
+    console.error('Error checking component content:', error);
+    return { hasContent: false, summary: '' };
+  }
+};
+

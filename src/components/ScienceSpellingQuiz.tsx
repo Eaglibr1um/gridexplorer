@@ -1,12 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Sparkles, Award, RefreshCw, Trophy, Users, Keyboard, PenTool, X } from 'lucide-react';
+import { fetchActiveQuestions, recordWordAttempt, fetchSpellingWords, SpellingQuestion } from '../services/spellingQuizService';
+import { Tutee } from '../types/tuition';
 
 interface ScienceSpellingQuizProps {
+  tutee: Tutee;
   onBack?: () => void;
 }
 
-const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
-  const rayneQuestions = [
+const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
+  // Fallback questions (used if no active questions in database)
+  const rayneQuestionsFallback = [
     { sentence: "Towels can __________ water after a shower.", answer: "absorb", hint: "Soak up" },
     { sentence: "When you open a bottle of soda, it will __________ gas bubbles.", answer: "release", hint: "Let go" },
     { sentence: "A snake is a cold-blooded __________.", answer: "reptile", hint: "Group of animals" },
@@ -39,7 +43,7 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
     { sentence: "Plants grow well __________ they get enough light and water.", answer: "when", hint: "At the time that" }
   ];
 
-  const jeffreyQuestions = [
+  const jeffreyQuestionsFallback = [
     { sentence: "Water is a __________ because it flows and takes the shape of its container.", answer: "liquid", hint: "State of matter that flows" },
     { sentence: "Ice is a __________ because it keeps its shape.", answer: "solid", hint: "State of matter with fixed shape" },
     { sentence: "The cheetah runs the __________ among all land animals.", answer: "fastest", hint: "Most fast" },
@@ -68,8 +72,8 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
     { sentence: "Mirrors __________ light to show our reflection.", answer: "reflect", hint: "Bounce back" }
   ];
 
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [questions, setQuestions] = useState([]);
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
+  const [questions, setQuestions] = useState<SpellingQuestion[]>([]);
   const [currentQ, setCurrentQ] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
   const [score, setScore] = useState(0);
@@ -78,20 +82,40 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
   const [feedbackMsg, setFeedbackMsg] = useState('');
   const [showHint, setShowHint] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [records, setRecords] = useState({ rayne: [], jeffrey: [] });
+  const [records, setRecords] = useState<Record<string, any[]>>({});
   const [timeLeft, setTimeLeft] = useState(30);
   const [timerActive, setTimerActive] = useState(false);
   const [inputMode, setInputMode] = useState<'keyboard' | 'handwriting'>('keyboard');
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [canvasPaths, setCanvasPaths] = useState<Array<{ x: number; y: number }[]>>([]);
+  const [wordIdMap, setWordIdMap] = useState<Map<string, string>>(new Map()); // Map answer -> wordId for statistics tracking
+
+  const studentNames = useMemo(() => {
+    if (tutee.id === 'primary-school') return ['Rayne', 'Jeffrey'];
+    return [tutee.name];
+  }, [tutee]);
+
+  // Force light theme for quiz - ensure good contrast regardless of localStorage
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+    return () => {
+      // Don't restore theme on unmount - let ThemeContext handle it
+    };
+  }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem('spellingRecords');
+    const saved = localStorage.getItem(`spellingRecords_${tutee.id}`);
     if (saved) {
       setRecords(JSON.parse(saved));
+    } else {
+      // Initialize empty records for each student
+      const initialRecords: Record<string, any[]> = {};
+      studentNames.forEach(name => {
+        initialRecords[name.toLowerCase()] = [];
+      });
+      setRecords(initialRecords);
     }
-  }, []);
+  }, [tutee.id, studentNames]);
 
   // Timer effect - countdown and auto-submit (30s total per question, not per attempt)
   useEffect(() => {
@@ -110,19 +134,40 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
       const currentAnswer = userAnswer.trim();
       const correct = currentAnswer.toLowerCase() === questions[currentQ].answer.toLowerCase();
       
+      const recordStats = async () => {
+        if (selectedStudent && wordIdMap.size > 0) {
+          const answer = questions[currentQ].answer.toLowerCase();
+          const wordId = wordIdMap.get(answer);
+          if (wordId) {
+            try {
+              await recordWordAttempt({
+                wordId,
+                tuteeId: tutee.id,
+                studentName: selectedStudent,
+                isCorrect: correct,
+              });
+            } catch (error) {
+              console.error('Error recording word attempt:', error);
+            }
+          }
+        }
+      };
+      
       if (currentAnswer && correct) {
         setFeedbackMsg('✓ Correct! Well done!');
         setShowFeedback(true);
         setScore(prev => prev + 1);
         setAttempts(0);
+        recordStats();
       } else {
         // Time's up - show final answer regardless of attempts
         setAttempts(3); // Set to max attempts to show final answer
         setFeedbackMsg(`⏰ Time's up! The correct answer is: ${questions[currentQ].answer}`);
         setShowFeedback(true);
+        recordStats();
       }
     }
-  }, [timeLeft, timerActive, showFeedback, completed, selectedStudent, userAnswer, attempts, currentQ, questions, feedbackMsg]);
+  }, [timeLeft, timerActive, showFeedback, completed, selectedStudent, userAnswer, attempts, currentQ, questions, feedbackMsg, wordIdMap, tutee.id]);
 
   // Reset timer when question changes
   useEffect(() => {
@@ -137,13 +182,12 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
+    if (ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-    setCanvasPaths([]);
-    setUserAnswer('');
-  };
+  }
+  setUserAnswer('');
+};
 
   const startDrawing = (e: React.TouchEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
@@ -158,7 +202,6 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
     if (ctx) {
       ctx.beginPath();
       ctx.moveTo(x, y);
-      setCanvasPaths([[{ x, y }]]);
     }
   };
 
@@ -181,14 +224,6 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.stroke();
-      
-      setCanvasPaths(prev => {
-        const newPaths = [...prev];
-        if (newPaths.length > 0) {
-          newPaths[newPaths.length - 1].push({ x, y });
-        }
-        return newPaths;
-      });
     }
   };
 
@@ -213,13 +248,66 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
     }
   }, [inputMode]);
 
-  const selectStudent = (student) => {
-    setSelectedStudent(student);
-    setQuestions(student === 'rayne' ? rayneQuestions : jeffreyQuestions);
+  const selectStudent = async (studentName: string) => {
+    const studentKey = studentName.toLowerCase();
+    setSelectedStudent(studentKey);
+    
+    try {
+      // Try to load active questions from database
+      const activeQuestions = await fetchActiveQuestions(tutee.id, studentKey);
+      
+      if (activeQuestions && activeQuestions.length > 0) {
+        // Use database questions
+        setQuestions(activeQuestions);
+        
+        // Build word ID map for statistics tracking
+        const words = await fetchSpellingWords(tutee.id, studentKey);
+        const idMap = new Map<string, string>();
+        words.forEach(word => {
+          idMap.set(word.word.toLowerCase(), word.id);
+        });
+        setWordIdMap(idMap);
+      } else {
+        // Fallback to hardcoded questions for known students
+        if (tutee.id === 'primary-school') {
+          setQuestions(studentKey === 'rayne' ? rayneQuestionsFallback : jeffreyQuestionsFallback);
+        } else {
+          setQuestions([]);
+        }
+        setWordIdMap(new Map());
+      }
+    } catch (error) {
+      console.error('Error loading questions:', error);
+      // Fallback
+      if (tutee.id === 'primary-school') {
+        setQuestions(studentKey === 'rayne' ? rayneQuestionsFallback : jeffreyQuestionsFallback);
+      } else {
+        setQuestions([]);
+      }
+      setWordIdMap(new Map());
+    }
   };
 
-  const checkAnswer = () => {
+  const checkAnswer = async () => {
     const correct = userAnswer.toLowerCase().trim() === questions[currentQ].answer.toLowerCase();
+    
+    // Record statistics if we have word ID
+    if (selectedStudent && wordIdMap.size > 0) {
+      const answer = questions[currentQ].answer.toLowerCase();
+      const wordId = wordIdMap.get(answer);
+      if (wordId) {
+        try {
+          await recordWordAttempt({
+            wordId,
+            tuteeId: tutee.id,
+            studentName: selectedStudent,
+            isCorrect: correct,
+          });
+        } catch (error) {
+          console.error('Error recording word attempt:', error);
+        }
+      }
+    }
     
     if (correct) {
       // Correct answer - stop timer and show success
@@ -233,10 +321,28 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
       setAttempts(newAttempts);
       
       if (newAttempts >= 3) {
-        // Final attempt - stop timer
+        // Final attempt - stop timer and record incorrect
         setTimerActive(false);
         setFeedbackMsg(`✗ The correct answer is: ${questions[currentQ].answer}`);
         setShowFeedback(true);
+        
+        // Record final incorrect attempt
+        if (selectedStudent && wordIdMap.size > 0) {
+          const answer = questions[currentQ].answer.toLowerCase();
+          const wordId = wordIdMap.get(answer);
+          if (wordId) {
+            try {
+              await recordWordAttempt({
+                wordId,
+                tuteeId: tutee.id,
+                studentName: selectedStudent,
+                isCorrect: false,
+              });
+            } catch (error) {
+              console.error('Error recording word attempt:', error);
+            }
+          }
+        }
       } else {
         // Wrong but can retry - timer continues, just show feedback
         setFeedbackMsg(`✗ Not quite right. You have ${3 - newAttempts} ${3 - newAttempts === 1 ? 'try' : 'tries'} left!`);
@@ -262,10 +368,11 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
       setTimeLeft(30); // Reset timer for next question
       setTimerActive(true); // Start timer for next question
       clearCanvas(); // Clear handwriting canvas
-    } else {
+    } else if (selectedStudent) {
       const percentage = Math.round((score / questions.length) * 100);
       const newRecords = { ...records };
-      const studentKey = selectedStudent === 'rayne' ? 'rayne' : 'jeffrey';
+      const studentKey = selectedStudent;
+      if (!newRecords[studentKey]) newRecords[studentKey] = [];
       newRecords[studentKey].push({
         date: new Date().toLocaleString(),
         timestamp: new Date().toISOString(),
@@ -274,7 +381,7 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
         percentage: percentage
       });
       setRecords(newRecords);
-      localStorage.setItem('spellingRecords', JSON.stringify(newRecords));
+      localStorage.setItem(`spellingRecords_${tutee.id}`, JSON.stringify(newRecords));
       setCompleted(true);
     }
   };
@@ -296,112 +403,93 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
     }
   };
 
-  if (!selectedStudent) {
+  if (!selectedStudent || questions.length === 0) {
+    if (selectedStudent && questions.length === 0) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-5 sm:p-6 md:p-8 max-w-md w-full text-center mx-2">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Preparing your quiz...</p>
+            <p className="text-xs text-gray-400 mt-2">If this takes too long, ensure words are added in the config.</p>
+            <button 
+              onClick={() => setSelectedStudent(null)}
+              className="mt-4 text-purple-600 font-bold text-sm"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset">
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-5 sm:p-6 md:p-8 max-w-2xl w-full mx-2">
           <div className="text-center mb-6 sm:mb-8">
             <Users className="w-12 h-12 sm:w-16 sm:h-16 text-purple-600 mx-auto mb-3 sm:mb-4" />
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-purple-700 mb-2 px-2">Science Spelling Quiz</h1>
-            <p className="text-sm sm:text-base text-gray-600 px-2">Choose your quiz!</p>
+            <p className="text-sm sm:text-base text-gray-600 px-2">Choose your student to start!</p>
           </div>
 
           <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <button
-              onClick={() => selectStudent('rayne')}
-              className="bg-gradient-to-br from-pink-400 to-purple-500 text-white p-5 sm:p-6 md:p-8 rounded-lg sm:rounded-xl active:scale-95 transition-transform shadow-lg min-h-[140px] touch-manipulation"
-            >
-              <h2 className="text-2xl sm:text-3xl font-bold mb-2">Rayne's Quiz</h2>
-              <p className="text-pink-100 mb-3 sm:mb-4 text-sm sm:text-base">30 Questions</p>
-              {records.rayne.length > 0 && (
-                <div className="bg-white/20 rounded-lg p-2 sm:p-3 text-xs sm:text-sm">
-                  <p className="font-semibold">Best Score:</p>
-                  <p className="text-xl sm:text-2xl">{Math.max(...records.rayne.map(r => r.percentage))}%</p>
-                </div>
-              )}
-            </button>
-
-            <button
-              onClick={() => selectStudent('jeffrey')}
-              className="bg-gradient-to-br from-blue-400 to-indigo-500 text-white p-5 sm:p-6 md:p-8 rounded-lg sm:rounded-xl active:scale-95 transition-transform shadow-lg min-h-[140px] touch-manipulation"
-            >
-              <h2 className="text-2xl sm:text-3xl font-bold mb-2">Jeffrey's Quiz</h2>
-              <p className="text-blue-100 mb-3 sm:mb-4 text-sm sm:text-base">26 Questions</p>
-              {records.jeffrey.length > 0 && (
-                <div className="bg-white/20 rounded-lg p-2 sm:p-3 text-xs sm:text-sm">
-                  <p className="font-semibold">Best Score:</p>
-                  <p className="text-xl sm:text-2xl">{Math.max(...records.jeffrey.map(r => r.percentage))}%</p>
-                </div>
-              )}
-            </button>
+            {studentNames.map((name, idx) => {
+              const key = name.toLowerCase();
+              const studentRecord = records[key] || [];
+              const bestScore = studentRecord.length > 0 ? Math.max(...studentRecord.map(r => r.percentage)) : 0;
+              const isPink = idx % 2 === 0;
+              
+              return (
+                <button
+                  key={name}
+                  onClick={() => selectStudent(name)}
+                  className={`bg-gradient-to-br ${isPink ? 'from-pink-400 to-purple-500' : 'from-blue-400 to-indigo-500'} text-white p-5 sm:p-6 md:p-8 rounded-lg sm:rounded-xl active:scale-95 transition-transform shadow-lg min-h-[140px] touch-manipulation text-left`}
+                >
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">{name}'s Quiz</h2>
+                  <p className={`mb-3 sm:mb-4 text-sm sm:text-base ${isPink ? 'text-pink-100' : 'text-blue-100'}`}>
+                    Customized for your level
+                  </p>
+                  {studentRecord.length > 0 && (
+                    <div className="bg-white/20 rounded-lg p-2 sm:p-3 text-xs sm:text-sm">
+                      <p className="font-semibold">Best Score:</p>
+                      <p className="text-xl sm:text-2xl">{bestScore}%</p>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {(records.rayne.length > 0 || records.jeffrey.length > 0) && (
+          {Object.values(records).some(r => r.length > 0) && (
             <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border-2 border-yellow-300">
               <div className="flex items-center gap-2 mb-4 sm:mb-6">
                 <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 flex-shrink-0" />
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-purple-700">🏆 Leaderboard - Who's Winning?</h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-purple-700">🏆 Recent Performance</h3>
               </div>
               
-              {/* Side-by-side comparison */}
               <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-                <div className="bg-white rounded-lg p-3 sm:p-4 border-2 border-pink-300">
-                  <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                    <h4 className="font-bold text-pink-600 text-base sm:text-lg">Rayne</h4>
-                    {records.rayne.length > 0 && (
-                      <span className="text-xl sm:text-2xl font-bold text-pink-600">
-                        {Math.max(...records.rayne.map(r => r.percentage))}%
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Best Score</p>
-                  <p className="text-xs text-gray-500">Total Attempts: {records.rayne.length}</p>
-                  {records.rayne.length > 0 && (
-                    <div className="mt-2 text-xs text-gray-600">
-                      Latest: {records.rayne[records.rayne.length - 1].percentage}%
-                    </div>
-                  )}
-                </div>
-                
-                <div className="bg-white rounded-lg p-3 sm:p-4 border-2 border-blue-300">
-                  <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                    <h4 className="font-bold text-blue-600 text-base sm:text-lg">Jeffrey</h4>
-                    {records.jeffrey.length > 0 && (
-                      <span className="text-xl sm:text-2xl font-bold text-blue-600">
-                        {Math.max(...records.jeffrey.map(r => r.percentage))}%
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Best Score</p>
-                  <p className="text-xs text-gray-500">Total Attempts: {records.jeffrey.length}</p>
-                  {records.jeffrey.length > 0 && (
-                    <div className="mt-2 text-xs text-gray-600">
-                      Latest: {records.jeffrey[records.jeffrey.length - 1].percentage}%
-                    </div>
-                  )}
-                </div>
-              </div>
+                {studentNames.map((name, idx) => {
+                  const key = name.toLowerCase();
+                  const studentRecord = records[key] || [];
+                  const bestScore = studentRecord.length > 0 ? Math.max(...studentRecord.map(r => r.percentage)) : 0;
+                  const isPink = idx % 2 === 0;
+                  
+                  if (studentRecord.length === 0) return null;
 
-              {/* Recent attempts */}
-              <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <p className="font-semibold text-pink-600 mb-2 text-sm sm:text-base">Rayne's Recent Attempts</p>
-                  {records.rayne.slice(-3).reverse().map((r, i) => (
-                    <div key={i} className="bg-white/60 rounded p-2 sm:p-3 mb-1 flex justify-between items-center">
-                      <span className="text-xs sm:text-sm text-gray-700">{r.percentage}%</span>
-                      <span className="text-xs text-gray-500">{r.score}/{r.total}</span>
+                  return (
+                    <div key={name} className={`bg-white rounded-lg p-3 sm:p-4 border-2 ${isPink ? 'border-pink-300' : 'border-blue-300'}`}>
+                      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                        <h4 className={`font-bold ${isPink ? 'text-pink-600' : 'text-blue-600'} text-base sm:text-lg`}>{name}</h4>
+                        <span className={`text-xl sm:text-2xl font-bold ${isPink ? 'text-pink-600' : 'text-blue-600'}`}>
+                          {bestScore}%
+                        </span>
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Best Score</p>
+                      <p className="text-xs text-gray-500">Total Attempts: {studentRecord.length}</p>
+                      <div className="mt-2 text-xs text-gray-600">
+                        Latest: {studentRecord[studentRecord.length - 1].percentage}%
+                      </div>
                     </div>
-                  ))}
-                </div>
-                <div>
-                  <p className="font-semibold text-blue-600 mb-2 text-sm sm:text-base">Jeffrey's Recent Attempts</p>
-                  {records.jeffrey.slice(-3).reverse().map((r, i) => (
-                    <div key={i} className="bg-white/60 rounded p-2 sm:p-3 mb-1 flex justify-between items-center">
-                      <span className="text-xs sm:text-sm text-gray-700">{r.percentage}%</span>
-                      <span className="text-xs text-gray-500">{r.score}/{r.total}</span>
-                    </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -412,7 +500,6 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
 
   if (completed) {
     const percentage = Math.round((score / questions.length) * 100);
-    const studentColor = selectedStudent === 'rayne' ? 'pink' : 'blue';
     
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset">
@@ -567,7 +654,7 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
                 onChange={(e) => setUserAnswer(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && userAnswer && !showFeedback && checkAnswer()}
                 placeholder="Type your answer here..."
-                className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-lg text-gray-900 bg-white border-2 border-purple-300 rounded-lg focus:outline-none focus:border-purple-500 min-h-[44px] touch-manipulation"
+                className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-lg text-gray-900 !text-gray-900 bg-white !bg-white border-2 border-purple-300 rounded-lg focus:outline-none focus:border-purple-500 min-h-[44px] touch-manipulation dark:!text-gray-900 dark:!bg-white placeholder:text-gray-500 dark:placeholder:text-gray-500"
                 autoFocus
                 disabled={showFeedback && (feedbackMsg.includes('Correct') || attempts >= 3)}
                 autoComplete="off"
@@ -615,7 +702,7 @@ const ScienceSpellingQuiz = ({ onBack }: ScienceSpellingQuizProps) => {
                   onChange={(e) => setUserAnswer(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && userAnswer && !showFeedback && checkAnswer()}
                   placeholder="Type what you drew (or use iPad handwriting keyboard)"
-                  className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-lg text-gray-900 bg-white border-2 border-purple-300 rounded-lg focus:outline-none focus:border-purple-500 min-h-[44px] touch-manipulation"
+                  className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-lg text-gray-900 !text-gray-900 bg-white !bg-white border-2 border-purple-300 rounded-lg focus:outline-none focus:border-purple-500 min-h-[44px] touch-manipulation dark:!text-gray-900 dark:!bg-white placeholder:text-gray-500 dark:placeholder:text-gray-500"
                   disabled={showFeedback && (feedbackMsg.includes('Correct') || attempts >= 3)}
                   autoComplete="off"
                   autoCorrect="off"

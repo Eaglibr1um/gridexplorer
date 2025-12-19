@@ -199,22 +199,89 @@ export const deleteAvailableDate = async (id: string): Promise<void> => {
 
 /**
  * Book a time slot (mark as booked by a tutee)
+ * Also creates a tuition_session record for earnings tracking
  */
 export const bookTimeSlot = async (
   id: string,
   tuteeId: string
 ): Promise<AvailableDate> => {
-  return updateAvailableDate({
+  // First, get the slot details
+  const { data: slotData, error: fetchError } = await supabase
+    .from('available_dates')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // Update the available date to mark as booked
+  const updatedSlot = await updateAvailableDate({
     id,
     bookedBy: tuteeId,
     isAvailable: false,
   });
+
+  // Create tuition session if it doesn't exist
+  const { data: existingSession } = await supabase
+    .from('tuition_sessions')
+    .select('id')
+    .eq('available_date_id', id)
+    .single();
+
+  if (!existingSession) {
+    // Get earnings settings to calculate amount
+    const { data: settings } = await supabase
+      .from('tuition_earnings_settings')
+      .select('fee_per_hour')
+      .eq('tutee_id', tuteeId)
+      .single();
+
+    const feePerHour = settings ? parseFloat(settings.fee_per_hour) : 140.0;
+
+    // Calculate duration and amount
+    const [startHour, startMin] = slotData.start_time.split(':').map(Number);
+    const [endHour, endMin] = slotData.end_time.split(':').map(Number);
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    const durationHours = (endMinutes - startMinutes) / 60;
+    const amount = durationHours * feePerHour;
+
+    // Create tuition session
+    await supabase
+      .from('tuition_sessions')
+      .insert({
+        tutee_id: tuteeId,
+        session_date: slotData.date,
+        start_time: slotData.start_time,
+        end_time: slotData.end_time,
+        duration_hours: Math.round(durationHours * 100) / 100,
+        amount: Math.round(amount * 100) / 100,
+        available_date_id: id,
+      });
+  }
+
+  return updatedSlot;
 };
 
 /**
  * Cancel a booking (make available again)
+ * Also removes the linked tuition_session if it exists
  */
 export const cancelBooking = async (id: string): Promise<AvailableDate> => {
+  // Find and delete the linked tuition_session
+  const { data: session } = await supabase
+    .from('tuition_sessions')
+    .select('id')
+    .eq('available_date_id', id)
+    .single();
+
+  if (session) {
+    await supabase
+      .from('tuition_sessions')
+      .delete()
+      .eq('id', session.id);
+  }
+
   return updateAvailableDate({
     id,
     bookedBy: null,

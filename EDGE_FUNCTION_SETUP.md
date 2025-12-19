@@ -211,3 +211,7 @@ try {
 
 You can now use this edge function throughout your application by importing `callChatGPT` from `src/services/chatgptService.ts` and customizing the prompts based on your specific use cases!
 
+
+
+
+

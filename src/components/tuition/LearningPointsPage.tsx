@@ -10,8 +10,9 @@ import {
 } from '../../services/componentService';
 import { format, parseISO } from 'date-fns';
 import ConfirmationModal from '../ui/ConfirmationModal';
-import { convertChemistryNotation, processChemistryInput } from '../../utils/chemistryNotation';
+import { convertChemistryNotation } from '../../utils/chemistryNotation';
 import { fetchLearningPointReviews, upsertLearningPointReview } from '../../services/learningPointReviewService';
+import LearningPointReviewGPTModal from './components/LearningPointReviewGPTModal';
 
 interface LearningPointsPageProps {
   tutee: Tutee;
@@ -44,6 +45,15 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
   const [tagInput, setTagInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [reviewModal, setReviewModal] = useState<{
+    isOpen: boolean;
+    sessionDate: string;
+    learningPoints: string[];
+  }>({
+    isOpen: false,
+    sessionDate: '',
+    learningPoints: [],
+  });
   
   // Spaced Repetition System - must be declared before useMemo hooks
   const [reviewData, setReviewData] = useState<Record<string, { lastReviewed: string; reviewCount: number }>>({});
@@ -353,13 +363,13 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
         // Convert molecular formulas to subscripts automatically
         // Pattern: Letter(s) followed by number(s) - like C4H8, H2O, CO2, C4H10
         // Match: [A-Z][a-z]? followed by [0-9]+ (one or more digits)
-        trimmed = trimmed.replace(/([A-Z][a-z]?)(\d+)/g, (match, element, number) => {
+        trimmed = trimmed.replace(/([A-Z][a-z]?)(\d+)/g, (_, element, number) => {
           // Convert all digits in the number to subscripts
           const subscriptMap: Record<string, string> = {
             '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
             '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉'
           };
-          const subscriptNumber = number.split('').map((digit: string) => subscriptMap[digit] || digit).join('');
+          const subscriptNumber = (number as string).split('').map((digit: string) => subscriptMap[digit] || digit).join('');
           return element + subscriptNumber;
         });
         
@@ -891,18 +901,17 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
                           )}
                         </div>
                         <button
-                          onClick={async () => {
-                            try {
-                              await markAsReviewed(session.sessionDate);
-                            } catch (err) {
-                              console.error('Failed to mark as reviewed:', err);
-                              setError('Failed to save review status. Please try again.');
-                            }
+                          onClick={() => {
+                            setReviewModal({
+                              isOpen: true,
+                              sessionDate: session.sessionDate,
+                              learningPoints: session.bulletPoints,
+                            });
                           }}
                           className={`px-4 py-2 bg-gradient-to-r ${gradientClass} text-white rounded-lg hover:opacity-90 transition-all font-medium text-sm flex items-center gap-2`}
                         >
-                          <CheckCircle2 className="w-4 h-4" />
-                          Mark as Reviewed
+                          <Sparkles className="w-4 h-4" />
+                          Let's Review
                         </button>
                       </div>
                       <div className="text-sm text-gray-600">
@@ -938,7 +947,6 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
               {mergedSessions.map((session, index) => {
                 const reviewStatus = getReviewStatus(session.sessionDate);
                 // Use the first point's ID for editing (we'll edit all points for that date)
-                const firstPoint = session.originalPoints[0];
                 
                 return (
                   <div
@@ -1049,7 +1057,7 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
       <ConfirmationModal
         isOpen={deleteConfirm.isOpen}
         onConfirm={handleDelete}
-        onCancel={() => setDeleteConfirm({ isOpen: false, pointId: null })}
+        onClose={() => setDeleteConfirm({ isOpen: false, pointId: null })}
         title="Delete Learning Point"
         message={
           deleteConfirm.pointId?.includes(',')
@@ -1059,6 +1067,18 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
         confirmText="Delete"
         cancelText="Cancel"
         type="danger"
+      />
+
+      <LearningPointReviewGPTModal
+        isOpen={reviewModal.isOpen}
+        onClose={() => setReviewModal(prev => ({ ...prev, isOpen: false }))}
+        onSuccess={async () => {
+          await markAsReviewed(reviewModal.sessionDate);
+          setReviewModal(prev => ({ ...prev, isOpen: false }));
+        }}
+        tutee={tutee}
+        sessionDate={reviewModal.sessionDate}
+        learningPoints={reviewModal.learningPoints}
       />
     </div>
   );

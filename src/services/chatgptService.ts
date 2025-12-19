@@ -46,11 +46,27 @@ export const callChatGPT = async (
   request: ChatGPTRequest
 ): Promise<ChatGPTResponse> => {
   try {
-    const { data, error } = await supabase.functions.invoke('chatgpt', {
+    // Try to get session, but don't require it (edge function should allow anonymous access)
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    const invokeOptions: any = {
       body: request,
-    });
+    };
+
+    // Only add auth header if we have a session
+    if (session?.access_token) {
+      invokeOptions.headers = {
+        Authorization: `Bearer ${session.access_token}`,
+      };
+    }
+
+    const { data, error } = await supabase.functions.invoke('chatgpt', invokeOptions);
 
     if (error) {
+      // If 401, provide more helpful error message
+      if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+        throw new Error('Edge function authentication failed. Please check if the function allows anonymous access or if you need to be logged in.');
+      }
       throw error;
     }
 
@@ -101,4 +117,7 @@ export const callChatGPTStream = async (
     throw error;
   }
 };
+
+
+
 

@@ -376,11 +376,12 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
     const today = format(now, 'yyyy-MM-dd');
     const currentTime = format(now, 'HH:mm');
 
-    // Get all available slots for this tutee (their own or unassigned)
+    // Get all available or booked slots for this tutee
     const tuteeSlots = availableDates
       .filter((slot) => {
-        const isOwnSlot = !slot.tuteeId || slot.tuteeId === tutee.id;
-        return slot.isAvailable && isOwnSlot;
+        const isOwnSlot = slot.tuteeId === tutee.id || slot.bookedBy === tutee.id;
+        // Include slots assigned to them OR slots they have booked
+        return isOwnSlot;
       })
       .sort((a, b) => {
         // Sort by date, then by start time
@@ -431,7 +432,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
       <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-4 sm:p-5 md:p-6 lg:p-8">
         {/* Greeting & Status Banner */}
         {!isAdmin && tutee && (
-          <div className={`mb-6 p-4 rounded-xl border-2 bg-gradient-to-r ${tutee.colorScheme.gradient} bg-opacity-10 border-opacity-30 animate-fade-in-up`} style={{
+          <div className={`mb-6 p-4 rounded-xl border-2 bg-gradient-to-r ${tutee.colorScheme.gradient} shadow-lg animate-fade-in-up transition-all duration-500`} style={{
             borderColor: tutee.colorScheme.primary === 'pink' ? '#ec4899' : 
                          tutee.colorScheme.primary === 'purple' ? '#a855f7' : 
                          tutee.colorScheme.primary === 'blue' ? '#3b82f6' : 
@@ -440,72 +441,60 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
           }}>
             {tuitionInfo?.type === 'in_progress' ? (
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/80 rounded-lg">
-                  <Clock className="w-5 h-5" style={{
-                    color: tutee.colorScheme.primary === 'pink' ? '#ec4899' : 
-                           tutee.colorScheme.primary === 'purple' ? '#a855f7' : 
-                           tutee.colorScheme.primary === 'blue' ? '#3b82f6' : 
-                           tutee.colorScheme.primary === 'green' ? '#10b981' : 
-                           tutee.colorScheme.primary === 'indigo' ? '#6366f1' : '#6366f1',
-                  }} />
+                <div className="p-2 bg-white/20 backdrop-blur-md rounded-lg">
+                  <Clock className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-800">
+                  <p className="font-bold text-white">
                     Hi {tutee.name}! Tuition in progress
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-white/90">
                     {format(parseISO(tuitionInfo.slot.date), 'EEEE, d MMMM yyyy')} • {tuitionInfo.slot.startTime} - {tuitionInfo.slot.endTime}
                   </p>
                 </div>
               </div>
             ) : tuitionInfo?.type === 'upcoming' ? (
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/80 rounded-lg">
-                  <CalendarIcon className="w-5 h-5" style={{
-                    color: tutee.colorScheme.primary === 'pink' ? '#ec4899' : 
-                           tutee.colorScheme.primary === 'purple' ? '#a855f7' : 
-                           tutee.colorScheme.primary === 'blue' ? '#3b82f6' : 
-                           tutee.colorScheme.primary === 'green' ? '#10b981' : 
-                           tutee.colorScheme.primary === 'indigo' ? '#6366f1' : '#6366f1',
-                  }} />
+                <div className="p-2 bg-white/20 backdrop-blur-md rounded-lg">
+                  <CalendarIcon className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-800">
+                  <p className="font-bold text-white">
                     Hi {tutee.name}! Tuition in{' '}
                     {tuitionInfo.days > 0 && (
                       <>
-                        <span className="font-bold">{tuitionInfo.days} {tuitionInfo.days === 1 ? 'day' : 'days'}</span>
+                        <span className="font-black">{tuitionInfo.days} {tuitionInfo.days === 1 ? 'day' : 'days'}</span>
                         {(tuitionInfo.hours > 0 || tuitionInfo.minutes > 0) && ' and '}
                       </>
                     )}
                     {tuitionInfo.hours > 0 && (
                       <>
-                        <span className="font-bold">{tuitionInfo.hours} {tuitionInfo.hours === 1 ? 'hour' : 'hours'}</span>
+                        <span className="font-black">{tuitionInfo.hours} {tuitionInfo.hours === 1 ? 'hour' : 'hours'}</span>
                         {tuitionInfo.minutes > 0 && ' and '}
                       </>
                     )}
                     {tuitionInfo.minutes > 0 && (
-                      <span className="font-bold">{tuitionInfo.minutes} {tuitionInfo.minutes === 1 ? 'minute' : 'minutes'}</span>
+                      <span className="font-black">{tuitionInfo.minutes} {tuitionInfo.minutes === 1 ? 'minute' : 'minutes'}</span>
                     )}
                     {tuitionInfo.days === 0 && tuitionInfo.hours === 0 && tuitionInfo.minutes === 0 && (
-                      <span className="font-bold">soon!</span>
+                      <span className="font-black">soon!</span>
                     )}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-white/90 font-medium">
                     {format(parseISO(tuitionInfo.slot.date), 'EEEE, d MMMM yyyy')} • {tuitionInfo.slot.startTime} - {tuitionInfo.slot.endTime}
                   </p>
                 </div>
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/80 rounded-lg">
-                  <CalendarIcon className="w-5 h-5 text-gray-500" />
+                <div className="p-2 bg-white/20 backdrop-blur-md rounded-lg">
+                  <CalendarIcon className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-800">
+                  <p className="font-bold text-white">
                     Hi {tutee.name}!
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-white/90">
                     No upcoming tuition sessions scheduled
                   </p>
                 </div>

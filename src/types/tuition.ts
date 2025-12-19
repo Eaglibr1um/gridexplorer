@@ -47,3 +47,42 @@ export interface BookingRequest {
   updatedAt: string;
 }
 
+export interface TuitionSession {
+  id: string;
+  tuteeId: string;
+  sessionDate: string; // ISO date string
+  startTime: string; // HH:mm format
+  endTime: string; // HH:mm format
+  durationHours: number;
+  amount: number;
+  earningsRecordId?: string;
+  availableDateId?: string; // Links to available_dates table
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EarningsSettings {
+  id: string;
+  tuteeId: string;
+  messageTemplate: string;
+  feePerHour: number;
+  feePerSession?: number;
+  calculationType: 'hourly' | 'per_session';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EarningsRecord {
+  id: string;
+  tuteeId: string;
+  year: number;
+  month: number;
+  totalSessions: number;
+  totalHours: number;
+  totalAmount: number;
+  generatedMessage?: string;
+  createdAt: string;
+  updatedAt: string;
+  sessions?: TuitionSession[];
+}
+

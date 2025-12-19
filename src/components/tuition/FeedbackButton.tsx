@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { MessageSquare, X, Send, Bug, Lightbulb, HelpCircle, FileText } from 'lucide-react';
+import { MessageSquare, X, Send, Bug, Lightbulb, HelpCircle, FileText, Sparkles } from 'lucide-react';
 import { Tutee } from '../../types/tuition';
 import { createFeedback } from '../../services/feedbackService';
 import * as LucideIcons from 'lucide-react';
+import ChatWithGPT from './ChatWithGPT';
 
 interface FeedbackButtonProps {
   tutee: Tutee;
@@ -10,6 +11,7 @@ interface FeedbackButtonProps {
 
 const FeedbackButton = ({ tutee }: FeedbackButtonProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [type, setType] = useState<'bug' | 'feature_request' | 'question' | 'other'>('feature_request');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -95,9 +97,15 @@ const FeedbackButton = ({ tutee }: FeedbackButtonProps) => {
           }}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className={`p-2 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-lg`}>
+                <button 
+                  onClick={() => setShowChat(true)}
+                  className={`p-2 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-lg hover:scale-110 transition-transform active:scale-95 shadow-md group relative`}
+                >
                   <TuteeIcon className="w-6 h-6 text-white" />
-                </div>
+                  <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Sparkles className="w-2.5 h-2.5 text-indigo-500 animate-pulse" />
+                  </div>
+                </button>
                 <div>
                   <h3 className="text-xl font-bold text-gray-800">Send Feedback</h3>
                   <p className="text-sm text-gray-600">{tutee.name}</p>
@@ -243,6 +251,13 @@ const FeedbackButton = ({ tutee }: FeedbackButtonProps) => {
           </div>
         </div>
       )}
+
+      {/* GPT Chat Component */}
+      <ChatWithGPT 
+        tutee={tutee} 
+        isOpen={showChat} 
+        onClose={() => setShowChat(false)} 
+      />
     </>
   );
 };

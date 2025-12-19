@@ -9,6 +9,8 @@ import ColorCustomization from './ColorCustomization';
 import PinChange from './PinChange';
 import IconCustomization from './IconCustomization';
 import LearningPoints from './components/LearningPoints';
+import WorksheetTracker from './components/WorksheetTracker';
+import SharedFiles from './components/SharedFiles';
 import LearningPointsPage from './LearningPointsPage';
 import FeedbackButton from './FeedbackButton';
 import MyFeedback from './MyFeedback';
@@ -42,13 +44,19 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
 
   useEffect(() => {
     // Load quiz records based on tutee
-    const spellingRecords = localStorage.getItem('spellingRecords');
-    const chemistryRecords = localStorage.getItem('ibChemistryRecords');
+    const spellingRecords = localStorage.getItem(`spellingRecords_${tutee.id}`);
+    const chemistryRecords = localStorage.getItem(`ibChemistryRecords_${tutee.id}`);
     
     if (spellingRecords) {
       setAllRecords(prev => ({
         ...prev,
         spelling: JSON.parse(spellingRecords)
+      }));
+    } else {
+      // Clear spelling records if none for this tutee
+      setAllRecords(prev => ({
+        ...prev,
+        spelling: { rayne: [], jeffrey: [] }
       }));
     }
     
@@ -58,7 +66,7 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
         chemistry: JSON.parse(chemistryRecords)
       }));
     }
-  }, []);
+  }, [tutee.id]);
 
   // Load dashboard components
   useEffect(() => {
@@ -118,8 +126,8 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
   };
 
   const refreshRecords = () => {
-    const spellingRecords = localStorage.getItem('spellingRecords');
-    const chemistryRecords = localStorage.getItem('ibChemistryRecords');
+    const spellingRecords = localStorage.getItem(`spellingRecords_${tutee.id}`);
+    const chemistryRecords = localStorage.getItem(`ibChemistryRecords_${tutee.id}`);
     
     if (spellingRecords) {
       setAllRecords(prev => ({
@@ -154,12 +162,12 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
   }, []);
 
   // Show quiz if selected
-  if (currentQuiz === 'spelling' && tutee.id === 'primary-school') {
-    return <ScienceSpellingQuiz onBack={navigateToMenu} />;
+  if (currentQuiz === 'spelling') {
+    return <ScienceSpellingQuiz tutee={tutee} onBack={navigateToMenu} />;
   }
 
   if (currentQuiz === 'chemistry' && tutee.id === 'shermaine') {
-    return <IBChemistryQuiz onBack={navigateToMenu} />;
+    return <IBChemistryQuiz tutee={tutee} onBack={navigateToMenu} />;
   }
 
   // Show learning points page if selected
@@ -169,11 +177,16 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
 
   // Determine available quizzes for this tutee
   const availableQuizzes = [];
-  if (tutee.id === 'primary-school') {
-    availableQuizzes.push({ type: 'spelling' as const, name: 'Science Spelling Quiz', icon: BookOpen });
-  }
-  if (tutee.id === 'shermaine') {
-    availableQuizzes.push({ type: 'chemistry' as const, name: 'IB Chemistry Quiz', icon: GraduationCap });
+  if (!loadingComponents) {
+    components.forEach((tComp) => {
+      const componentType = tComp.component?.componentType;
+      if (componentType === 'spelling_quiz') {
+        availableQuizzes.push({ type: 'spelling' as const, name: 'Science Spelling Quiz', icon: BookOpen });
+      }
+      if (componentType === 'chemistry_quiz') {
+        availableQuizzes.push({ type: 'chemistry' as const, name: 'IB Chemistry Quiz', icon: GraduationCap });
+      }
+    });
   }
 
   return (
@@ -211,10 +224,41 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
 
         {/* Quiz Cards & Components */}
         <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          {/* Learning Points Component Card */}
-          {!loadingComponents && components.some(c => c.component?.componentType === 'learning_points') && (
-            <LearningPoints tutee={tutee} />
-          )}
+          {/* Dashboard Components */}
+          {!loadingComponents && components.map((tComp) => {
+            const componentType = tComp.component?.componentType;
+            
+            if (componentType === 'learning_points') {
+              return <LearningPoints key={tComp.id} tutee={tutee} />;
+            }
+            
+            if (componentType === 'worksheet_tracker') {
+              const studentNames = tutee.id === 'primary-school' 
+                ? ['Rayne', 'Jeffrey'] 
+                : [tutee.name];
+              return (
+                <div key={tComp.id} className="md:col-span-2">
+                  <WorksheetTracker 
+                    tuteeId={tutee.id} 
+                    studentNames={studentNames} 
+                  />
+                </div>
+              );
+            }
+
+            if (componentType === 'shared_files') {
+              return (
+                <div key={tComp.id} className="md:col-span-2">
+                  <SharedFiles 
+                    tutee={tutee} 
+                    isAdmin={false}
+                  />
+                </div>
+              );
+            }
+            
+            return null;
+          })}
           
           {/* Quiz Cards */}
           {availableQuizzes.map((quiz, index) => {

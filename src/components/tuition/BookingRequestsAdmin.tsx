@@ -7,7 +7,8 @@ import {
   rejectBookingRequest,
   deleteBookingRequest,
 } from '../../services/bookingService';
-import { createAvailableDate, fetchAvailableDates, updateAvailableDate } from '../../services/calendarService';
+import { createAvailableDate, fetchAvailableDates, updateAvailableDate, bookTimeSlot } from '../../services/calendarService';
+import { supabase } from '../../config/supabase';
 import { getTuteeByIdSync } from '../../config/tutees';
 import { format, parseISO } from 'date-fns';
 import ConfirmationModal from '../ui/ConfirmationModal';
@@ -16,7 +17,7 @@ const BookingRequestsAdmin = () => {
   const [requests, setRequests] = useState<BookingRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
-  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
   const [selectedRequest, setSelectedRequest] = useState<BookingRequest | null>(null);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -62,18 +63,21 @@ const BookingRequestsAdmin = () => {
           slot.isAvailable
       );
       
+      let slotId: string;
+      
       if (existingSlot) {
         // Update existing slot with new timing
-        await updateAvailableDate({
+        const updated = await updateAvailableDate({
           id: existingSlot.id,
           startTime: selectedRequest.requestedStartTime,
           endTime: selectedRequest.requestedEndTime,
           notes: adminNotes || selectedRequest.tuteeNotes || existingSlot.notes || undefined,
           isAvailable: true,
         });
+        slotId = updated.id;
       } else {
         // Create a new available slot for the approved request
-        await createAvailableDate({
+        const created = await createAvailableDate({
           date: selectedRequest.requestedDate,
           startTime: selectedRequest.requestedStartTime,
           endTime: selectedRequest.requestedEndTime,
@@ -81,7 +85,11 @@ const BookingRequestsAdmin = () => {
           notes: adminNotes || selectedRequest.tuteeNotes || undefined,
           isAvailable: true,
         });
+        slotId = created.id;
       }
+      
+      // Book the slot (this will create a tuition_session automatically)
+      await bookTimeSlot(slotId, selectedRequest.tuteeId);
       
       await loadRequests();
       setShowApproveModal(false);

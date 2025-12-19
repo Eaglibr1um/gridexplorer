@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Award, RefreshCw, BookOpen } from 'lucide-react';
+import { Tutee } from '../types/tuition';
 
 interface IBChemistryQuizProps {
+  tutee: Tutee;
   onBack?: () => void;
 }
 
-const IBChemistryQuiz = ({ onBack }: IBChemistryQuizProps) => {
+const IBChemistryQuiz = ({ tutee, onBack }: IBChemistryQuizProps) => {
   // Placeholder questions - you can replace these with actual IB Chemistry questions
   const questions = [
     { 
@@ -38,11 +40,11 @@ const IBChemistryQuiz = ({ onBack }: IBChemistryQuizProps) => {
   const [endTime, setEndTime] = useState(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('ibChemistryRecords');
+    const saved = localStorage.getItem(`ibChemistryRecords_${tutee.id}`);
     if (saved) {
       setRecords(JSON.parse(saved));
     }
-  }, []);
+  }, [tutee.id]);
 
   useEffect(() => {
     if (!completed && currentQ === 0 && selectedAnswer === null) {
@@ -85,7 +87,7 @@ const IBChemistryQuiz = ({ onBack }: IBChemistryQuizProps) => {
       
       const newRecords = [...records, newRecord];
       setRecords(newRecords);
-      localStorage.setItem('ibChemistryRecords', JSON.stringify(newRecords));
+      localStorage.setItem(`ibChemistryRecords_${tutee.id}`, JSON.stringify(newRecords));
       setCompleted(true);
     }
   };

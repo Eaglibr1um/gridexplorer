@@ -8,8 +8,15 @@ import AdminPinProtection from './tuition/AdminPinProtection';
 import TuteeDashboard from './tuition/TuteeDashboard';
 import BookingRequestsAdmin from './tuition/BookingRequestsAdmin';
 import TuteeEditor from './tuition/admin/TuteeEditor';
+import TuteeCreator from './tuition/admin/TuteeCreator';
+import TuteeDeleteModal from './tuition/admin/TuteeDeleteModal';
 import ComponentManager from './tuition/admin/ComponentManager';
 import FeedbackAdmin from './tuition/admin/FeedbackAdmin';
+import EarningsAdmin from './tuition/admin/EarningsAdmin';
+import EarningsSettingsEditor from './tuition/admin/EarningsSettingsEditor';
+import SpellingQuizConfig from './tuition/admin/SpellingQuizConfig';
+import GPTChatAdmin from './tuition/admin/GPTChatAdmin';
+import GlobalFileManager from './tuition/admin/GlobalFileManager';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 // Icon mapping for tutees - dynamically import icons as needed
@@ -54,6 +61,7 @@ const Tuition = () => {
   const [showAdminPinModal, setShowAdminPinModal] = useState(false);
   const [tutees, setTutees] = useState<Tutee[]>([]);
   const [loadingTutees, setLoadingTutees] = useState(true);
+  const [selectedEarningsTuteeId, setSelectedEarningsTuteeId] = useState<string | null>(null);
 
   // Load tutees from Supabase
   useEffect(() => {
@@ -221,6 +229,10 @@ const Tuition = () => {
             const handleTuteeUpdate = (updatedTutee: Tutee) => {
               setTutees(prev => prev.map(t => t.id === updatedTutee.id ? updatedTutee : t));
             };
+
+            const handleTuteeDelete = (deletedId: string) => {
+              setTutees(prev => prev.filter(t => t.id !== deletedId));
+            };
             
             return (
               <div
@@ -229,9 +241,15 @@ const Tuition = () => {
                 style={{ animationDelay: `${tutees.indexOf(tutee) * 100}ms` }}
               >
                 {isAdmin && (
-                  <div className="absolute top-2 right-2 z-10 flex gap-1">
-                    <ComponentManager tutee={tutee} />
+                  <div className="absolute top-2 right-2 z-10 flex gap-1 items-center">
+                    <TuteeDeleteModal tutee={tutee} onDeleted={handleTuteeDelete} />
                     <TuteeEditor tutee={tutee} onUpdate={handleTuteeUpdate} />
+                    <EarningsSettingsEditor 
+                      tutee={tutee} 
+                      onSelectTutee={(tuteeId) => {
+                        setSelectedEarningsTuteeId(tuteeId);
+                      }}
+                    />
                   </div>
                 )}
                 <button
@@ -262,6 +280,13 @@ const Tuition = () => {
               </div>
             );
           })}
+          {isAdmin && (
+            <TuteeCreator 
+              onCreated={(newTutee) => {
+                setTutees(prev => [...prev, newTutee]);
+              }}
+            />
+          )}
           </div>
         )}
 
@@ -298,8 +323,47 @@ const Tuition = () => {
 
         {/* Feedback Admin (only in admin mode) */}
         {isAdmin && (
-          <div className="mb-8">
+          <div id="feedback-admin-section" className="mb-8">
             <FeedbackAdmin />
+          </div>
+        )}
+
+        {/* Earnings Admin (only in admin mode) */}
+        {isAdmin && (
+          <div id="earnings-admin-section" className="mb-8">
+            <EarningsAdmin 
+              tutees={tutees} 
+              initialTuteeId={selectedEarningsTuteeId}
+              onTuteeSelectChange={setSelectedEarningsTuteeId}
+            />
+          </div>
+        )}
+
+        {/* Module Manager (only in admin mode) */}
+        {isAdmin && (
+          <div id="module-manager-section" className="mb-8">
+            <ComponentManager tutees={tutees} />
+          </div>
+        )}
+
+        {/* Global File Manager (only in admin mode) */}
+        {isAdmin && (
+          <div id="global-file-admin-section" className="mb-8">
+            <GlobalFileManager tutees={tutees} />
+          </div>
+        )}
+
+        {/* Spelling Quiz Config (only in admin mode) */}
+        {isAdmin && (
+          <div id="spelling-quiz-admin-section" className="mb-8">
+            <SpellingQuizConfig tutees={tutees} />
+          </div>
+        )}
+
+        {/* GPT Chat History (only in admin mode) */}
+        {isAdmin && (
+          <div id="gpt-chat-admin-section" className="mb-8">
+            <GPTChatAdmin />
           </div>
         )}
 
