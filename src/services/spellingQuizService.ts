@@ -301,7 +301,8 @@ The sentences should be clear, age-appropriate, and educational.`;
 
     const userPrompt = `Generate ${count} different fill-in-the-blank spelling questions for a Singapore primary school science quiz.
 
-Use these words: ${words.join(', ')}
+CRITICAL: You MUST ONLY use words from this specific list: ${words.join(', ')}
+DO NOT generate questions for any other words. Each question's "answer" MUST be exactly one of the words from the list above.
 
 For each word, create a sentence where the word fits naturally in the blank. Make sure:
 1. The sentence is about science concepts appropriate for primary school
@@ -366,6 +367,47 @@ Do not include any text before or after the JSON array. Return only the JSON arr
 };
 
 /**
+ * Generate hints for a list of words using ChatGPT
+ */
+export const generateWordHints = async (
+  words: string[]
+): Promise<Record<string, string>> => {
+  try {
+    const { callChatGPT } = await import('./chatgptService');
+
+    const systemPrompt = `You are a helpful assistant that creates Singapore primary school science spelling quiz hints. 
+You must return your response as a valid JSON object only, where keys are the words and values are the hints.
+The hints should be brief, educational, and appropriate for primary school students.
+Do not include the word itself in the hint.`;
+
+    const userPrompt = `Generate a brief science-related hint for each of these words: ${words.join(', ')}.
+Return ONLY a valid JSON object where the keys are the words and the values are the hints.
+Example: {"Skeleton": "The framework of bones that supports our body"}`;
+
+    const response = await callChatGPT({
+      message: userPrompt,
+      systemPrompt,
+      model: 'gpt-4o-mini',
+      temperature: 0.5,
+    });
+
+    let hints: Record<string, string>;
+    try {
+      const jsonMatch = response.response.match(/\{[\s\S]*\}/);
+      hints = JSON.parse(jsonMatch ? jsonMatch[0] : response.response);
+    } catch (parseError) {
+      console.error('Error parsing ChatGPT hints response:', parseError);
+      throw new Error('Failed to parse ChatGPT response for hints.');
+    }
+
+    return hints;
+  } catch (error) {
+    console.error('Error generating word hints:', error);
+    throw error;
+  }
+};
+
+/**
  * Save generated questions to database (as draft)
  */
 export const saveGeneratedQuestions = async (
@@ -388,22 +430,29 @@ export const saveGeneratedQuestions = async (
     
     await deactivateQuery;
 
-    // Match questions to words by answer
-    const questionRecords = questions.map((q) => {
-      const word = words.find(w => w.word.toLowerCase() === q.answer.toLowerCase());
-      if (!word) {
-        throw new Error(`Word not found for answer: ${q.answer}`);
-      }
-      return {
-        word_id: word.id,
-        tutee_id: tuteeId,
-        student_name: studentName,
-        sentence: q.sentence,
-        answer: q.answer,
-        hint: q.hint,
-        status: 'draft' as const,
-      };
-    });
+    // Match questions to words by answer, filtering out any rogue words
+    const questionRecords = questions
+      .map((q) => {
+        const word = words.find(w => w.word.toLowerCase() === q.answer.toLowerCase());
+        if (!word) {
+          console.warn(`AI generated a question for a word not in our list: ${q.answer}. Skipping.`);
+          return null;
+        }
+        return {
+          word_id: word.id,
+          tutee_id: tuteeId,
+          student_name: studentName,
+          sentence: q.sentence,
+          answer: q.answer,
+          hint: q.hint,
+          status: 'draft' as const,
+        };
+      })
+      .filter((q): q is any => q !== null);
+
+    if (questionRecords.length === 0) {
+      throw new Error('No valid questions matching your word bank were generated. Please try again.');
+    }
 
     // Insert new questions
     const { data, error } = await supabase

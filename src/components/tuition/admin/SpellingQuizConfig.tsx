@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { BookOpen, Plus, Edit2, Trash2, Sparkles, X, Loader2, Save, BarChart3, TrendingUp, TrendingDown, Search, Filter, User, GraduationCap, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { BookOpen, Plus, Edit2, Trash2, Sparkles, X, Loader2, Save, BarChart3, Search, User, GraduationCap, CheckCircle2, AlertCircle } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
-import { SpellingWord, CreateSpellingWordInput, generateSpellingQuestions, WordStatistics, getWordStatistics, SpellingQuestionRecord, saveGeneratedQuestions, confirmQuestions, deleteSpellingQuestion, fetchActiveQuestionsWithDetails, updateSpellingQuestion } from '../../../services/spellingQuizService';
+import { SpellingWord, generateSpellingQuestions, WordStatistics, getWordStatistics, SpellingQuestionRecord, saveGeneratedQuestions, confirmQuestions, deleteSpellingQuestion, fetchActiveQuestionsWithDetails, updateSpellingQuestion, generateWordHints } from '../../../services/spellingQuizService';
 import { fetchSpellingWords, createSpellingWord, updateSpellingWord, deleteSpellingWord } from '../../../services/spellingQuizService';
 import { Tutee } from '../../../types/tuition';
 import ConfirmationModal from '../../ui/ConfirmationModal';
-import Select, { SelectOption } from '../../ui/Select';
 import AnimatedCard from '../../ui/AnimatedCard';
 
 interface SpellingQuizConfigProps {
@@ -22,6 +21,9 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBatchModal, setShowBatchModal] = useState(false);
+  const [batchWordsInput, setBatchWordsInput] = useState('');
+  const [isBatchAdding, setIsBatchAdding] = useState(false);
   const [editingWord, setEditingWord] = useState<SpellingWord | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; wordId: string | null }>({
     isOpen: false,
@@ -33,12 +35,9 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
   const [showPreview, setShowPreview] = useState(false);
   const [wordStats, setWordStats] = useState<WordStatistics[]>([]);
   const [loadingStats, setLoadingStats] = useState(false);
-  const [showStats, setShowStats] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
   const [activeQuestions, setActiveQuestions] = useState<SpellingQuestionRecord[]>([]);
-  const [showActiveQuestions, setShowActiveQuestions] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<SpellingQuestionRecord | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   
@@ -166,6 +165,73 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
     }
   };
 
+  const handleBatchAdd = async () => {
+    if (!batchWordsInput.trim()) {
+      setError('Please enter some words');
+      return;
+    }
+
+    try {
+      setIsBatchAdding(true);
+      setError('');
+      
+      // Split by newlines or commas
+      const wordLines = batchWordsInput.split(/[\n,]/).map(w => w.trim()).filter(w => w.length > 0);
+      
+      if (wordLines.length === 0) {
+        setError('No valid words found');
+        return;
+      }
+
+      const wordsToCreate: { word: string; hint: string | null }[] = wordLines.map(line => {
+        if (line.includes(':')) {
+          const parts = line.split(':');
+          return { word: parts[0].trim(), hint: parts.slice(1).join(':').trim() };
+        } else if (line.includes(' - ')) {
+          const parts = line.split(' - ');
+          return { word: parts[0].trim(), hint: parts.slice(1).join(' - ').trim() };
+        }
+        return { word: line, hint: null };
+      });
+
+      // Get words that need AI hints
+      const wordsMissingHints = wordsToCreate.filter(w => !w.hint).map(w => w.word);
+      let aiHints: Record<string, string> = {};
+      
+      if (wordsMissingHints.length > 0) {
+        try {
+          aiHints = await generateWordHints(wordsMissingHints);
+        } catch (hintError) {
+          console.error('Failed to generate AI hints, using fallback', hintError);
+          // Fallback to generic hint if AI fails
+          wordsMissingHints.forEach(w => {
+            aiHints[w] = 'Science vocabulary word';
+          });
+        }
+      }
+
+      // Create all words
+      for (const item of wordsToCreate) {
+        await createSpellingWord({
+          word: item.word,
+          hint: item.hint || aiHints[item.word] || 'Science vocabulary word',
+          tuteeId: selectedTuteeId,
+          studentName: selectedStudent,
+        });
+      }
+
+      await loadWords();
+      await loadStatistics();
+      setShowBatchModal(false);
+      setBatchWordsInput('');
+    } catch (err: any) {
+      setError(err.message || 'Failed to add words. Please try again.');
+      console.error(err);
+    } finally {
+      setIsBatchAdding(false);
+    }
+  };
+
   const handleDeleteWord = (id: string) => {
     setDeleteConfirm({ isOpen: true, wordId: id });
   };
@@ -229,6 +295,18 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
     }
   };
 
+  const handleDeleteQuestion = async (id: string) => {
+    try {
+      await deleteSpellingQuestion(id);
+      setGeneratedQuestions(prev => prev.filter(q => q.id !== id));
+      const newSet = new Set(selectedQuestions);
+      newSet.delete(id);
+      setSelectedQuestions(newSet);
+    } catch (err: any) {
+      console.error('Failed to delete question:', err);
+    }
+  };
+
   const handleConfirmQuestions = async () => {
     if (selectedQuestions.size === 0) {
       setError('Please select at least one question to confirm');
@@ -271,8 +349,8 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
   };
 
   return (
-    <AnimatedCard id="spelling-quiz-admin-section" className="overflow-hidden">
-      <div className="p-6 md:p-8">
+    <AnimatedCard className="overflow-hidden">
+      <div id="spelling-quiz-admin-section" className="p-6 md:p-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-purple-100 rounded-xl text-purple-600 shadow-sm">
@@ -283,17 +361,29 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
               <p className="text-sm text-gray-500">Curate words and generate AI-powered quiz questions</p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              setEditingWord(null);
-              setNewWord({ word: '', hint: '' });
-              setShowAddModal(true);
-            }}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 font-bold text-sm press-effect"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Word</span>
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setBatchWordsInput('');
+                setShowBatchModal(true);
+              }}
+              className="flex items-center gap-2 px-5 py-2.5 bg-purple-50 text-purple-700 rounded-xl hover:bg-purple-100 transition-all font-bold text-sm press-effect border border-purple-100"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Batch Add</span>
+            </button>
+            <button
+              onClick={() => {
+                setEditingWord(null);
+                setNewWord({ word: '', hint: '' });
+                setShowAddModal(true);
+              }}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 font-bold text-sm press-effect"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Word</span>
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -318,7 +408,7 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                   placeholder="Search groups..."
                   value={groupSearchTerm}
                   onChange={(e) => setGroupSearchTerm(e.target.value)}
-                  className="pl-9 pr-4 py-1.5 text-xs bg-white border border-gray-200 rounded-full focus:ring-2 focus:ring-indigo-500 outline-none w-48 transition-all shadow-sm"
+                  className="pl-9 pr-4 py-1.5 text-xs bg-white border border-gray-200 rounded-full focus:ring-2 focus:ring-indigo-500 outline-none w-48 transition-all shadow-sm text-gray-900"
                 />
               </div>
             )}
@@ -394,7 +484,7 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                   placeholder="Search word bank..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium"
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-gray-900"
                 />
               </div>
               <div className="flex gap-2 ml-4">
@@ -430,49 +520,69 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {filteredWords.map((word) => {
-                  const stat = wordStats.find(s => s.wordId === word.id);
-                  return (
-                    <div
-                      key={word.id}
-                      className="group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-indigo-100 transition-all relative overflow-hidden"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h4 className="text-xl font-black text-gray-800 tracking-tight">{word.word}</h4>
-                          <p className="text-xs text-gray-500 font-medium line-clamp-1 mt-1">Hint: {word.hint}</p>
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="bg-gray-50/50 px-4 py-3 border-b border-gray-100 flex items-center">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                      Word ({filteredWords.length})
+                    </span>
+                  </div>
+                  <div className="hidden md:block flex-1 min-w-0 pr-4">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hint</span>
+                  </div>
+                  <div className="w-20 text-center pr-4">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Accuracy</span>
+                  </div>
+                  <div className="w-20"></div> {/* Actions spacer */}
+                </div>
+                <div className="max-h-[500px] overflow-y-auto custom-scrollbar divide-y divide-gray-50">
+                  {filteredWords.map((word) => {
+                    const stat = wordStats.find(s => s.wordId === word.id);
+                    return (
+                      <div
+                        key={word.id}
+                        className="group flex items-center justify-between p-4 hover:bg-indigo-50/30 transition-all"
+                      >
+                        <div className="flex-1 min-w-0 pr-4">
+                          <h4 className="text-base font-bold text-gray-800 tracking-tight truncate">{word.word}</h4>
+                          <p className="text-[10px] text-gray-400 font-medium truncate md:hidden">Hint: {word.hint}</p>
                         </div>
+                        
+                        <div className="hidden md:block flex-1 min-w-0 pr-4">
+                          <p className="text-xs text-gray-500 font-medium truncate">{word.hint}</p>
+                        </div>
+
+                        <div className="w-20 text-center flex flex-col items-center pr-4">
+                          {stat && stat.totalAttempts > 0 ? (
+                            <>
+                              <span className={`text-xs font-black ${stat.accuracy >= 70 ? 'text-green-600' : stat.accuracy >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                {stat.accuracy}%
+                              </span>
+                              <span className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter">{stat.totalAttempts} tries</span>
+                            </>
+                          ) : (
+                            <span className="text-[10px] text-gray-300 font-black uppercase tracking-widest">New</span>
+                          )}
+                        </div>
+
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => startEdit(word)}
-                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"
+                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-indigo-100"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteWord(word.id)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-red-100"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
-                      
-                      {stat && stat.totalAttempts > 0 && (
-                        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-50">
-                          <div className="flex items-center gap-1.5">
-                            <div className={`w-2 h-2 rounded-full ${stat.accuracy >= 70 ? 'bg-green-500' : stat.accuracy >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} />
-                            <span className="text-xs font-bold text-gray-600">{stat.accuracy}% Accuracy</span>
-                          </div>
-                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{stat.totalAttempts} attempts</span>
-                        </div>
-                      )}
-                      
-                      <div className={`absolute top-0 right-0 w-1 h-full bg-gradient-to-b ${selectedTutee?.colorScheme.gradient || 'from-indigo-500 to-purple-600'} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -493,7 +603,7 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
               
               {activeQuestions.length > 0 ? (
                 <div className="space-y-3 mb-6 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                  {activeQuestions.map((q, i) => (
+                  {activeQuestions.map((q) => (
                     <div key={q.id} className="bg-white p-3 rounded-xl border border-green-100 text-xs shadow-sm group">
                       <div className="flex justify-between items-start gap-2">
                         <p className="text-gray-700 font-medium line-clamp-2 leading-relaxed">
@@ -608,7 +718,7 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                     setNewWord({ ...newWord, word: e.target.value });
                     setError('');
                   }}
-                  className="w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-purple-500 outline-none transition-all text-xl font-black tracking-tight"
+                  className="w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-purple-500 outline-none transition-all text-xl font-black tracking-tight text-gray-900"
                   placeholder="e.g. Photosynthesis"
                   autoFocus
                 />
@@ -623,7 +733,7 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                     setError('');
                   }}
                   rows={2}
-                  className="w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-purple-500 outline-none transition-all font-medium resize-none"
+                  className="w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-purple-500 outline-none transition-all font-medium resize-none text-gray-900"
                   placeholder="e.g. Process plants use to make food"
                 />
               </div>
@@ -642,6 +752,73 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                 >
                   <Save className="w-5 h-5" />
                   {editingWord ? 'Save Changes' : 'Add to Bank'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Add Modal */}
+      {showBatchModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-modal-backdrop">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl p-8 max-w-lg w-full animate-modal-content border border-purple-100">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-purple-100 text-purple-600 rounded-2xl">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">Batch Add Words</h3>
+                  <p className="text-sm text-gray-500">For {selectedStudent}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowBatchModal(false);
+                  setBatchWordsInput('');
+                }} 
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">Paste Word List</label>
+                <textarea
+                  value={batchWordsInput}
+                  onChange={(e) => {
+                    setBatchWordsInput(e.target.value);
+                    setError('');
+                  }}
+                  rows={8}
+                  className="w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-purple-500 outline-none transition-all font-medium resize-none text-gray-900"
+                  placeholder="Enter words separated by commas or new lines.&#10;Tip: Use 'Word: Hint' format to include hints!&#10;Example:&#10;Photosynthesis: Process of making food&#10;Chlorophyll: Green pigment in leaves"
+                />
+                <p className="mt-3 text-xs text-gray-400 italic">
+                  Paste a list of words from your notes. If no hint is provided, one will be generated automatically.
+                </p>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button
+                  onClick={() => {
+                    setShowBatchModal(false);
+                    setBatchWordsInput('');
+                  }}
+                  className="flex-1 px-6 py-4 rounded-2xl font-bold text-gray-500 hover:bg-gray-100 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBatchAdd}
+                  disabled={isBatchAdding || !batchWordsInput.trim()}
+                  className="flex-[2] px-6 py-4 rounded-2xl font-bold text-white bg-purple-600 hover:bg-purple-700 shadow-xl shadow-purple-100 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2"
+                >
+                  {isBatchAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                  {isBatchAdding ? 'Adding Words...' : 'Add to Bank'}
                 </button>
               </div>
             </div>
@@ -772,7 +949,7 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                   value={questionEditForm.sentence}
                   onChange={(e) => setQuestionEditForm({ ...questionEditForm, sentence: e.target.value })}
                   rows={3}
-                  className="w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-gray-800 leading-relaxed"
+                  className="w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-gray-800 leading-relaxed text-gray-900"
                   placeholder="Use __________ for the blank"
                 />
               </div>
@@ -784,7 +961,7 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                     type="text"
                     value={questionEditForm.answer}
                     onChange={(e) => setQuestionEditForm({ ...questionEditForm, answer: e.target.value })}
-                    className="w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-black text-indigo-600 tracking-tight"
+                    className="w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-black text-indigo-600 tracking-tight text-gray-900"
                   />
                 </div>
                 <div>
@@ -793,7 +970,7 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                     type="text"
                     value={questionEditForm.hint}
                     onChange={(e) => setQuestionEditForm({ ...questionEditForm, hint: e.target.value })}
-                    className="w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium"
+                    className="w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-gray-900"
                   />
                 </div>
               </div>

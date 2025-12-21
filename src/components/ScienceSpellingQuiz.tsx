@@ -88,12 +88,31 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
   const [inputMode, setInputMode] = useState<'keyboard' | 'handwriting'>('keyboard');
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [currentStroke, setCurrentStroke] = useState<{ x: number[]; y: number[]; t: number[] } | null>(null);
+  const [allStrokes, setAllStrokes] = useState<any[]>([]);
+  const [isRecognizing, setIsRecognizing] = useState(false);
   const [wordIdMap, setWordIdMap] = useState<Map<string, string>>(new Map()); // Map answer -> wordId for statistics tracking
 
   const studentNames = useMemo(() => {
     if (tutee.id === 'primary-school') return ['Rayne', 'Jeffrey'];
     return [tutee.name];
   }, [tutee]);
+
+  // Prevent accidental page refresh/leave during active quiz
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (selectedStudent && questions.length > 0 && !completed) {
+        e.preventDefault();
+        e.returnValue = ''; // Required for some browsers
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [selectedStudent, questions.length, completed]);
 
   // Force light theme for quiz - ensure good contrast regardless of localStorage
   useEffect(() => {
@@ -131,8 +150,9 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
     } else {
       // Time's up - force final answer
       setTimerActive(false);
-      const currentAnswer = userAnswer.trim();
-      const correct = currentAnswer.toLowerCase() === questions[currentQ].answer.toLowerCase();
+      const currentAnswer = userAnswer.trim().toLowerCase();
+      const correctAnswer = questions[currentQ].answer.trim().toLowerCase();
+      const correct = currentAnswer === correctAnswer;
       
       const recordStats = async () => {
         if (selectedStudent && wordIdMap.size > 0) {
@@ -182,39 +202,56 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
     }
-  }
-  setUserAnswer('');
-};
+    setAllStrokes([]);
+    setCurrentStroke(null);
+    setUserAnswer('');
+  };
+
+  const getCanvasCoordinates = (e: React.TouchEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+    
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
+      time: Date.now()
+    };
+  };
 
   const startDrawing = (e: React.TouchEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
     const canvas = canvasRef.current;
     if (!canvas) return;
     
-    const rect = canvas.getBoundingClientRect();
-    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+    const { x, y, time } = getCanvasCoordinates(e);
     
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.beginPath();
       ctx.moveTo(x, y);
     }
+
+    setCurrentStroke({ x: [x], y: [y], t: [time] });
   };
 
   const draw = (e: React.TouchEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
-    e.preventDefault();
     
     const canvas = canvasRef.current;
     if (!canvas) return;
     
-    const rect = canvas.getBoundingClientRect();
-    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+    const { x, y, time } = getCanvasCoordinates(e);
     
     const ctx = canvas.getContext('2d');
     if (ctx) {
@@ -225,13 +262,60 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
       ctx.lineJoin = 'round';
       ctx.stroke();
     }
+
+    if (currentStroke) {
+      setCurrentStroke({
+        x: [...currentStroke.x, x],
+        y: [...currentStroke.y, y],
+        t: [...currentStroke.t, time]
+      });
+    }
   };
 
   const stopDrawing = () => {
+    if (!isDrawing) return;
     setIsDrawing(false);
-    // Convert handwriting to text using basic recognition
-    // For now, we'll use a simple approach - users can manually type what they drew
-    // Or we can integrate a handwriting recognition API later
+    if (currentStroke) {
+      setAllStrokes(prev => [...prev, [currentStroke.x, currentStroke.y, currentStroke.t]]);
+      setCurrentStroke(null);
+    }
+  };
+
+  const recognizeHandwriting = async () => {
+    if (allStrokes.length === 0) return;
+
+    try {
+      setIsRecognizing(true);
+      const response = await fetch('https://www.google.com.tw/inputtools/request?ime=handwriting&app=autraw&cs=1&oe=utf-8&itc=en-t-i0-handwrit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          options: 'enable_pre_space',
+          requests: [
+            {
+              writing_guide: {
+                writing_area_width: 600,
+                writing_area_height: 200
+              },
+              pre_context: '',
+              max_num_results: 3,
+              max_candidates: 3,
+              ink: allStrokes
+            }
+          ]
+        })
+      });
+
+      const data = await response.json();
+      if (data && data[0] === 'SUCCESS' && data[1][0][1][0]) {
+        const recognizedText = data[1][0][1][0];
+        setUserAnswer(recognizedText);
+      }
+    } catch (error) {
+      console.error('Handwriting recognition failed:', error);
+    } finally {
+      setIsRecognizing(false);
+    }
   };
 
   // Initialize canvas
@@ -289,7 +373,9 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
   };
 
   const checkAnswer = async () => {
-    const correct = userAnswer.toLowerCase().trim() === questions[currentQ].answer.toLowerCase();
+    const currentAnswer = userAnswer.trim().toLowerCase();
+    const correctAnswer = questions[currentQ].answer.trim().toLowerCase();
+    const correct = currentAnswer === correctAnswer;
     
     // Record statistics if we have word ID
     if (selectedStudent && wordIdMap.size > 0) {
@@ -367,7 +453,7 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
       setFeedbackMsg('');
       setTimeLeft(30); // Reset timer for next question
       setTimerActive(true); // Start timer for next question
-      clearCanvas(); // Clear handwriting canvas
+      clearCanvas(); // Clear handwriting canvas and strokes
     } else if (selectedStudent) {
       const percentage = Math.round((score / questions.length) * 100);
       const newRecords = { ...records };
@@ -691,10 +777,18 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
                     <X className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <p className="text-xs sm:text-sm text-blue-800">
-                    💡 <strong>Tip:</strong> Draw your answer above. On iPad, you can also use the handwriting keyboard by long-pressing the globe key on your keyboard.
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex justify-between items-center gap-4">
+                  <p className="text-xs sm:text-sm text-blue-800 flex-1">
+                    💡 <strong>Tip:</strong> Draw your answer and tap the wand to convert to text!
                   </p>
+                  <button
+                    onClick={recognizeHandwriting}
+                    disabled={isRecognizing || allStrokes.length === 0}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-all disabled:bg-blue-300 disabled:cursor-not-allowed shadow-md press-effect shrink-0"
+                  >
+                    {isRecognizing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    <span>Magic Wand</span>
+                  </button>
                 </div>
                 <input
                   type="text"
