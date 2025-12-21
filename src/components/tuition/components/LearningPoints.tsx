@@ -2,11 +2,9 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { BookOpen, RotateCcw, AlertCircle } from 'lucide-react';
 import { Tutee } from '../../../types/tuition';
-import {
-  fetchLearningPoints,
-  LearningPoint as LearningPointType,
-} from '../../../services/componentService';
+import { fetchLearningPoints, LearningPoint as LearningPointType } from '../../../services/componentService';
 import { fetchLearningPointReviews } from '../../../services/learningPointReviewService';
+import Skeleton from '../../ui/Skeleton';
 
 interface LearningPointsProps {
   tutee: Tutee;
@@ -130,8 +128,19 @@ const LearningPoints = ({ tutee }: LearningPointsProps) => {
   // Card view (compact, like quiz cards)
   if (loading) {
     return (
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-5 sm:p-6 md:p-8 animate-fade-in-up">
-        <div className="text-center py-8 text-gray-500">Loading...</div>
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-5 sm:p-6 md:p-8 space-y-4">
+        <div className="flex items-center gap-3">
+          <Skeleton className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-4 w-1/3" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <Skeleton className="h-16 rounded-lg" />
+          <Skeleton className="h-16 rounded-lg" />
+        </div>
+        <Skeleton className="h-12 rounded-lg w-full" />
       </div>
     );
   }

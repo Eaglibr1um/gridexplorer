@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Award, RefreshCw, BookOpen } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { Tutee } from '../types/tuition';
 
 interface IBChemistryQuizProps {
@@ -106,6 +107,41 @@ const IBChemistryQuiz = ({ tutee, onBack }: IBChemistryQuizProps) => {
       setEndTime(null);
     }
   };
+
+  useEffect(() => {
+    if (completed) {
+      const percentage = Math.round((score / questions.length) * 100);
+      if (percentage >= 80) {
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#0d9488', '#0891b2', '#2dd4bf', '#fbbf24']
+        });
+
+        if (percentage === 100) {
+          setTimeout(() => {
+            confetti({
+              particleCount: 100,
+              angle: 60,
+              spread: 55,
+              origin: { x: 0 },
+              colors: ['#0d9488', '#0891b2', '#2dd4bf', '#fbbf24']
+            });
+          }, 250);
+          setTimeout(() => {
+            confetti({
+              particleCount: 100,
+              angle: 120,
+              spread: 55,
+              origin: { x: 1 },
+              colors: ['#0d9488', '#0891b2', '#2dd4bf', '#fbbf24']
+            });
+          }, 400);
+        }
+      }
+    }
+  }, [completed, score, questions.length]);
 
   if (completed) {
     const percentage = Math.round((score / questions.length) * 100);

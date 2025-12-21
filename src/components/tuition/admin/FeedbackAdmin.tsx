@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { MessageSquare, X, Filter, Bug, Lightbulb, HelpCircle, FileText, CheckCircle, Clock, AlertCircle, XCircle, Edit2, Save, BookOpen, GraduationCap } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { MessageSquare, X, Filter, Bug, Lightbulb, HelpCircle, FileText, CheckCircle, Clock, AlertCircle, XCircle, Edit2, Save, BookOpen, GraduationCap, Search, RotateCcw, ChevronDown } from 'lucide-react';
 import { fetchAllFeedback, updateFeedback, FeedbackWithTutee, UpdateFeedbackInput } from '../../../services/feedbackService';
 import * as LucideIcons from 'lucide-react';
 
@@ -36,7 +36,6 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 
 const FeedbackAdmin = () => {
   const [feedback, setFeedback] = useState<FeedbackWithTutee[]>([]);
-  const [filteredFeedback, setFilteredFeedback] = useState<FeedbackWithTutee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -44,6 +43,7 @@ const FeedbackAdmin = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Editing state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -64,10 +64,6 @@ const FeedbackAdmin = () => {
     loadFeedback();
   }, []);
 
-  useEffect(() => {
-    applyFilters();
-  }, [feedback, statusFilter, typeFilter, priorityFilter]);
-
   const loadFeedback = async () => {
     try {
       setLoading(true);
@@ -82,7 +78,7 @@ const FeedbackAdmin = () => {
     }
   };
 
-  const applyFilters = () => {
+  const filteredFeedback = useMemo(() => {
     let filtered = [...feedback];
 
     if (statusFilter !== 'all') {
@@ -97,7 +93,50 @@ const FeedbackAdmin = () => {
       filtered = filtered.filter(f => f.priority === priorityFilter);
     }
 
-    setFilteredFeedback(filtered);
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(f => 
+        f.title.toLowerCase().includes(term) || 
+        f.description.toLowerCase().includes(term) ||
+        f.tuteeName.toLowerCase().includes(term)
+      );
+    }
+
+    return filtered;
+  }, [feedback, statusFilter, typeFilter, priorityFilter, searchTerm]);
+
+  // Counts for filters
+  const counts = useMemo(() => {
+    return {
+      status: {
+        all: feedback.length,
+        open: feedback.filter(f => f.status === 'open').length,
+        in_progress: feedback.filter(f => f.status === 'in_progress').length,
+        resolved: feedback.filter(f => f.status === 'resolved').length,
+        closed: feedback.filter(f => f.status === 'closed').length,
+      },
+      type: {
+        all: feedback.length,
+        bug: feedback.filter(f => f.type === 'bug').length,
+        feature_request: feedback.filter(f => f.type === 'feature_request').length,
+        question: feedback.filter(f => f.type === 'question').length,
+        other: feedback.filter(f => f.type === 'other').length,
+      },
+      priority: {
+        all: feedback.length,
+        urgent: feedback.filter(f => f.priority === 'urgent').length,
+        high: feedback.filter(f => f.priority === 'high').length,
+        medium: feedback.filter(f => f.priority === 'medium').length,
+        low: feedback.filter(f => f.priority === 'low').length,
+      }
+    };
+  }, [feedback]);
+
+  const resetFilters = () => {
+    setStatusFilter('all');
+    setTypeFilter('all');
+    setPriorityFilter('all');
+    setSearchTerm('');
   };
 
   const handleEdit = (item: FeedbackWithTutee) => {
@@ -222,205 +261,290 @@ const FeedbackAdmin = () => {
     );
   }
 
+  const FilterPill = ({ label, value, current, count, onClick }: { label: string, value: string, current: string, count: number, onClick: (v: string) => void }) => (
+    <button
+      onClick={() => onClick(value)}
+      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 press-effect ${
+        current === value
+          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100 scale-105'
+          : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'
+      }`}
+    >
+      <span>{label}</span>
+      <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
+        current === value ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400'
+      }`}>
+        {count}
+      </span>
+    </button>
+  );
+
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg">
-            <MessageSquare className="w-6 h-6 text-white" />
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+      {/* Header */}
+      <div className="p-6 md:p-8 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-100">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-indigo-600 rounded-2xl text-white shadow-lg shadow-indigo-200">
+              <MessageSquare className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-gray-800 tracking-tight">Feedback Inbox</h3>
+              <p className="text-sm font-medium text-gray-500">
+                Manage and track improvements from your students
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xl font-bold text-gray-800">All Feedback</h3>
-            <p className="text-sm text-gray-600">
-              {filteredFeedback.length} of {feedback.length} feedback items
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <div className="flex items-center gap-2 mb-3">
-          <Filter className="w-4 h-4 text-gray-600" />
-          <span className="text-sm font-medium text-gray-700">Filters</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="open">Open</option>
-              <option value="in_progress">In Progress</option>
-              <option value="resolved">Resolved</option>
-              <option value="closed">Closed</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="all">All Types</option>
-              <option value="bug">Bug</option>
-              <option value="feature_request">Feature Request</option>
-              <option value="question">Question</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Priority</label>
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="all">All Priorities</option>
-              <option value="urgent">Urgent</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
+          
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search feedback..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full md:w-72 pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-gray-900 shadow-sm"
+            />
           </div>
         </div>
       </div>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg animate-fade-in">
-          <p className="text-sm text-red-700">{error}</p>
+      {/* Modern Filter Section - Only show if more than 5 items or if filter is active */}
+      {(feedback.length > 5 || statusFilter !== 'all' || typeFilter !== 'all' || priorityFilter !== 'all' || searchTerm !== '') && (
+        <div className="px-6 md:px-8 py-6 bg-white border-b border-gray-50 animate-in slide-in-from-top-4 duration-500">
+          <div className="flex flex-wrap items-center justify-between gap-6">
+            <div className="flex flex-wrap items-center gap-8">
+              {/* Status Filter */}
+              <div className="space-y-3">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block">Status</span>
+                <div className="flex flex-wrap gap-2">
+                  <FilterPill label="All" value="all" current={statusFilter} count={counts.status.all} onClick={setStatusFilter} />
+                  <FilterPill label="Open" value="open" current={statusFilter} count={counts.status.open} onClick={setStatusFilter} />
+                  <FilterPill label="In Progress" value="in_progress" current={statusFilter} count={counts.status.in_progress} onClick={setStatusFilter} />
+                  <FilterPill label="Resolved" value="resolved" current={statusFilter} count={counts.status.resolved} onClick={setStatusFilter} />
+                </div>
+              </div>
+
+              {/* Type Filter */}
+              <div className="space-y-3">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block">Category</span>
+                <div className="flex flex-wrap gap-2">
+                  <FilterPill label="All" value="all" current={typeFilter} count={counts.type.all} onClick={setTypeFilter} />
+                  <FilterPill label="Bug" value="bug" current={typeFilter} count={counts.type.bug} onClick={setTypeFilter} />
+                  <FilterPill label="Feature" value="feature_request" current={typeFilter} count={counts.type.feature_request} onClick={setTypeFilter} />
+                  <FilterPill label="Question" value="question" current={typeFilter} count={counts.type.question} onClick={setTypeFilter} />
+                </div>
+              </div>
+
+              {/* Priority Filter */}
+              <div className="space-y-3">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block">Priority</span>
+                <div className="flex flex-wrap gap-2">
+                  <FilterPill label="All" value="all" current={priorityFilter} count={counts.priority.all} onClick={setPriorityFilter} />
+                  <FilterPill label="Urgent" value="urgent" current={priorityFilter} count={counts.priority.urgent} onClick={setPriorityFilter} />
+                  <FilterPill label="High" value="high" current={priorityFilter} count={counts.priority.high} onClick={setPriorityFilter} />
+                  <FilterPill label="Medium" value="medium" current={priorityFilter} count={counts.priority.medium} onClick={setPriorityFilter} />
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={resetFilters}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all press-effect"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Reset Filters
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Feedback List */}
-      {filteredFeedback.length === 0 ? (
-        <div className="text-center py-12">
-          <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No feedback found</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredFeedback.map((item) => {
-            const TypeIcon = getTypeIcon(item.type);
-            const StatusIcon = getStatusIcon(item.status);
-            const isEditing = editingId === item.id;
+      <div className="p-6 md:p-8">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 animate-in fade-in slide-in-from-top-2">
+            <AlertCircle className="w-5 h-5" />
+            <p className="text-sm font-medium">{error}</p>
+          </div>
+        )}
 
-            return (
-              <div
-                key={item.id}
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={`p-1.5 rounded ${getTypeColor(item.type)}`}>
-                        <TypeIcon className="w-4 h-4" />
-                      </div>
-                      <h4 className="font-semibold text-gray-800">{item.title}</h4>
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded border ${getPriorityColor(item.priority)}`}>
-                        {item.priority}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">{item.description}</p>
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                      <span className="font-medium">From:</span>
-                      {item.tuteeIcon && item.tuteeColorScheme ? (
-                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-br ${item.tuteeColorScheme.gradient} rounded-full text-white font-medium`}>
-                          {(() => {
-                            const TuteeIcon = getIcon(item.tuteeIcon);
-                            return <TuteeIcon className="w-3 h-3" />;
-                          })()}
-                          <span>{item.tuteeName}</span>
+        {/* Results Counter */}
+        <div className="mb-6 flex items-center justify-between">
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+            Showing {filteredFeedback.length} items
+          </span>
+        </div>
+
+        {/* Feedback List */}
+        {filteredFeedback.length === 0 ? (
+          <div className="py-20 text-center bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200">
+            <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+              <MessageSquare className="w-10 h-10 text-gray-200" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-800">No feedback matches your filters</h3>
+            <p className="text-gray-500 mt-2">Try adjusting your selection or search term.</p>
+            <button
+              onClick={resetFilters}
+              className="mt-6 px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-100"
+            >
+              Clear all filters
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {filteredFeedback.map((item) => {
+              const TypeIcon = getTypeIcon(item.type);
+              const StatusIcon = getStatusIcon(item.status);
+              const isEditing = editingId === item.id;
+
+              return (
+                <div
+                  key={item.id}
+                  className={`group bg-white rounded-2xl border transition-all duration-300 ${
+                    isEditing 
+                      ? 'ring-2 ring-indigo-500 border-transparent shadow-xl' 
+                      : 'border-gray-100 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-50/50'
+                  } p-6 relative overflow-hidden`}
+                >
+                  {/* Priority Indicator Stripe */}
+                  <div className={`absolute left-0 top-0 w-1.5 h-full ${
+                    item.priority === 'urgent' ? 'bg-red-500' :
+                    item.priority === 'high' ? 'bg-orange-500' :
+                    item.priority === 'medium' ? 'bg-yellow-500' :
+                    'bg-gray-300'
+                  }`} />
+
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-3 mb-3">
+                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${getTypeColor(item.type)}`}>
+                          <TypeIcon className="w-3.5 h-3.5" />
+                          {item.type.replace('_', ' ')}
                         </div>
-                      ) : (
-                        <span className="font-medium">{item.tuteeName}</span>
+                        <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg border ${getPriorityColor(item.priority)}`}>
+                          {item.priority}
+                        </span>
+                        <span className="text-[10px] font-bold text-gray-400">
+                          {formatDate(item.createdAt)}
+                        </span>
+                      </div>
+                      
+                      <h4 className="text-lg font-black text-gray-800 mb-2 leading-tight tracking-tight">
+                        {item.title}
+                      </h4>
+                      <p className="text-gray-600 leading-relaxed mb-4 text-sm font-medium">
+                        {item.description}
+                      </p>
+
+                      <div className="flex items-center gap-4">
+                        {item.tuteeIcon && item.tuteeColorScheme ? (
+                          <div className={`inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-br ${item.tuteeColorScheme.gradient} rounded-xl text-white font-bold text-xs shadow-sm`}>
+                            {(() => {
+                              const TuteeIcon = getIcon(item.tuteeIcon);
+                              return <TuteeIcon className="w-3.5 h-3.5" />;
+                            })()}
+                            <span>{item.tuteeName}</span>
+                          </div>
+                        ) : (
+                          <div className="px-3 py-1.5 bg-gray-100 rounded-xl text-gray-600 font-bold text-xs">
+                            {item.tuteeName}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-2">
+                      {!isEditing && (
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="p-3 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all shadow-sm border border-transparent hover:border-indigo-100"
+                          title="Edit status"
+                        >
+                          <Edit2 className="w-5 h-5" />
+                        </button>
                       )}
-                      <span>•</span>
-                      <span>{formatDate(item.createdAt)}</span>
+                      
+                      {!isEditing && (
+                        <div className={`mt-2 flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${getStatusColor(item.status)} shadow-sm bg-white`}>
+                          <StatusIcon className="w-3.5 h-3.5" />
+                          {item.status.replace('_', ' ')}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  {!isEditing && (
-                    <button
-                      onClick={() => handleEdit(item)}
-                      className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors-smooth press-effect"
-                      title="Edit feedback"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
+
+                  {isEditing ? (
+                    <div className="mt-6 pt-6 border-t border-gray-100 animate-in slide-in-from-top-4 duration-300">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                            Update Status
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {['open', 'in_progress', 'resolved', 'closed'].map((status) => (
+                              <button
+                                key={status}
+                                onClick={() => setEditStatus(status as any)}
+                                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
+                                  editStatus === status
+                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300'
+                                } capitalize`}
+                              >
+                                {status.replace('_', ' ')}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                            Internal Admin Notes
+                          </label>
+                          <textarea
+                            value={editAdminNotes}
+                            onChange={(e) => setEditAdminNotes(e.target.value)}
+                            rows={3}
+                            placeholder="Type notes for yourself here..."
+                            className="w-full px-4 py-3 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-sm text-gray-900 shadow-inner"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleSave(item.id)}
+                          className="flex-[2] flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all font-bold text-sm shadow-lg shadow-indigo-100 press-effect"
+                        >
+                          <Save className="w-5 h-5" />
+                          Update Feedback
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          className="flex-1 px-6 py-3 bg-gray-100 text-gray-600 rounded-2xl hover:bg-gray-200 transition-all font-bold text-sm press-effect"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    item.adminNotes && (
+                      <div className="mt-6 pt-6 border-t border-gray-50 flex items-start gap-3">
+                        <div className="p-2 bg-indigo-50 rounded-lg shrink-0">
+                          <Edit2 className="w-3 h-3 text-indigo-600" />
+                        </div>
+                        <div className="flex-1">
+                          <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mb-1">Internal Note</span>
+                          <p className="text-sm font-medium text-gray-600 italic">"{item.adminNotes}"</p>
+                        </div>
+                      </div>
+                    )
                   )}
                 </div>
-
-                {isEditing ? (
-                  <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Status
-                      </label>
-                      <select
-                        value={editStatus}
-                        onChange={(e) => setEditStatus(e.target.value as any)}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      >
-                        <option value="open">Open</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="resolved">Resolved</option>
-                        <option value="closed">Closed</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Admin Notes
-                      </label>
-                      <textarea
-                        value={editAdminNotes}
-                        onChange={(e) => setEditAdminNotes(e.target.value)}
-                        rows={3}
-                        placeholder="Add admin notes..."
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleSave(item.id)}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors-smooth press-effect text-sm font-medium"
-                      >
-                        <Save className="w-4 h-4" />
-                        Save
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors-smooth press-effect text-sm font-medium"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
-                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium border ${getStatusColor(item.status)}`}>
-                      <StatusIcon className="w-3 h-3" />
-                      <span className="capitalize">{item.status.replace('_', ' ')}</span>
-                    </div>
-                    {item.adminNotes && (
-                      <div className="flex-1 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
-                        <span className="font-medium">Admin Notes: </span>
-                        {item.adminNotes}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
 export default FeedbackAdmin;
-

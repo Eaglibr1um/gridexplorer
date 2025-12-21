@@ -7,6 +7,7 @@ import PinProtection from './tuition/PinProtection';
 import AdminPinProtection from './tuition/AdminPinProtection';
 import TuteeDashboard from './tuition/TuteeDashboard';
 import BookingRequestsAdmin from './tuition/BookingRequestsAdmin';
+import Skeleton from './ui/Skeleton';
 import TuteeEditor from './tuition/admin/TuteeEditor';
 import TuteeCreator from './tuition/admin/TuteeCreator';
 import TuteeDeleteModal from './tuition/admin/TuteeDeleteModal';
@@ -215,9 +216,19 @@ const Tuition = () => {
 
         {/* Tutee Selection Grid */}
         {loadingTutees ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading tutees...</p>
+          <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-6 sm:p-8">
+                <div className="flex items-center gap-4 mb-4">
+                  <Skeleton className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                </div>
+                <Skeleton className="h-4 w-1/4 mt-4" />
+              </div>
+            ))}
           </div>
         ) : (
           <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">

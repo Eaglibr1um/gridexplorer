@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ClipboardList, Plus, Trash2, Edit2, Calendar, User, Search, CheckCircle2, AlertCircle, Clock, PlayCircle, CheckCircle } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { WorksheetEntry, fetchWorksheets, createWorksheet, updateWorksheet, deleteWorksheet } from '../../../services/worksheetService';
 import { format, parseISO } from 'date-fns';
 import AnimatedCard from '../../ui/AnimatedCard';
@@ -61,8 +62,24 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
     try {
       if (editingEntry) {
         await updateWorksheet(editingEntry.id, form);
+        // Celebration if marked as completed now
+        if (form.status === 'Completed' && editingEntry.status !== 'Completed') {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        }
       } else {
         await createWorksheet({ ...form, tuteeId });
+        // Celebration if added as completed
+        if (form.status === 'Completed') {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        }
       }
       
       resetForm();

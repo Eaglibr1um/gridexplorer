@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Sparkles, Award, RefreshCw, Trophy, Users, Keyboard, PenTool, X } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { fetchActiveQuestions, recordWordAttempt, fetchSpellingWords, SpellingQuestion } from '../services/spellingQuizService';
 import { Tutee } from '../types/tuition';
 
@@ -213,7 +214,7 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
 
   const getCanvasCoordinates = (e: React.TouchEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
+    if (!canvas) return { x: 0, y: 0, time: 0 };
     
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -584,6 +585,43 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
     );
   }
 
+  useEffect(() => {
+    if (completed) {
+      const percentage = Math.round((score / questions.length) * 100);
+      if (percentage >= 80) {
+        // Simple celebration
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#8b5cf6', '#3b82f6', '#ec4899', '#fbbf24']
+        });
+
+        // Extra celebration for perfect score
+        if (percentage === 100) {
+          setTimeout(() => {
+            confetti({
+              particleCount: 100,
+              angle: 60,
+              spread: 55,
+              origin: { x: 0 },
+              colors: ['#8b5cf6', '#3b82f6', '#ec4899', '#fbbf24']
+            });
+          }, 250);
+          setTimeout(() => {
+            confetti({
+              particleCount: 100,
+              angle: 120,
+              spread: 55,
+              origin: { x: 1 },
+              colors: ['#8b5cf6', '#3b82f6', '#ec4899', '#fbbf24']
+            });
+          }, 400);
+        }
+      }
+    }
+  }, [completed, score, questions.length]);
+
   if (completed) {
     const percentage = Math.round((score / questions.length) * 100);
     
@@ -795,7 +833,7 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
                   value={userAnswer}
                   onChange={(e) => setUserAnswer(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && userAnswer && !showFeedback && checkAnswer()}
-                  placeholder="Type what you drew (or use iPad handwriting keyboard)"
+                  placeholder="The Magic Wand will type your drawing here..."
                   className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-lg text-gray-900 !text-gray-900 bg-white !bg-white border-2 border-purple-300 rounded-lg focus:outline-none focus:border-purple-500 min-h-[44px] touch-manipulation dark:!text-gray-900 dark:!bg-white placeholder:text-gray-500 dark:placeholder:text-gray-500"
                   disabled={showFeedback && (feedbackMsg.includes('Correct') || attempts >= 3)}
                   autoComplete="off"

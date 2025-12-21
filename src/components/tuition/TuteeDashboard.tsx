@@ -16,6 +16,7 @@ import FeedbackButton from './FeedbackButton';
 import MyFeedback from './MyFeedback';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { fetchTuteeComponents, TuteeComponent } from '../../services/componentService';
+import Skeleton from '../ui/Skeleton';
 
 interface TuteeDashboardProps {
   tutee: Tutee;
@@ -153,13 +154,39 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
     setSearchParams({});
   };
 
-  // Force light theme for tuition pages - MUST be before any early returns
+  // Force light theme and handle dynamic theme color for PWA
   useEffect(() => {
     document.documentElement.classList.remove('dark');
-    return () => {
-      // Don't restore theme on unmount
+    
+    // Dynamic theme color for mobile status bar
+    const colorMap: Record<string, string> = {
+      pink: '#ec4899',
+      blue: '#3b82f6',
+      green: '#10b981',
+      orange: '#f97316',
+      indigo: '#6366f1',
+      yellow: '#eab308',
+      rose: '#f43f5e',
+      emerald: '#10b981',
     };
-  }, []);
+    
+    const themeColor = colorMap[tutee.colorScheme.primary] || '#6366f1';
+    let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    
+    if (!metaThemeColor) {
+      metaThemeColor = document.createElement('meta');
+      metaThemeColor.setAttribute('name', 'theme-color');
+      document.head.appendChild(metaThemeColor);
+    }
+    
+    metaThemeColor.setAttribute('content', themeColor);
+
+    return () => {
+      // Restore default theme color on unmount
+      const defaultMeta = document.querySelector('meta[name="theme-color"]');
+      if (defaultMeta) defaultMeta.setAttribute('content', '#6366f1');
+    };
+  }, [tutee.colorScheme.primary]);
 
   // Show quiz if selected
   if (currentQuiz === 'spelling') {
@@ -222,10 +249,45 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
           </div>
         </div>
 
+        {/* Calendar Section */}
+        <div className="mb-6 sm:mb-8">
+          <TuitionCalendar isAdmin={false} tutee={tutee} onTuteeUpdate={setTutee} />
+        </div>
+
         {/* Quiz Cards & Components */}
         <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          {/* Dashboard Components */}
-          {!loadingComponents && components.map((tComp) => {
+          {loadingComponents ? (
+            <>
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-5 sm:p-6 md:p-8 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-6 w-1/2" />
+                    <Skeleton className="h-4 w-1/3" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <Skeleton className="h-16 rounded-lg" />
+                  <Skeleton className="h-16 rounded-lg" />
+                </div>
+                <Skeleton className="h-12 rounded-lg w-full" />
+              </div>
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-5 sm:p-6 md:p-8 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-6 w-1/2" />
+                    <Skeleton className="h-4 w-1/3" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <Skeleton className="h-16 rounded-lg" />
+                  <Skeleton className="h-16 rounded-lg" />
+                </div>
+                <Skeleton className="h-12 rounded-lg w-full" />
+              </div>
+            </>
+          ) : components.map((tComp) => {
             const componentType = tComp.component?.componentType;
             
             if (componentType === 'learning_points') {
@@ -313,11 +375,6 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
               </div>
             );
           })}
-        </div>
-
-        {/* Calendar Section */}
-        <div className="mb-6 sm:mb-8">
-          <TuitionCalendar isAdmin={false} tutee={tutee} onTuteeUpdate={setTutee} />
         </div>
 
         {/* My Feedback Section */}
