@@ -198,6 +198,56 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
     }
   }, [currentQ, selectedStudent, questions.length]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas && inputMode === 'handwriting') {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.strokeStyle = '#4c1d95';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+      }
+    }
+  }, [inputMode]);
+
+  useEffect(() => {
+    if (completed) {
+      const percentage = Math.round((score / questions.length) * 100);
+      if (percentage >= 80) {
+        // Simple celebration
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#8b5cf6', '#3b82f6', '#ec4899', '#fbbf24']
+        });
+
+        // Extra celebration for perfect score
+        if (percentage === 100) {
+          setTimeout(() => {
+            confetti({
+              particleCount: 100,
+              angle: 60,
+              spread: 55,
+              origin: { x: 0 },
+              colors: ['#8b5cf6', '#3b82f6', '#ec4899', '#fbbf24']
+            });
+          }, 250);
+          setTimeout(() => {
+            confetti({
+              particleCount: 100,
+              angle: 120,
+              spread: 55,
+              origin: { x: 1 },
+              colors: ['#8b5cf6', '#3b82f6', '#ec4899', '#fbbf24']
+            });
+          }, 400);
+        }
+      }
+    }
+  }, [completed, score, questions.length]);
+
   // Handwriting canvas functions
   const clearCanvas = () => {
     const canvas = canvasRef.current;
@@ -320,19 +370,6 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
   };
 
   // Initialize canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas && inputMode === 'handwriting') {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.strokeStyle = '#4c1d95';
-        ctx.lineWidth = 3;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-      }
-    }
-  }, [inputMode]);
-
   const selectStudent = async (studentName: string) => {
     const studentKey = studentName.toLowerCase();
     setSelectedStudent(studentKey);
@@ -584,43 +621,6 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
       </div>
     );
   }
-
-  useEffect(() => {
-    if (completed) {
-      const percentage = Math.round((score / questions.length) * 100);
-      if (percentage >= 80) {
-        // Simple celebration
-        confetti({
-          particleCount: 150,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#8b5cf6', '#3b82f6', '#ec4899', '#fbbf24']
-        });
-
-        // Extra celebration for perfect score
-        if (percentage === 100) {
-          setTimeout(() => {
-            confetti({
-              particleCount: 100,
-              angle: 60,
-              spread: 55,
-              origin: { x: 0 },
-              colors: ['#8b5cf6', '#3b82f6', '#ec4899', '#fbbf24']
-            });
-          }, 250);
-          setTimeout(() => {
-            confetti({
-              particleCount: 100,
-              angle: 120,
-              spread: 55,
-              origin: { x: 1 },
-              colors: ['#8b5cf6', '#3b82f6', '#ec4899', '#fbbf24']
-            });
-          }, 400);
-        }
-      }
-    }
-  }, [completed, score, questions.length]);
 
   if (completed) {
     const percentage = Math.round((score / questions.length) * 100);

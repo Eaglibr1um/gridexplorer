@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { Calendar as CalendarIcon, Clock, X, Plus, Edit2, Trash2, XCircle, CalendarPlus, User, AlertCircle } from 'lucide-react';
@@ -429,73 +430,57 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
 
   return (
     <>
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-4 sm:p-5 md:p-6 lg:p-8">
+      <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-4 sm:p-6 lg:p-10 border border-white/50 overflow-hidden">
         {/* Greeting & Status Banner */}
         {!isAdmin && tutee && (
-          <div className={`mb-6 p-4 rounded-xl border-2 bg-gradient-to-r ${tutee.colorScheme.gradient} shadow-lg animate-fade-in-up transition-all duration-500`} style={{
-            borderColor: tutee.colorScheme.primary === 'pink' ? '#ec4899' : 
-                         tutee.colorScheme.primary === 'purple' ? '#a855f7' : 
-                         tutee.colorScheme.primary === 'blue' ? '#3b82f6' : 
-                         tutee.colorScheme.primary === 'green' ? '#10b981' : 
-                         tutee.colorScheme.primary === 'indigo' ? '#6366f1' : '#6366f1',
+          <div className={`mb-8 p-6 rounded-3xl border-2 bg-gradient-to-br ${tutee.colorScheme.gradient} shadow-xl animate-fade-in-up transition-all duration-500 transform hover:scale-[1.01]`} style={{
+            borderColor: 'rgba(255, 255, 255, 0.3)',
           }}>
             {tuitionInfo?.type === 'in_progress' ? (
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 backdrop-blur-md rounded-lg">
-                  <Clock className="w-5 h-5 text-white" />
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/30 backdrop-blur-md rounded-2xl shadow-inner animate-pulse">
+                  <Clock className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="font-bold text-white">
-                    Hi {tutee.name}! Tuition in progress
+                  <p className="font-black text-xl text-white tracking-tight">
+                    Session in Progress!
                   </p>
-                  <p className="text-sm text-white/90">
-                    {format(parseISO(tuitionInfo.slot.date), 'EEEE, d MMMM yyyy')} • {tuitionInfo.slot.startTime} - {tuitionInfo.slot.endTime}
+                  <p className="text-sm font-bold text-white/90 uppercase tracking-widest mt-0.5">
+                    {tuitionInfo.slot.startTime} - {tuitionInfo.slot.endTime}
                   </p>
                 </div>
               </div>
             ) : tuitionInfo?.type === 'upcoming' ? (
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 backdrop-blur-md rounded-lg">
-                  <CalendarIcon className="w-5 h-5 text-white" />
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/30 backdrop-blur-md rounded-2xl shadow-inner">
+                  <CalendarIcon className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="font-bold text-white">
-                    Hi {tutee.name}! Tuition in{' '}
-                    {tuitionInfo.days > 0 && (
-                      <>
-                        <span className="font-black">{tuitionInfo.days} {tuitionInfo.days === 1 ? 'day' : 'days'}</span>
-                        {(tuitionInfo.hours > 0 || tuitionInfo.minutes > 0) && ' and '}
-                      </>
-                    )}
-                    {tuitionInfo.hours > 0 && (
-                      <>
-                        <span className="font-black">{tuitionInfo.hours} {tuitionInfo.hours === 1 ? 'hour' : 'hours'}</span>
-                        {tuitionInfo.minutes > 0 && ' and '}
-                      </>
-                    )}
-                    {tuitionInfo.minutes > 0 && (
-                      <span className="font-black">{tuitionInfo.minutes} {tuitionInfo.minutes === 1 ? 'minute' : 'minutes'}</span>
-                    )}
-                    {tuitionInfo.days === 0 && tuitionInfo.hours === 0 && tuitionInfo.minutes === 0 && (
-                      <span className="font-black">soon!</span>
+                  <p className="font-black text-lg sm:text-xl text-white tracking-tight leading-tight">
+                    {tuitionInfo.days > 0 ? (
+                      <>{tuitionInfo.days} {tuitionInfo.days === 1 ? 'Day' : 'Days'} to go!</>
+                    ) : tuitionInfo.hours > 0 ? (
+                      <>{tuitionInfo.hours} {tuitionInfo.hours === 1 ? 'Hour' : 'Hours'} to go!</>
+                    ) : (
+                      <>{tuitionInfo.minutes} {tuitionInfo.minutes === 1 ? 'Minute' : 'Minutes'} to go!</>
                     )}
                   </p>
-                  <p className="text-sm text-white/90 font-medium">
-                    {format(parseISO(tuitionInfo.slot.date), 'EEEE, d MMMM yyyy')} • {tuitionInfo.slot.startTime} - {tuitionInfo.slot.endTime}
+                  <p className="text-xs sm:text-sm font-bold text-white/90 uppercase tracking-widest mt-1">
+                    {format(parseISO(tuitionInfo.slot.date), 'EEE, MMM d')} • {tuitionInfo.slot.startTime}
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 backdrop-blur-md rounded-lg">
-                  <CalendarIcon className="w-5 h-5 text-white" />
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/30 backdrop-blur-md rounded-2xl shadow-inner">
+                  <CalendarIcon className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="font-bold text-white">
-                    Hi {tutee.name}!
+                  <p className="font-black text-xl text-white tracking-tight">
+                    Hey {tutee.name}!
                   </p>
-                  <p className="text-sm text-white/90">
-                    No upcoming tuition sessions scheduled
+                  <p className="text-sm font-bold text-white/80 uppercase tracking-widest mt-0.5">
+                    No upcoming sessions
                   </p>
                 </div>
               </div>
@@ -503,341 +488,322 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 sm:mb-6">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="p-2 bg-indigo-100 rounded-lg flex-shrink-0">
-            <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-8">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-indigo-50 rounded-2xl shadow-inner">
+              <CalendarIcon className="w-6 h-6 text-indigo-600" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-gray-800 leading-tight">Tuition Calendar</h2>
+              <p className="text-sm font-bold text-gray-400 uppercase tracking-wider">Plan your sessions</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Available Dates</h2>
-            <p className="text-xs sm:text-sm text-gray-600">View and book available time slots</p>
-          </div>
+          {isAdmin && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl active:scale-95 w-full sm:w-auto justify-center group"
+            >
+              <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+              <span>Add Slot</span>
+            </button>
+          )}
         </div>
-        {isAdmin && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors-smooth press-effect text-sm sm:text-base w-full sm:w-auto justify-center"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Slot</span>
-          </button>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border-2 border-red-100 rounded-2xl flex items-center gap-3 animate-shake">
+            <XCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
+            <p className="text-sm font-bold text-red-700">{error}</p>
+          </div>
         )}
-      </div>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-          <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Calendar */}
-        <div>
-          <div className="mb-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 lg:gap-12">
+          {/* Calendar Container */}
+          <div className="bg-gray-50/50 rounded-3xl p-4 sm:p-6 border border-gray-100 shadow-inner">
             <Calendar
               onChange={handleDateChange}
               value={selectedDate}
               tileContent={tileContent}
               tileClassName={tileClassName}
-              className="w-full border-0 rounded-lg"
+              className="w-full border-0 rounded-2xl"
             />
+            
+            <div className="mt-6 flex flex-wrap gap-4 px-2">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full shadow-sm" />
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Available</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-amber-500 rounded-full shadow-sm" />
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Requested</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full shadow-sm" />
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Today</span>
+              </div>
+            </div>
           </div>
-          <style>{`
-            .react-calendar {
-              width: 100%;
-              border: none;
-              font-family: inherit;
-              background: white !important;
-              color: #111827 !important;
-            }
-            .react-calendar__navigation {
-              background: white !important;
-            }
-            .react-calendar__navigation button {
-              color: #111827 !important;
-              background: white !important;
-            }
-            .react-calendar__navigation button:enabled:hover,
-            .react-calendar__navigation button:enabled:focus {
-              background: #f3f4f6 !important;
-            }
-            .react-calendar__month-view__weekdays {
-              background: white !important;
-            }
-            .react-calendar__month-view__weekdays__weekday {
-              color: #111827 !important;
-            }
-            .react-calendar__month-view__days__day {
-              color: #111827 !important;
-            }
-            .react-calendar__month-view__days__day--neighboringMonth {
-              color: #9ca3af !important;
-            }
-            .react-calendar__tile {
-              padding: 0.75em 0.5em;
-              position: relative;
-              color: #111827 !important;
-              background: white !important;
-            }
-            .react-calendar__tile:enabled:hover {
-              background: #f3f4f6 !important;
-            }
-            .react-calendar__tile--active {
-              background: #4f46e5 !important;
-              color: white !important;
-            }
-            .react-calendar__tile--active:enabled:hover {
-              background: #4338ca !important;
-            }
-            .react-calendar__tile.has-available-slots {
-              background: #f0fdf4 !important;
-              color: #111827 !important;
-            }
-            .react-calendar__tile.has-available-slots:hover {
-              background: #dcfce7 !important;
-            }
-            .react-calendar__tile.has-requests {
-              background: #fef3c7 !important;
-              color: #111827 !important;
-            }
-            .react-calendar__tile.has-requests:hover {
-              background: #fde68a !important;
-            }
-            .react-calendar__tile.has-available-slots.has-requests {
-              background: #f0fdf4 !important;
-              color: #111827 !important;
-            }
-            .react-calendar__tile.has-available-slots.has-requests:hover {
-              background: #dcfce7 !important;
-            }
-            .react-calendar__tile--now {
-              background: #dbeafe !important;
-              border: 2px solid #3b82f6 !important;
-              font-weight: 600;
-              color: #111827 !important;
-            }
-            .react-calendar__tile--now:enabled:hover {
-              background: #bfdbfe !important;
-            }
-            .react-calendar__tile--now.has-available-slots {
-              background: #dcfce7 !important;
-              border: 2px solid #10b981 !important;
-              color: #111827 !important;
-            }
-            .react-calendar__tile--now.has-available-slots:enabled:hover {
-              background: #bbf7d0 !important;
-            }
-          `}</style>
-        </div>
 
-        {/* Time Slots */}
-        <div>
-          <div className="mb-4">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-2">
-              {format(selectedDate, 'EEEE, d MMMM yyyy')}
-            </h3>
+          {/* Time Slots & Agenda */}
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between mb-6 px-1">
+              <h3 className="text-xl font-black text-gray-800 tracking-tight">
+                {isSameDay(selectedDate, new Date()) ? 'Today' : format(selectedDate, 'EEEE, d MMM')}
+              </h3>
+              {slotsForSelectedDate.length > 0 && (
+                <span className="px-3 py-1 bg-gray-100 text-gray-500 text-[10px] font-black uppercase tracking-widest rounded-full">
+                  {slotsForSelectedDate.length} {slotsForSelectedDate.length === 1 ? 'Event' : 'Events'}
+                </span>
+              )}
+            </div>
+
             {loading ? (
               <div className="text-center py-8 text-gray-500">Loading...</div>
-            ) : slotsForSelectedDate.length === 0 && (!tutee || requestsForSelectedDate.length === 0) ? (
-              <div className="text-center py-8 text-gray-500">
-                <Clock className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                <p>No tuition for this date as of now</p>
-                {isAdmin ? (
-                  <button
-                    onClick={() => setShowAddModal(true)}
-                    className="mt-4 text-indigo-600 hover:text-indigo-700 font-medium"
-                  >
-                    Add a time slot
-                  </button>
-                ) : tutee ? (
-                  <div className="mt-4 space-y-2">
-                    <button
-                      onClick={() => {
-                        setEditingRequest(null);
-                        setShowBookingRequest(true);
-                      }}
-                      className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r ${tutee?.colorScheme.gradient || 'from-indigo-500 to-indigo-600'} text-white rounded-lg hover:opacity-90 transition-colors-smooth press-effect`}
-                    >
-                      <CalendarPlus className="w-4 h-4" />
-                      <span>Request Time Slot</span>
-                    </button>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => {
-                          setEditingSlot(null);
-                          setNewSlot({
-                            date: format(selectedDate, 'yyyy-MM-dd'),
-                            startTime: '09:00',
-                            endTime: '10:00',
-                            tuteeId: tutee.id,
-                            notes: '',
-                            eventType: 'exam',
-                          });
-                          setShowAddModal(true);
-                        }}
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors-smooth press-effect"
-                      >
-                        <CalendarPlus className="w-4 h-4" />
-                        <span>Add Exam</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditingSlot(null);
-                          setNewSlot({
-                            date: format(selectedDate, 'yyyy-MM-dd'),
-                            startTime: '09:00',
-                            endTime: '10:00',
-                            tuteeId: tutee.id,
-                            notes: '',
-                            eventType: 'test',
-                          });
-                          setShowAddModal(true);
-                        }}
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors-smooth press-effect"
-                      >
-                        <CalendarPlus className="w-4 h-4" />
-                        <span>Add Test</span>
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
             ) : (
-              <div className="space-y-3">
-                {slotsForSelectedDate.map((slot, index) => {
-                  const isOtherTuteeSlot = (slot as any).isOtherTuteeSlot;
-                  // Use the updated tutee from props if it matches, otherwise get from sync
-                  const slotTutee = slot.tuteeId 
-                    ? (tutee && slot.tuteeId === tutee.id ? tutee : getTuteeByIdSync(slot.tuteeId))
-                    : null;
-                  const isOwnSlot = !isAdmin && tutee && (!slot.tuteeId || slot.tuteeId === tutee.id);
-                  const isExamOrTest = slot.eventType === 'exam' || slot.eventType === 'test';
-                  const canEdit = isAdmin || (isOwnSlot && isExamOrTest);
-                  
-                  return (
-                    <div
-                    key={slot.id}
-                    className={`p-4 rounded-lg border-2 transition-smooth animate-fade-in-up ${
-                      isExamOrTest
-                        ? slot.eventType === 'exam' 
-                          ? 'border-red-200 bg-red-50'
-                          : 'border-blue-200 bg-blue-50'
-                        : slot.isAvailable && !isOtherTuteeSlot
-                        ? 'border-green-200 bg-green-50'
-                        : isOtherTuteeSlot
-                        ? 'border-orange-200 bg-orange-50 opacity-75'
-                        : 'border-gray-200 bg-gray-50'
-                    }`}
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <Clock className="w-4 h-4 text-gray-600" />
-                          <span className="font-semibold text-gray-800">
-                            {slot.startTime} - {slot.endTime}
-                          </span>
-                          {isExamOrTest && (
-                            <span 
-                              className={`text-xs px-2 py-1 rounded font-medium ${
-                                slot.eventType === 'exam' 
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-blue-100 text-blue-800'
+              <div className="flex-1 flex flex-col gap-6">
+                {/* 1. Empty State - only show if there are truly no events/requests */}
+                {slotsForSelectedDate.length === 0 && (!tutee || requestsForSelectedDate.length === 0) ? (
+                  <div className="text-center py-10 px-6 bg-gray-50/50 rounded-[2rem] border-2 border-dashed border-gray-100 flex flex-col items-center justify-center min-h-[200px]">
+                    <Clock className="w-12 h-12 text-gray-300 mb-3" />
+                    <p className="font-bold text-gray-400 text-lg">No sessions scheduled</p>
+                    {isAdmin && (
+                      <button
+                        onClick={() => setShowAddModal(true)}
+                        className="mt-4 text-indigo-600 font-black uppercase tracking-widest text-xs hover:underline underline-offset-4 transition-all"
+                      >
+                        Add a time slot
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {/* 2. List of Slots */}
+                    {slotsForSelectedDate.length > 0 && (
+                      <div className="space-y-4">
+                        {slotsForSelectedDate.map((slot, index) => {
+                          const isOtherTuteeSlot = (slot as any).isOtherTuteeSlot;
+                          const slotTutee = slot.tuteeId 
+                            ? (tutee && slot.tuteeId === tutee.id ? tutee : getTuteeByIdSync(slot.tuteeId))
+                            : null;
+                          const isOwnSlot = !isAdmin && tutee && (!slot.tuteeId || slot.tuteeId === tutee.id);
+                          const isExamOrTest = slot.eventType === 'exam' || slot.eventType === 'test';
+                          const canEdit = isAdmin || (isOwnSlot && isExamOrTest);
+                          
+                          return (
+                            <div
+                              key={slot.id}
+                              className={`p-5 rounded-3xl border-2 transition-all duration-300 animate-fade-in-up shadow-sm hover:shadow-md ${
+                                isExamOrTest
+                                  ? slot.eventType === 'exam' 
+                                    ? 'border-red-100 bg-red-50/50'
+                                    : 'border-blue-100 bg-blue-50/50'
+                                  : slot.isAvailable && !isOtherTuteeSlot
+                                  ? 'border-green-100 bg-green-50/50'
+                                  : isOtherTuteeSlot
+                                  ? 'border-orange-100 bg-orange-50/30 opacity-75'
+                                  : 'border-gray-100 bg-gray-50/50'
                               }`}
+                              style={{ animationDelay: `${index * 50}ms` }}
                             >
-                              {slot.eventType === 'exam' ? 'Exam' : 'Test'}
-                            </span>
-                          )}
-                          {slot.tuteeId && slotTutee && (
-                            <span 
-                              className={`text-xs px-2 py-1 rounded flex items-center gap-1 text-white bg-gradient-to-r ${slotTutee.colorScheme.gradient}`}
-                            >
-                              <User className="w-3 h-3" />
-                              {slotTutee.name}
-                            </span>
-                          )}
-                          {isOtherTuteeSlot && !isExamOrTest && (
-                            <span className="text-xs px-2 py-1 bg-orange-200 text-orange-800 rounded font-medium">
-                              Not Available
-                            </span>
-                          )}
-                          {!slot.isAvailable && !isOtherTuteeSlot && !isExamOrTest && (
-                            <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded">
-                              Booked
-                            </span>
-                          )}
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                    <div className={`p-2 rounded-xl ${
+                                      isExamOrTest 
+                                        ? slot.eventType === 'exam' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                                        : 'bg-indigo-100 text-indigo-600'
+                                    }`}>
+                                      <Clock className="w-4 h-4" />
+                                    </div>
+                                    <span className="font-black text-gray-800 text-lg">
+                                      {slot.startTime} - {slot.endTime}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                    {isExamOrTest && (
+                                      <span 
+                                        className={`text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest shadow-sm ${
+                                          slot.eventType === 'exam' 
+                                            ? 'bg-red-600 text-white'
+                                            : 'bg-blue-600 text-white'
+                                        }`}
+                                      >
+                                        {slot.eventType === 'exam' ? 'Exam' : 'Test'}
+                                      </span>
+                                    )}
+                                    {slot.tuteeId && slotTutee && (
+                                      <span 
+                                        className={`text-[10px] px-3 py-1 rounded-full flex items-center gap-1.5 text-white bg-gradient-to-r ${slotTutee.colorScheme.gradient} font-black uppercase tracking-widest shadow-sm`}
+                                      >
+                                        <User className="w-3 h-3" />
+                                        {slotTutee.name}
+                                      </span>
+                                    )}
+                                    {isOtherTuteeSlot && !isExamOrTest && (
+                                      <span className="text-[10px] px-3 py-1 bg-orange-100 text-orange-700 rounded-full font-black uppercase tracking-widest border border-orange-200">
+                                        Unavailable
+                                      </span>
+                                    )}
+                                    {!slot.isAvailable && !isOtherTuteeSlot && !isExamOrTest && (
+                                      <span className="text-[10px] px-3 py-1 bg-gray-200 text-gray-600 rounded-full font-black uppercase tracking-widest border border-gray-300">
+                                        Booked
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {slot.notes && (
+                                    <p className="text-sm font-medium text-gray-600 bg-white/50 p-3 rounded-2xl border border-white/20 shadow-inner">
+                                      {slot.notes}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-col gap-2 flex-shrink-0">
+                                  {canEdit && (
+                                    <>
+                                      <button
+                                        onClick={() => startEdit(slot)}
+                                        className="p-3 text-indigo-600 bg-white hover:bg-indigo-50 rounded-2xl shadow-sm border border-gray-100 transition-all active:scale-90"
+                                        aria-label="Edit"
+                                      >
+                                        <Edit2 className="w-5 h-5" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteSlot(slot.id)}
+                                        className="p-3 text-red-600 bg-white hover:bg-red-50 rounded-2xl shadow-sm border border-gray-100 transition-all active:scale-90"
+                                        aria-label="Delete"
+                                      >
+                                        <Trash2 className="w-5 h-5" />
+                                      </button>
+                                    </>
+                                  )}
+                                  {!isAdmin && slot.isAvailable && !isOtherTuteeSlot && tutee && isOwnSlot && !isExamOrTest && (
+                                    <button
+                                      onClick={() => {
+                                        setEditingRequest(null);
+                                        setShowBookingRequest(true);
+                                      }}
+                                      className="p-4 rounded-2xl shadow-lg transition-all active:scale-90 transform hover:scale-105"
+                                      style={{
+                                        background: `linear-gradient(135deg, ${tutee.colorScheme.primary === 'pink' ? '#ec4899, #db2777' : tutee.colorScheme.primary === 'purple' ? '#a855f7, #9333ea' : tutee.colorScheme.primary === 'blue' ? '#3b82f6, #2563eb' : tutee.colorScheme.primary === 'green' ? '#10b981, #059669' : tutee.colorScheme.primary === 'indigo' ? '#6366f1, #4f46e5' : '#6366f1, #4f46e5'})`,
+                                        color: 'white'
+                                      }}
+                                      aria-label="Request Booking"
+                                      title="Request this time slot"
+                                    >
+                                      <CalendarPlus className="w-6 h-6" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* 3. Booking Requests Section (for tutees) */}
+                    {!isAdmin && tutee && requestsForSelectedDate.length > 0 && (
+                      <div className="mt-2">
+                        <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2 ml-1">
+                          <AlertCircle className="w-4 h-4 text-amber-500" />
+                          Pending Requests
+                        </h4>
+                        <div className="space-y-3">
+                          {requestsForSelectedDate.map((request, index) => {
+                            const formatTime = (time: string) => {
+                              if (!time) return '';
+                              return time.includes(':') && time.split(':').length === 3 
+                                ? time.slice(0, 5) 
+                                : time;
+                            };
+
+                            const getStatusColor = (status: BookingRequest['status']) => {
+                              switch (status) {
+                                case 'pending': return 'border-amber-100 bg-amber-50/50';
+                                case 'approved': return 'border-green-100 bg-green-50/50';
+                                case 'rejected': return 'border-red-100 bg-red-50/50';
+                                case 'cancelled': return 'border-gray-100 bg-gray-50/50';
+                                default: return 'border-gray-100 bg-gray-50/50';
+                              }
+                            };
+
+                            const getStatusBadge = (status: BookingRequest['status']) => {
+                              const styles = {
+                                pending: 'bg-amber-100 text-amber-800',
+                                approved: 'bg-green-100 text-green-800',
+                                rejected: 'bg-red-100 text-red-800',
+                                cancelled: 'bg-gray-100 text-gray-800',
+                              };
+                              return (
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${styles[status]}`}>
+                                  {status}
+                                </span>
+                              );
+                            };
+
+                            return (
+                              <div
+                                key={request.id}
+                                className={`p-4 rounded-[2rem] border-2 transition-all hover:shadow-md animate-fade-in-up ${getStatusColor(request.status)}`}
+                                style={{ animationDelay: `${(slotsForSelectedDate.length + index) * 50}ms` }}
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                      <Clock className="w-4 h-4 text-gray-400" />
+                                      <span className="font-bold text-gray-700">
+                                        {formatTime(request.requestedStartTime)} - {formatTime(request.requestedEndTime)}
+                                      </span>
+                                      {getStatusBadge(request.status)}
+                                    </div>
+                                    {request.tuteeNotes && (
+                                      <p className="text-xs font-medium text-gray-500 italic">"{request.tuteeNotes}"</p>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-1">
+                                    {request.status === 'pending' && (
+                                      <button
+                                        onClick={() => {
+                                          setEditingRequest(request);
+                                          setShowBookingRequest(true);
+                                        }}
+                                        className="p-2 text-indigo-600 hover:bg-white rounded-xl transition-all active:scale-90"
+                                      >
+                                        <Edit2 className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => handleDeleteRequest(request.id)}
+                                      className="p-2 text-red-600 hover:bg-white rounded-xl transition-all active:scale-90"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                        {slot.notes && (
-                          <p className="text-sm text-gray-600 mt-1">{slot.notes}</p>
-                        )}
                       </div>
-                      <div className="flex gap-2 ml-4">
-                        {canEdit && (
-                          <>
-                            <button
-                              onClick={() => startEdit(slot)}
-                              className="p-2 text-indigo-600 hover:bg-indigo-50 rounded transition-colors-smooth press-effect"
-                              aria-label="Edit"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteSlot(slot.id)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors-smooth press-effect"
-                              aria-label="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                        {!isAdmin && slot.isAvailable && !isOtherTuteeSlot && tutee && isOwnSlot && !isExamOrTest && (
-                          <button
-                            onClick={() => {
-                              setEditingRequest(null);
-                              setShowBookingRequest(true);
-                            }}
-                            className="p-2 rounded transition-colors-smooth press-effect"
-                            style={{
-                              color: tutee.colorScheme.primary === 'pink' ? '#ec4899' : tutee.colorScheme.primary === 'purple' ? '#a855f7' : tutee.colorScheme.primary === 'blue' ? '#3b82f6' : tutee.colorScheme.primary === 'green' ? '#10b981' : tutee.colorScheme.primary === 'indigo' ? '#6366f1' : '#6366f1',
-                            }}
-                            onMouseEnter={(e) => {
-                              const primary = tutee.colorScheme.primary;
-                              const bgColor = primary === 'pink' ? '#fdf2f8' : primary === 'purple' ? '#faf5ff' : primary === 'blue' ? '#eff6ff' : primary === 'green' ? '#f0fdf4' : primary === 'indigo' ? '#eef2ff' : '#eef2ff';
-                              e.currentTarget.style.backgroundColor = bgColor;
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'transparent';
-                            }}
-                            aria-label="Request Booking"
-                            title="Request this time slot"
-                          >
-                            <CalendarPlus className="w-4 h-4" />
-                          </button>
-                        )}
-                        {isOtherTuteeSlot && !isExamOrTest && (
-                          <span className="text-xs text-orange-700 font-medium px-2 py-1">
-                            Another tutee's slot
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    </div>
-                  );
-                })}
+                    )}
+                  </>
+                )}
+
+                {/* 4. Action Buttons - Consolidated at the bottom (only for tutees) */}
                 {!isAdmin && tutee && (
-                  <div className="mt-3 space-y-2">
+                  <div className="mt-auto pt-6 space-y-3 border-t border-gray-100">
                     <button
                       onClick={() => {
                         setEditingRequest(null);
                         setShowBookingRequest(true);
                       }}
-                      className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r ${tutee?.colorScheme.gradient || 'from-indigo-500 to-indigo-600'} text-white rounded-lg hover:opacity-90 transition-colors-smooth press-effect animate-fade-in-up`}
+                      className={`w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r ${tutee?.colorScheme.gradient || 'from-indigo-500 to-indigo-600'} text-white rounded-2xl font-black uppercase tracking-widest shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200`}
                     >
-                      <CalendarPlus className="w-4 h-4" />
-                      <span>Request Different Time</span>
+                      <CalendarPlus className="w-6 h-6" />
+                      <span>Request Session</span>
                     </button>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => {
                           setEditingSlot(null);
@@ -851,9 +817,9 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                           });
                           setShowAddModal(true);
                         }}
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors-smooth press-effect"
+                        className="flex items-center justify-center gap-2 px-4 py-4 bg-red-50 text-red-600 border-2 border-red-100 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-red-100 transition-all active:scale-[0.98]"
                       >
-                        <CalendarPlus className="w-4 h-4" />
+                        <Plus className="w-4 h-4" />
                         <span>Add Exam</span>
                       </button>
                       <button
@@ -869,9 +835,9 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                           });
                           setShowAddModal(true);
                         }}
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors-smooth press-effect"
+                        className="flex items-center justify-center gap-2 px-4 py-4 bg-blue-50 text-blue-600 border-2 border-blue-100 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-blue-100 transition-all active:scale-[0.98]"
                       >
-                        <CalendarPlus className="w-4 h-4" />
+                        <Plus className="w-4 h-4" />
                         <span>Add Test</span>
                       </button>
                     </div>
@@ -879,163 +845,41 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                 )}
               </div>
             )}
-
-            {/* Booking Requests Section (for tutees) */}
-            {!isAdmin && tutee && requestsForSelectedDate.length > 0 && (
-              <div className="mt-6">
-                <h4 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-600" />
-                  Your Booking Requests
-                </h4>
-                <div className="space-y-3">
-                  {requestsForSelectedDate.map((request, index) => {
-                    // Format time to remove seconds if present (ensure HH:mm format)
-                    const formatTime = (time: string) => {
-                      if (!time) return '';
-                      // If time includes seconds (HH:mm:ss), remove them
-                      return time.includes(':') && time.split(':').length === 3 
-                        ? time.slice(0, 5) 
-                        : time;
-                    };
-
-                    const getStatusColor = (status: BookingRequest['status']) => {
-                      switch (status) {
-                        case 'pending':
-                          return 'border-amber-200 bg-amber-50';
-                        case 'approved':
-                          return 'border-green-200 bg-green-50';
-                        case 'rejected':
-                          return 'border-red-200 bg-red-50';
-                        case 'cancelled':
-                          return 'border-gray-200 bg-gray-50';
-                        default:
-                          return 'border-gray-200 bg-gray-50';
-                      }
-                    };
-
-                    const getStatusBadge = (status: BookingRequest['status']) => {
-                      const styles = {
-                        pending: 'bg-amber-100 text-amber-800',
-                        approved: 'bg-green-100 text-green-800',
-                        rejected: 'bg-red-100 text-red-800',
-                        cancelled: 'bg-gray-100 text-gray-800',
-                      };
-                      return (
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${styles[status]}`}>
-                          {status.charAt(0).toUpperCase() + status.slice(1)}
-                        </span>
-                      );
-                    };
-
-                    return (
-                      <div
-                        key={request.id}
-                        className={`p-4 rounded-lg border-2 transition-smooth animate-fade-in-up ${getStatusColor(request.status)}`}
-                        style={{ animationDelay: `${(slotsForSelectedDate.length + index) * 50}ms` }}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <Clock className="w-4 h-4 text-gray-600" />
-                              <span className="font-semibold text-gray-800">
-                                {formatTime(request.requestedStartTime)} - {formatTime(request.requestedEndTime)}
-                              </span>
-                              {getStatusBadge(request.status)}
-                            </div>
-                            {request.tuteeNotes && (
-                              <p className="text-sm text-gray-600 mt-1">{request.tuteeNotes}</p>
-                            )}
-                            {request.adminNotes && (
-                              <p className="text-sm text-indigo-700 mt-1 font-medium">
-                                Admin: {request.adminNotes}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex gap-2 ml-4">
-                            {request.status === 'pending' && (
-                              <>
-                                <button
-                                  onClick={() => {
-                                    setEditingRequest(request);
-                                    setShowBookingRequest(true);
-                                  }}
-                                  className="p-2 text-indigo-600 hover:bg-indigo-50 rounded transition-colors-smooth press-effect"
-                                  aria-label="Edit Request"
-                                  title="Edit this request"
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteRequest(request.id)}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors-smooth press-effect"
-                                  aria-label="Delete Request"
-                                  title="Delete this request"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </>
-                            )}
-                            {/* Allow deletion of all request statuses */}
-                            {request.status !== 'pending' && (
-                              <button
-                                onClick={() => handleDeleteRequest(request.id)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors-smooth press-effect"
-                                aria-label="Delete Request"
-                                title="Delete this request"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
 
       {/* Add/Edit Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-modal-backdrop">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full animate-modal-content">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-800">
-                {editingSlot 
-                  ? editingSlot.eventType === 'exam' 
-                    ? 'Edit Exam' 
-                    : editingSlot.eventType === 'test'
-                    ? 'Edit Test'
-                    : 'Edit Time Slot'
-                  : 'Add Time Slot'}
-              </h3>
+      {showAddModal && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-modal-backdrop">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl p-6 sm:p-10 max-w-lg w-full my-auto animate-modal-content border border-white/20 relative">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">
+                  {editingSlot 
+                    ? editingSlot.eventType === 'exam' 
+                      ? 'Edit Exam' 
+                      : editingSlot.eventType === 'test'
+                      ? 'Edit Test'
+                      : 'Edit Slot'
+                    : 'New Slot'}
+                </h3>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                  {format(parseISO(newSlot.date), 'EEEE, MMM d')}
+                </p>
+              </div>
               <button
                 onClick={cancelEdit}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors-smooth press-effect"
+                className="p-3 hover:bg-gray-100 rounded-2xl transition-all active:scale-90"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-6 h-6 text-gray-300" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={newSlot.date}
-                  onChange={(e) => setNewSlot({ ...newSlot, date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
-              </div>
-
+            <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
                     Start Time
                   </label>
                   <input
@@ -1043,11 +887,11 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                     step="60"
                     value={newSlot.startTime}
                     onChange={(e) => setNewSlot({ ...newSlot, startTime: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-bold text-gray-800 shadow-inner"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
                     End Time
                   </label>
                   <input
@@ -1055,81 +899,79 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                     step="60"
                     value={newSlot.endTime}
                     onChange={(e) => setNewSlot({ ...newSlot, endTime: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-bold text-gray-800 shadow-inner"
                   />
                 </div>
               </div>
 
               {isAdmin && (
-                <div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                    Assigned Tutee
+                  </label>
                   <Select
                     value={newSlot.tuteeId}
                     onChange={(value) => setNewSlot({ ...newSlot, tuteeId: value })}
                     options={tuteeOptions}
                     placeholder="All Tutees"
-                    label="For Tutee (optional)"
                     searchable={tuteeOptions.length > 5}
                   />
                 </div>
               )}
 
-              <div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                  Event Category
+                </label>
                 <Select
                   value={newSlot.eventType}
                   onChange={(value) => setNewSlot({ ...newSlot, eventType: value as 'time_slot' | 'exam' | 'test' })}
-                  options={
-                    isAdmin
-                      ? [
-                          { value: 'time_slot', label: 'Time Slot' },
-                          { value: 'exam', label: 'Exam' },
-                          { value: 'test', label: 'Test' },
-                        ]
-                      : [
-                          { value: 'time_slot', label: 'Time Slot' },
-                          { value: 'exam', label: 'Exam' },
-                          { value: 'test', label: 'Test' },
-                        ]
-                  }
-                  placeholder="Select event type"
-                  label="Event Type"
+                  options={[
+                    { value: 'time_slot', label: 'Standard Session' },
+                    { value: 'exam', label: 'Major Exam' },
+                    { value: 'test', label: 'Class Test' },
+                  ]}
+                  placeholder="Select category"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notes (optional)
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                  Special Notes
                 </label>
                 <textarea
                   value={newSlot.notes}
                   onChange={(e) => setNewSlot({ ...newSlot, notes: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="Add any notes about this time slot..."
+                  className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-medium text-gray-800 shadow-inner"
+                  placeholder="Add any reminders..."
                 />
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-4 pt-4">
                 <button
                   onClick={cancelEdit}
-                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors-smooth press-effect"
+                  className="flex-1 px-6 py-4 bg-gray-50 text-gray-500 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 transition-all active:scale-95"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={editingSlot ? () => handleUpdateSlot(editingSlot) : handleAddSlot}
-                  className={`flex-1 px-4 py-2 text-white rounded-lg font-semibold hover:opacity-90 transition-colors-smooth press-effect ${
+                  className={`flex-1 px-6 py-4 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all ${
                     tutee && !isAdmin
                       ? `bg-gradient-to-r ${tutee.colorScheme.gradient}`
-                      : 'bg-indigo-600 hover:bg-indigo-700'
+                      : 'bg-indigo-600 shadow-indigo-200'
                   }`}
                 >
-                  {editingSlot ? 'Update' : 'Add'} Slot
+                  {editingSlot ? 'Save Changes' : 'Create Session'}
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
+
 
       {/* Delete Confirmation Modal for Time Slots */}
       <ConfirmationModal
@@ -1185,8 +1027,7 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
           }}
         />
       )}
-    </div>
-    {/* Feedback Button - only show if tutee is logged in (not admin mode) */}
+      {/* Feedback Button - only show if tutee is logged in (not admin mode) */}
     {!isAdmin && tutee && <FeedbackButton tutee={tutee} />}
     </>
   );

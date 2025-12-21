@@ -224,74 +224,129 @@ const GlobalFileManager = ({ tutees }: GlobalFileManagerProps) => {
             <p className="text-gray-500">No documents have been shared yet.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-6 md:-mx-8">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50/50">
-                  <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">File Details</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Tuition Group</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Uploaded By</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredFiles.map((file) => (
-                  <tr key={file.id} className="group hover:bg-indigo-50/30 transition-colors">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white rounded-xl shadow-sm border border-gray-100 group-hover:border-indigo-100">
-                          <FileText className="w-5 h-5 text-indigo-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-800 pr-4">{file.fileName}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{formatFileSize(file.fileSize)}</span>
-                            <span className="w-1 h-1 bg-gray-200 rounded-full" />
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{format(new Date(file.createdAt), 'MMM d, yyyy')}</span>
+          <div>
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto -mx-8">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50/50">
+                    <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">File Details</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Tuition Group</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Uploaded By</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredFiles.map((file) => (
+                    <tr key={file.id} className="group hover:bg-indigo-50/30 transition-colors">
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-white rounded-xl shadow-sm border border-gray-100 group-hover:border-indigo-100">
+                            <FileText className="w-5 h-5 text-indigo-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-gray-800 pr-4">{file.fileName}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{formatFileSize(file.fileSize)}</span>
+                              <span className="w-1 h-1 bg-gray-200 rounded-full" />
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{format(new Date(file.createdAt), 'MMM d, yyyy')}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-8 h-8 bg-gradient-to-br ${getTuteeColor(file.tuteeId)} rounded-lg flex items-center justify-center text-white shadow-sm`}>
-                          {getTuteeIcon(file.tuteeId)}
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-8 h-8 bg-gradient-to-br ${getTuteeColor(file.tuteeId)} rounded-lg flex items-center justify-center text-white shadow-sm`}>
+                            {getTuteeIcon(file.tuteeId)}
+                          </div>
+                          <span className="text-xs font-black text-gray-700 tracking-tight">{file.tuteeName}</span>
                         </div>
-                        <span className="text-xs font-black text-gray-700 tracking-tight">{file.tuteeName}</span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                          file.uploadedBy === 'Admin' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
+                        }`}>
+                          {file.uploadedBy === 'Admin' ? <Shield className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                          {file.uploadedBy}
+                        </div>
+                      </td>
+                      <td className="px-8 py-5 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <a
+                            href={getFileUrl(file.filePath)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-white rounded-xl shadow-sm border border-transparent hover:border-indigo-100 transition-all"
+                            title="View/Download"
+                          >
+                            <Download className="w-4 h-4" />
+                          </a>
+                          <button
+                            onClick={() => setDeleteConfirm({ isOpen: true, file })}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-xl shadow-sm border border-transparent hover:border-red-100 transition-all"
+                            title="Delete permanently"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card List */}
+            <div className="md:hidden space-y-4">
+              {filteredFiles.map((file) => (
+                <div key={file.id} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm active:bg-gray-50 transition-colors">
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600 shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-gray-800 break-words">{file.fileName}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{formatFileSize(file.fileSize)}</span>
+                        <span className="w-1 h-1 bg-gray-200 rounded-full" />
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{format(new Date(file.createdAt), 'MMM d')}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
-                        file.uploadedBy === 'Admin' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
-                      }`}>
-                        {file.uploadedBy === 'Admin' ? <Shield className="w-3 h-3" /> : <User className="w-3 h-3" />}
-                        {file.uploadedBy}
+                    </div>
+                    <div className="flex gap-2">
+                      <a
+                        href={getFileUrl(file.filePath)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 text-indigo-600 bg-indigo-50 rounded-lg active:scale-95 transition-all"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
+                      <button
+                        onClick={() => setDeleteConfirm({ isOpen: true, file })}
+                        className="p-2 text-red-600 bg-red-50 rounded-lg active:scale-95 transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-6 h-6 bg-gradient-to-br ${getTuteeColor(file.tuteeId)} rounded-md flex items-center justify-center text-white text-[10px]`}>
+                        {getTuteeIcon(file.tuteeId)}
                       </div>
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <a
-                          href={getFileUrl(file.filePath)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-white rounded-xl shadow-sm border border-transparent hover:border-indigo-100 transition-all"
-                          title="View/Download"
-                        >
-                          <Download className="w-4 h-4" />
-                        </a>
-                        <button
-                          onClick={() => setDeleteConfirm({ isOpen: true, file })}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-xl shadow-sm border border-transparent hover:border-red-100 transition-all"
-                          title="Delete permanently"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <span className="text-[10px] font-black text-gray-700 uppercase tracking-wider">{file.tuteeName}</span>
+                    </div>
+                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${
+                      file.uploadedBy === 'Admin' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
+                    }`}>
+                      {file.uploadedBy === 'Admin' ? <Shield className="w-2.5 h-2.5" /> : <User className="w-2.5 h-2.5" />}
+                      {file.uploadedBy}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

@@ -245,7 +245,7 @@ const BookingRequestsAdmin = () => {
                       {getStatusBadge(request.status)}
                     </div>
 
-                    <div className="space-y-1 text-sm text-gray-600 ml-8">
+                    <div className="space-y-1 text-sm text-gray-600 ml-1 sm:ml-8">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4" />
                         <span>{format(parseISO(request.requestedDate), 'EEEE, d MMMM yyyy')}</span>

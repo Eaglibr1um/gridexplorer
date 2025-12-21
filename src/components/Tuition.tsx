@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
-import { GraduationCap, Lock, BookOpen, Shield, LogOut } from 'lucide-react';
+import { 
+  GraduationCap, Lock, BookOpen, Shield, LogOut, ChevronRight,
+  User, Star, Heart, Zap, Target, Award, Trophy, Lightbulb, 
+  Brain, Rocket, Sparkles, BookMarked, School, PenTool, 
+  Calculator, FlaskConical, Atom, Music, Palette, Camera, 
+  Gamepad2, Code, Globe, Coffee, Smile
+} from 'lucide-react';
 import { getTutees, verifyPin } from '../config/tutees';
 import { verifyAdminPin, ADMIN_CONFIG } from '../config/admin';
 import { Tutee } from '../types/tuition';
@@ -14,44 +20,39 @@ import TuteeDeleteModal from './tuition/admin/TuteeDeleteModal';
 import ComponentManager from './tuition/admin/ComponentManager';
 import FeedbackAdmin from './tuition/admin/FeedbackAdmin';
 import EarningsAdmin from './tuition/admin/EarningsAdmin';
-import EarningsSettingsEditor from './tuition/admin/EarningsSettingsEditor';
 import SpellingQuizConfig from './tuition/admin/SpellingQuizConfig';
 import GPTChatAdmin from './tuition/admin/GPTChatAdmin';
 import GlobalFileManager from './tuition/admin/GlobalFileManager';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
-// Icon mapping for tutees - dynamically import icons as needed
-import * as LucideIcons from 'lucide-react';
-
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   BookOpen,
   GraduationCap,
-  // Add more icons dynamically
-  User: LucideIcons.User,
-  Star: LucideIcons.Star,
-  Heart: LucideIcons.Heart,
-  Zap: LucideIcons.Zap,
-  Target: LucideIcons.Target,
-  Award: LucideIcons.Award,
-  Trophy: LucideIcons.Trophy,
-  Lightbulb: LucideIcons.Lightbulb,
-  Brain: LucideIcons.Brain,
-  Rocket: LucideIcons.Rocket,
-  Sparkles: LucideIcons.Sparkles,
-  BookMarked: LucideIcons.BookMarked,
-  School: LucideIcons.School,
-  PenTool: LucideIcons.PenTool,
-  Calculator: LucideIcons.Calculator,
-  FlaskConical: LucideIcons.FlaskConical,
-  Atom: LucideIcons.Atom,
-  Music: LucideIcons.Music,
-  Palette: LucideIcons.Palette,
-  Camera: LucideIcons.Camera,
-  Gamepad2: LucideIcons.Gamepad2,
-  Code: LucideIcons.Code,
-  Globe: LucideIcons.Globe,
-  Coffee: LucideIcons.Coffee,
-  Smile: LucideIcons.Smile,
+  User,
+  Star,
+  Heart,
+  Zap,
+  Target,
+  Award,
+  Trophy,
+  Lightbulb,
+  Brain,
+  Rocket,
+  Sparkles,
+  BookMarked,
+  School,
+  PenTool,
+  Calculator,
+  FlaskConical,
+  Atom,
+  Music,
+  Palette,
+  Camera,
+  Gamepad2,
+  Code,
+  Globe,
+  Coffee,
+  Smile,
 };
 
 const Tuition = () => {
@@ -195,97 +196,86 @@ const Tuition = () => {
     if (iconMap[iconName]) {
       return iconMap[iconName];
     }
-    // Try dynamic lookup from LucideIcons
-    const IconComponent = (LucideIcons as any)[iconName];
+    // Try dynamic lookup from iconMap
+    const IconComponent = iconMap[iconName];
     return IconComponent || GraduationCap;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4 sm:p-6 md:p-8 safe-area-inset">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 safe-area-inset pb-20 sm:pb-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
         {/* Header */}
-        <div className="text-center mb-8 sm:mb-12">
-          <GraduationCap className="w-16 h-16 sm:w-20 sm:h-20 text-indigo-600 mx-auto mb-4 sm:mb-6" />
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-indigo-700 mb-3 px-2">
+        <div className="text-center pt-8 mb-8 sm:mb-12">
+          <GraduationCap className="w-12 h-12 sm:w-20 sm:h-20 text-indigo-600 mx-auto mb-4 sm:mb-6 animate-bounce-slow" />
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-3 px-2">
             Tuition Portal
           </h1>
-          <p className="text-gray-600 text-lg sm:text-xl px-2">
+          <p className="text-gray-600 text-base sm:text-xl px-2 max-w-2xl mx-auto">
             Select your tutee page to access quizzes and learning materials
           </p>
         </div>
 
         {/* Tutee Selection Grid */}
         {loadingTutees ? (
-          <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-6 sm:p-8">
-                <div className="flex items-center gap-4 mb-4">
-                  <Skeleton className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl" />
+              <div key={i} className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="w-16 h-16 rounded-2xl" />
                   <div className="flex-1 space-y-2">
                     <Skeleton className="h-6 w-3/4" />
                     <Skeleton className="h-4 w-1/2" />
                   </div>
                 </div>
-                <Skeleton className="h-4 w-1/4 mt-4" />
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
-            {tutees.map((tutee) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
+            {tutees.map((tutee, index) => {
             const IconComponent = getIcon(tutee.icon);
             const gradientClass = `bg-gradient-to-br ${tutee.colorScheme.gradient}`;
-            
-            // Update tutee in list when edited
-            const handleTuteeUpdate = (updatedTutee: Tutee) => {
-              setTutees(prev => prev.map(t => t.id === updatedTutee.id ? updatedTutee : t));
-            };
-
-            const handleTuteeDelete = (deletedId: string) => {
-              setTutees(prev => prev.filter(t => t.id !== deletedId));
-            };
             
             return (
               <div
                 key={tutee.id}
-                className="relative bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-6 sm:p-8 hover:shadow-2xl transition-smooth card-hover animate-fade-in-up"
-                style={{ animationDelay: `${tutees.indexOf(tutee) * 100}ms` }}
+                className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-5 sm:p-8 hover:shadow-2xl transition-smooth card-hover animate-fade-in-up touch-manipulation"
+                style={{ animationDelay: `${index * 100}ms` }}
               >
                 {isAdmin && (
-                  <div className="absolute top-2 right-2 z-10 flex gap-1 items-center">
-                    <TuteeDeleteModal tutee={tutee} onDeleted={handleTuteeDelete} />
-                    <TuteeEditor tutee={tutee} onUpdate={handleTuteeUpdate} />
-                    <EarningsSettingsEditor 
-                      tutee={tutee} 
-                      onSelectTutee={(tuteeId) => {
-                        setSelectedEarningsTuteeId(tuteeId);
-                      }}
-                    />
+                  <div className="absolute top-3 right-3 z-10 flex gap-1 items-center bg-white/90 backdrop-blur-md p-1 rounded-xl shadow-sm">
+                    <TuteeDeleteModal tutee={tutee} onDeleted={(id) => setTutees(prev => prev.filter(t => t.id !== id))} />
+                    <TuteeEditor tutee={tutee} onUpdate={(updated) => setTutees(prev => prev.map(t => t.id === updated.id ? updated : t))} />
                   </div>
                 )}
                 <button
                   onClick={() => handleTuteeClick(tutee)}
-                  className="w-full text-left group"
+                  className="w-full text-left group flex flex-col h-full"
                 >
                   <div className="flex items-center gap-4 mb-4">
-                    <div className={`p-3 sm:p-4 ${gradientClass} rounded-xl sm:rounded-2xl flex-shrink-0 group-hover:scale-110 transition-transform-smooth`}>
+                    <div className={`p-4 ${gradientClass} rounded-2xl shadow-lg flex-shrink-0 group-hover:scale-110 transition-transform-smooth group-active:scale-95`}>
                       <IconComponent className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">
+                      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1 group-hover:text-indigo-600 transition-colors">
                         {tutee.name}
                       </h2>
                       {tutee.description && (
-                        <p className="text-sm sm:text-base text-gray-600 truncate">
+                        <p className="text-sm sm:text-base text-gray-600 line-clamp-2">
                           {tutee.description}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-sm text-gray-500 mt-4">
-                    <Lock className="w-4 h-4" />
-                    <span>PIN Protected</span>
+                  <div className="mt-auto flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <Lock className="w-4 h-4" />
+                      <span className="font-medium">PIN Protected</span>
+                    </div>
+                    <div className="p-2 rounded-full bg-gray-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                      <ChevronRight className="w-5 h-5" />
+                    </div>
                   </div>
                 </button>
               </div>
@@ -293,104 +283,63 @@ const Tuition = () => {
           })}
           {isAdmin && (
             <TuteeCreator 
-              onCreated={(newTutee) => {
-                setTutees(prev => [...prev, newTutee]);
-              }}
+              onCreated={(newTutee) => setTutees(prev => [...prev, newTutee])}
             />
           )}
           </div>
         )}
 
-        {/* Admin Banner */}
+        {/* Admin Section (only in admin mode) */}
         {isAdmin && (
-          <div className="mb-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl p-4 flex items-center justify-between shadow-lg">
-            <div className="flex items-center gap-3">
-              <Shield className="w-6 h-6" />
-              <div>
-                <h3 className="font-bold text-lg">Admin Mode Active</h3>
-                <p className="text-sm text-purple-100">You can now manage calendar dates</p>
+          <div className="space-y-6 animate-fade-in">
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+              <div className="flex items-center gap-4 text-center sm:text-left">
+                <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                  <Shield className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-xl sm:text-2xl">Admin Mode Active</h3>
+                </div>
               </div>
+              <button
+                onClick={handleExitAdmin}
+                className="flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 font-bold rounded-xl hover:bg-purple-50 transition-all shadow-lg press-effect w-full sm:w-auto justify-center"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Exit Admin</span>
+              </button>
             </div>
-            <button
-              onClick={handleExitAdmin}
-              className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors-smooth press-effect"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Exit Admin</span>
-            </button>
-          </div>
-        )}
 
-        {/* Calendar Section */}
-        <div className="mb-8">
-        </div>
-
-        {/* Booking Requests Admin (only in admin mode) */}
-        {isAdmin && (
-          <div className="mb-8">
-            <BookingRequestsAdmin />
-          </div>
-        )}
-
-        {/* Feedback Admin (only in admin mode) */}
-        {isAdmin && (
-          <div id="feedback-admin-section" className="mb-8">
-            <FeedbackAdmin />
-          </div>
-        )}
-
-        {/* Earnings Admin (only in admin mode) */}
-        {isAdmin && (
-          <div id="earnings-admin-section" className="mb-8">
-            <EarningsAdmin 
-              tutees={tutees} 
-              initialTuteeId={selectedEarningsTuteeId}
-              onTuteeSelectChange={setSelectedEarningsTuteeId}
-            />
-          </div>
-        )}
-
-        {/* Module Manager (only in admin mode) */}
-        {isAdmin && (
-          <div id="module-manager-section" className="mb-8">
-            <ComponentManager tutees={tutees} />
-          </div>
-        )}
-
-        {/* Global File Manager (only in admin mode) */}
-        {isAdmin && (
-          <div id="global-file-admin-section" className="mb-8">
-            <GlobalFileManager tutees={tutees} />
-          </div>
-        )}
-
-        {/* Spelling Quiz Config (only in admin mode) */}
-        {isAdmin && (
-          <div id="spelling-quiz-admin-section" className="mb-8">
-            <SpellingQuizConfig tutees={tutees} />
-          </div>
-        )}
-
-        {/* GPT Chat History (only in admin mode) */}
-        {isAdmin && (
-          <div id="gpt-chat-admin-section" className="mb-8">
-            <GPTChatAdmin />
+            <div className="grid grid-cols-1 gap-6">
+              <BookingRequestsAdmin />
+              <FeedbackAdmin />
+              <EarningsAdmin 
+                tutees={tutees} 
+                initialTuteeId={selectedEarningsTuteeId}
+                onTuteeSelectChange={setSelectedEarningsTuteeId}
+              />
+              <ComponentManager tutees={tutees} />
+              <GlobalFileManager tutees={tutees} />
+              <SpellingQuizConfig tutees={tutees} />
+              <GPTChatAdmin />
+            </div>
           </div>
         )}
 
         {/* Admin Access Button (only when not in admin mode) */}
         {!isAdmin && (
-          <div className="text-center mb-8">
+          <div className="text-center py-8">
             <button
               onClick={handleAdminClick}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors-smooth press-effect text-sm font-medium mx-auto"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600/10 text-purple-700 rounded-xl hover:bg-purple-600 hover:text-white transition-all duration-300 font-bold group press-effect"
             >
-              <Shield className="w-4 h-4" />
+              <Shield className="w-5 h-5 group-hover:rotate-12 transition-transform" />
               <span>Admin Access</span>
             </button>
           </div>
         )}
       </div>
+
 
       {/* PIN Protection Modal */}
       {showPinModal && pendingTutee && (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { BookOpen, RotateCcw, AlertCircle } from 'lucide-react';
+import { BookOpen, RotateCcw, AlertCircle, ArrowRight } from 'lucide-react';
 import { Tutee } from '../../../types/tuition';
 import { fetchLearningPoints, LearningPoint as LearningPointType } from '../../../services/componentService';
 import { fetchLearningPointReviews } from '../../../services/learningPointReviewService';
@@ -147,59 +147,64 @@ const LearningPoints = ({ tutee }: LearningPointsProps) => {
 
   return (
     <>
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-5 sm:p-6 md:p-8 hover:shadow-2xl transition-smooth card-hover animate-fade-in-up relative">
+      <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 group border border-white/40 overflow-hidden flex flex-col animate-fade-in-up touch-manipulation relative h-full">
         {/* Review Badge */}
         {sessionsDueForReview > 0 && (
-          <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full px-3 py-1 flex items-center gap-1.5 shadow-lg animate-pulse z-10">
+          <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full px-3 py-1 flex items-center gap-1.5 shadow-lg animate-pulse z-10">
             <AlertCircle className="w-4 h-4" />
-            <span className="text-xs font-bold">{sessionsDueForReview}</span>
+            <span className="text-xs font-black">{sessionsDueForReview}</span>
           </div>
         )}
         
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`p-2 sm:p-3 bg-gradient-to-br ${gradientClass} rounded-lg sm:rounded-xl flex-shrink-0`}>
-            <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Learning Points</h2>
-            <p className="text-sm sm:text-base text-gray-600">{tutee.name}</p>
-          </div>
-        </div>
-
-        {/* Review Alert Banner */}
-        {sessionsDueForReview > 0 && (
-          <div className="mb-4 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-lg flex items-center gap-2 animate-fade-in">
-            <RotateCcw className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-yellow-800">
-                {sessionsDueForReview} session{sessionsDueForReview !== 1 ? 's' : ''} due for review! 📚
-              </p>
-              <p className="text-xs text-yellow-700">Review your learning points to strengthen your memory</p>
+        <div className="p-6 sm:p-8 flex-1">
+          <div className="flex items-center gap-4 mb-6">
+            <div className={`p-4 bg-gradient-to-br ${gradientClass} rounded-2xl shadow-lg transform group-hover:rotate-6 transition-transform duration-300`}>
+              <BookOpen className="w-8 h-8 text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-2xl font-black text-gray-800 leading-tight">Learning Points</h2>
+              <p className="text-gray-500 font-medium">Spaced Repetition</p>
             </div>
           </div>
-        )}
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className={`${bgClass} rounded-lg p-3 sm:p-4`}>
-            <p className="text-xs sm:text-sm text-gray-600 mb-1">Total Sessions</p>
-            <p className={`text-xl sm:text-2xl font-bold ${textClass}`}>
-              {totalSessions}
-            </p>
-          </div>
-          <div className={`${bgClass} rounded-lg p-3 sm:p-4`}>
-            <p className="text-xs sm:text-sm text-gray-600 mb-1">Total Learning Points</p>
-            <p className={`text-xl sm:text-2xl font-bold ${textClass}`}>
-              {totalLearningPoints}
-            </p>
+          {/* Review Alert Banner */}
+          {sessionsDueForReview > 0 && (
+            <div className="mb-6 p-4 bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl flex items-center gap-3 animate-fade-in shadow-sm">
+              <RotateCcw className="w-6 h-6 text-yellow-600 flex-shrink-0 animate-spin-slow" />
+              <div className="flex-1">
+                <p className="text-sm font-black text-yellow-800 uppercase tracking-tight">
+                  Review Due! 📚
+                </p>
+                <p className="text-xs font-bold text-yellow-700/80 uppercase tracking-widest mt-0.5">Time to strengthen memory</p>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
+            <div className={`${bgClass} rounded-2xl p-4 border border-white/50 shadow-inner`}>
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Sessions</p>
+              <p className={`text-2xl font-black ${textClass}`}>
+                {totalSessions}
+              </p>
+            </div>
+            <div className={`${bgClass} rounded-2xl p-4 border border-white/50 shadow-inner`}>
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Points</p>
+              <p className={`text-2xl font-black ${textClass}`}>
+                {totalLearningPoints}
+              </p>
+            </div>
           </div>
         </div>
 
-        <button
-          onClick={handleClick}
-          className={`w-full bg-gradient-to-r ${gradientClass} text-white py-3.5 sm:py-3 rounded-lg font-semibold text-base sm:text-lg hover:opacity-90 transition-smooth press-effect min-h-[44px] touch-manipulation relative`}
-        >
-          {points.length === 0 ? 'Add Learning Points ✨' : sessionsDueForReview > 0 ? `Review ${sessionsDueForReview} Session${sessionsDueForReview !== 1 ? 's' : ''} 🔔` : 'View & Manage Points'}
-        </button>
+        <div className="p-6 pt-0">
+          <button
+            onClick={handleClick}
+            className={`w-full bg-gradient-to-r ${gradientClass} text-white py-4 rounded-2xl font-black text-lg shadow-lg hover:shadow-xl hover:opacity-95 transform active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 uppercase tracking-widest`}
+          >
+            {points.length === 0 ? 'Start Learning ✨' : sessionsDueForReview > 0 ? `Review Now 🔔` : 'View points'}
+            <ArrowRight className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Sparkles, Loader2, CheckCircle2, AlertCircle, Send, ArrowRight, Brain, BookOpen, RotateCcw } from 'lucide-react';
 import { Tutee } from '../../../types/tuition';
 import { generateReviewQuestions, verifyReviewAnswers, VerificationResult } from '../../../services/learningPointReviewService';
@@ -79,11 +80,11 @@ const LearningPointReviewGPTModal = ({
 
   const gradientClass = tutee.colorScheme.gradient;
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[70] flex items-center justify-center p-4 animate-modal-backdrop">
-      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-modal-content border border-indigo-100">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-modal-backdrop">
+      <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl p-6 sm:p-10 max-w-2xl w-full my-auto animate-modal-content border border-white/20 relative">
         {/* Header */}
-        <div className={`p-6 bg-gradient-to-r ${gradientClass} text-white flex items-center justify-between shadow-lg`}>
+        <div className={`p-6 bg-gradient-to-r ${gradientClass} text-white flex items-center justify-between shadow-lg rounded-t-[2.5rem] -mx-6 -mt-6 sm:-mx-10 sm:-mt-10 mb-8`}>
           <div className="flex items-center gap-4">
             <div className="bg-white/20 p-2 rounded-2xl backdrop-blur-sm">
               <Brain className="w-6 h-6 text-white" />
@@ -95,14 +96,14 @@ const LearningPointReviewGPTModal = ({
           </div>
           <button 
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+            className="p-3 hover:bg-white/20 rounded-2xl transition-all active:scale-90"
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6 text-white" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+        <div className="space-y-6">
           {step === 'loading' && (
             <div className="h-64 flex flex-col items-center justify-center text-center space-y-4">
               <div className="relative">
@@ -110,8 +111,8 @@ const LearningPointReviewGPTModal = ({
                 <Sparkles className="absolute inset-0 m-auto w-8 h-8 text-indigo-600 animate-pulse" />
               </div>
               <div>
-                <p className="text-lg font-bold text-gray-800">Generating Review Questions...</p>
-                <p className="text-sm text-gray-500">GPT is analyzing your learning points</p>
+                <p className="text-lg font-bold text-gray-800">Generating Questions...</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">AI is analyzing your points</p>
               </div>
             </div>
           )}
@@ -124,26 +125,28 @@ const LearningPointReviewGPTModal = ({
                 </p>
               </div>
 
-              {questions.map((q, i) => (
-                <div key={i} className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className={`flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br ${gradientClass} flex items-center justify-center mt-1 text-white font-black text-sm`}>
-                      {i + 1}
+              <div className="max-h-[50vh] overflow-y-auto pr-2 space-y-8 custom-scrollbar">
+                {questions.map((q, i) => (
+                  <div key={i} className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className={`flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br ${gradientClass} flex items-center justify-center mt-1 text-white font-black text-sm`}>
+                        {i + 1}
+                      </div>
+                      <p className="text-gray-800 font-bold leading-relaxed pt-1">{q}</p>
                     </div>
-                    <p className="text-gray-800 font-bold leading-relaxed pt-1">{q}</p>
+                    <textarea
+                      value={answers[i]}
+                      onChange={(e) => handleAnswerChange(i, e.target.value)}
+                      placeholder="Type your explanation here..."
+                      className="w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all text-sm font-medium resize-none min-h-[100px] shadow-inner"
+                      rows={3}
+                    />
                   </div>
-                  <textarea
-                    value={answers[i]}
-                    onChange={(e) => handleAnswerChange(i, e.target.value)}
-                    placeholder="Type your explanation here..."
-                    className="w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all text-sm font-medium resize-none min-h-[100px]"
-                    rows={3}
-                  />
-                </div>
-              ))}
+                ))}
+              </div>
 
               {error && (
-                <div className="p-4 bg-red-50 text-red-600 text-sm font-bold rounded-2xl border border-red-100 flex items-center gap-3">
+                <div className="p-4 bg-red-50 text-red-600 text-xs font-black uppercase tracking-widest rounded-2xl border-2 border-red-100 flex items-center gap-3 animate-shake">
                   <AlertCircle className="w-5 h-5" />
                   {error}
                 </div>
@@ -155,8 +158,8 @@ const LearningPointReviewGPTModal = ({
             <div className="h-64 flex flex-col items-center justify-center text-center space-y-4">
               <Loader2 className="w-16 h-16 text-indigo-600 animate-spin" />
               <div>
-                <p className="text-lg font-bold text-gray-800">GPT is Reviewing Your Answers...</p>
-                <p className="text-sm text-gray-500">Checking for understanding and providing feedback</p>
+                <p className="text-lg font-bold text-gray-800">Reviewing Your Answers...</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">Checking for understanding</p>
               </div>
             </div>
           )}
@@ -169,15 +172,15 @@ const LearningPointReviewGPTModal = ({
                   : 'bg-amber-50 border-amber-200'
               }`}>
                 {verification.canMarkAsReviewed ? (
-                  <div className="w-16 h-16 bg-green-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-green-100 mb-2">
+                  <div className="w-16 h-16 bg-green-500 text-white rounded-[1.5rem] flex items-center justify-center shadow-lg shadow-green-100 mb-2">
                     <CheckCircle2 className="w-10 h-10" />
                   </div>
                 ) : (
-                  <div className="w-16 h-16 bg-amber-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-amber-100 mb-2">
+                  <div className="w-16 h-16 bg-amber-500 text-white rounded-[1.5rem] flex items-center justify-center shadow-lg shadow-amber-100 mb-2">
                     <RotateCcw className="w-10 h-10" />
                   </div>
                 )}
-                <h4 className={`text-2xl font-black ${verification.canMarkAsReviewed ? 'text-green-800' : 'text-amber-800'}`}>
+                <h4 className={`text-2xl font-black tracking-tight ${verification.canMarkAsReviewed ? 'text-green-800' : 'text-amber-800'}`}>
                   {verification.canMarkAsReviewed ? 'Excellent Work!' : 'Almost There!'}
                 </h4>
                 <p className="text-sm font-medium opacity-80 max-w-md">
@@ -187,16 +190,16 @@ const LearningPointReviewGPTModal = ({
                 </p>
               </div>
 
-              <div className="space-y-6">
-                <h5 className="text-sm font-black text-gray-400 uppercase tracking-widest">GPT's Feedback & Add-ons</h5>
+              <div className="max-h-[40vh] overflow-y-auto pr-2 space-y-6 custom-scrollbar">
+                <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">GPT's Feedback & Add-ons</h5>
                 {questions.map((q, i) => (
                   <div key={i} className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-4">
                     <div className="flex gap-3">
-                      <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-[10px] font-black text-gray-400">Q</div>
+                      <div className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 text-[10px] font-black text-gray-400">Q</div>
                       <p className="text-xs font-bold text-gray-500 italic">"{q}"</p>
                     </div>
                     <div className="flex gap-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-black text-white bg-gradient-to-br ${gradientClass}`}>A</div>
+                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 text-[10px] font-black text-white bg-gradient-to-br ${gradientClass}`}>A</div>
                       <p className="text-sm font-bold text-gray-800">{answers[i]}</p>
                     </div>
                     <div className="bg-indigo-50/30 p-4 rounded-2xl border border-indigo-50">
@@ -214,15 +217,15 @@ const LearningPointReviewGPTModal = ({
         </div>
 
         {/* Footer */}
-        <div className="p-6 bg-white border-t border-gray-100 flex gap-4">
+        <div className="pt-8 flex gap-4">
           {step === 'questions' && (
             <button
               onClick={handleVerify}
               disabled={!isAllAnswered || step === 'verifying'}
-              className={`w-full py-4 rounded-2xl font-black text-white shadow-xl transition-all flex items-center justify-center gap-3 press-effect ${
+              className={`w-full py-4 rounded-2xl font-black text-white shadow-xl transition-all flex items-center justify-center gap-3 active:scale-[0.98] ${
                 !isAllAnswered 
-                  ? 'bg-gray-200 shadow-none grayscale' 
-                  : `bg-gradient-to-r ${gradientClass} hover:scale-[1.02]`
+                  ? 'bg-gray-200 shadow-none grayscale cursor-not-allowed' 
+                  : `bg-gradient-to-r ${gradientClass} hover:shadow-2xl`
               }`}
             >
               <span>Submit for Review</span>
@@ -235,7 +238,7 @@ const LearningPointReviewGPTModal = ({
               {!verification?.canMarkAsReviewed ? (
                 <button
                   onClick={() => setStep('questions')}
-                  className={`w-full py-4 rounded-2xl font-black text-white shadow-xl transition-all flex items-center justify-center gap-3 press-effect bg-gradient-to-r ${gradientClass} hover:scale-[1.02]`}
+                  className={`w-full py-4 rounded-2xl font-black text-white shadow-xl transition-all flex items-center justify-center gap-3 active:scale-[0.98] bg-gradient-to-r ${gradientClass} hover:shadow-2xl`}
                 >
                   <RotateCcw className="w-5 h-5" />
                   <span>Try Again</span>
@@ -243,7 +246,7 @@ const LearningPointReviewGPTModal = ({
               ) : (
                 <button
                   onClick={onSuccess}
-                  className={`w-full py-4 rounded-2xl font-black text-white shadow-xl transition-all flex items-center justify-center gap-3 press-effect bg-gradient-to-r ${gradientClass} hover:scale-[1.02]`}
+                  className={`w-full py-4 rounded-2xl font-black text-white shadow-xl transition-all flex items-center justify-center gap-3 active:scale-[0.98] bg-gradient-to-r ${gradientClass} hover:shadow-2xl`}
                 >
                   <CheckCircle2 className="w-5 h-5" />
                   <span>Mark as Completed</span>
@@ -253,7 +256,8 @@ const LearningPointReviewGPTModal = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

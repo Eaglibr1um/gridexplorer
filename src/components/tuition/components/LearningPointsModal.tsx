@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { BookOpen, Plus, Edit2, Trash2, Calendar, Tag, X } from 'lucide-react';
 import { Tutee } from '../../../types/tuition';
 import {
@@ -136,114 +137,123 @@ const LearningPointsModal = ({ isOpen, onClose, tutee }: LearningPointsModalProp
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-modal-backdrop">
-        <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-modal-content">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-lg`}>
-                <BookOpen className="w-6 h-6 text-white" />
+      {isOpen && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-modal-backdrop">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl p-6 sm:p-10 max-w-4xl w-full my-auto animate-modal-content border border-white/20 relative">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className={`p-4 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-2xl shadow-lg transform rotate-3`}>
+                  <BookOpen className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">Learning Points</h3>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">{tutee.name}'s Vault</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-800">Learning Points</h3>
-                <p className="text-sm text-gray-600">{tutee.name}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleAdd}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors-smooth press-effect"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Points</span>
-              </button>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors-smooth"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="text-center py-12 text-gray-500">Loading learning points...</div>
-          ) : error ? (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg animate-fade-in">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          ) : points.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <BookOpen className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-              <p>No learning points yet</p>
-              <button
-                onClick={handleAdd}
-                className="mt-4 text-indigo-600 hover:text-indigo-700 font-medium"
-              >
-                Add your first learning points
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {points.map((point, index) => (
-                <div
-                  key={point.id}
-                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-300 transition-colors-smooth animate-fade-in-up card-hover"
-                  style={{ animationDelay: `${index * 50}ms` }}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleAdd}
+                  className="flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg hover:bg-indigo-700 transition-all active:scale-95"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Calendar className="w-4 h-4 text-gray-500" />
-                        <span className="font-semibold text-gray-800">
-                          {format(parseISO(point.sessionDate), 'EEEE, d MMMM yyyy')}
-                        </span>
-                      </div>
-                      <p className="text-gray-700 whitespace-pre-wrap mb-3">{point.points}</p>
-                      {point.tags && point.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {point.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className={`px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${tutee.colorScheme.gradient} text-white flex items-center gap-1`}
-                            >
-                              <Tag className="w-3 h-3" />
-                              {tag}
-                            </span>
-                          ))}
+                  <Plus className="w-4 h-4" />
+                  <span>Add Points</span>
+                </button>
+                <button
+                  onClick={onClose}
+                  className="p-3 hover:bg-gray-100 rounded-2xl transition-all active:scale-90"
+                >
+                  <X className="w-6 h-6 text-gray-300" />
+                </button>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-20">
+                <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading points...</p>
+              </div>
+            ) : error ? (
+              <div className="p-4 bg-red-50 border-2 border-red-100 rounded-2xl animate-shake flex items-center gap-3">
+                <X className="w-5 h-5 text-red-600" />
+                <p className="text-sm font-bold text-red-700">{error}</p>
+              </div>
+            ) : points.length === 0 ? (
+              <div className="text-center py-20 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100">
+                <BookOpen className="w-16 h-12 mx-auto mb-4 text-gray-200" />
+                <p className="text-gray-400 font-bold text-lg mb-6">No learning points yet</p>
+                <button
+                  onClick={handleAdd}
+                  className="text-indigo-600 font-black uppercase tracking-widest text-sm hover:underline underline-offset-8 transition-all"
+                >
+                  Add your first entry ✨
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {points.map((point, index) => (
+                  <div
+                    key={point.id}
+                    className="p-6 bg-white border-2 border-gray-100 rounded-3xl hover:border-indigo-200 transition-all animate-fade-in-up shadow-sm hover:shadow-md group"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="flex items-start justify-between gap-6">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 bg-indigo-50 rounded-lg">
+                            <Calendar className="w-4 h-4 text-indigo-600" />
+                          </div>
+                          <span className="font-black text-gray-800 text-sm uppercase tracking-tight">
+                            {format(parseISO(point.sessionDate), 'EEEE, d MMMM yyyy')}
+                          </span>
                         </div>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEdit(point)}
-                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded transition-colors-smooth press-effect"
-                        aria-label="Edit"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm({ isOpen: true, pointId: point.id })}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors-smooth press-effect"
-                        aria-label="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        <p className="text-gray-600 font-medium whitespace-pre-wrap leading-relaxed mb-4 text-lg">{point.points}</p>
+                        {point.tags && point.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {point.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-gradient-to-r ${tutee.colorScheme.gradient} text-white shadow-sm flex items-center gap-1.5`}
+                              >
+                                <Tag className="w-3 h-3" />
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleEdit(point)}
+                          className="p-3 text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all active:scale-90"
+                          aria-label="Edit"
+                        >
+                          <Edit2 className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm({ isOpen: true, pointId: point.id })}
+                          className="p-3 text-red-600 hover:bg-red-50 rounded-2xl transition-all active:scale-90"
+                          aria-label="Delete"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Add/Edit Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-modal-backdrop">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-modal-content">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-800">
-                {editingPoint ? 'Edit Learning Points' : 'Add Learning Points'}
+      {showAddModal && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-modal-backdrop">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl p-6 sm:p-10 max-w-2xl w-full my-auto animate-modal-content border border-white/20 relative">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">
+                {editingPoint ? 'Edit Entry' : 'New Entry'}
               </h3>
               <button
                 onClick={() => {
@@ -251,43 +261,43 @@ const LearningPointsModal = ({ isOpen, onClose, tutee }: LearningPointsModalProp
                   setEditingPoint(null);
                   setError('');
                 }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors-smooth"
+                className="p-3 hover:bg-gray-100 rounded-2xl transition-all active:scale-90"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-6 h-6 text-gray-300" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
                   Session Date
                 </label>
                 <input
                   type="date"
                   value={formData.sessionDate}
                   onChange={(e) => setFormData({ ...formData, sessionDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-bold text-gray-800 shadow-inner"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
                   Learning Points *
                 </label>
                 <textarea
                   value={formData.points}
                   onChange={(e) => setFormData({ ...formData, points: e.target.value })}
                   rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-medium text-gray-800 shadow-inner resize-none"
                   placeholder="Enter your learning points from this session..."
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
                   Tags (optional)
                 </label>
-                <div className="flex gap-2 mb-2">
+                <div className="flex gap-3">
                   <input
                     type="text"
                     value={tagInput}
@@ -298,27 +308,27 @@ const LearningPointsModal = ({ isOpen, onClose, tutee }: LearningPointsModalProp
                         addTag();
                       }
                     }}
-                    placeholder="Add a tag and press Enter"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Type and press Enter"
+                    className="flex-1 px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-bold text-gray-800 shadow-inner"
                   />
                   <button
                     onClick={addTag}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors-smooth press-effect"
+                    className="px-6 py-4 bg-indigo-50 text-indigo-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-100 transition-all active:scale-95"
                   >
                     Add
                   </button>
                 </div>
                 {formData.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 mt-3">
                     {formData.tags.map((tag) => (
                       <span
                         key={tag}
-                        className={`px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r ${tutee.colorScheme.gradient} text-white flex items-center gap-2`}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-600 flex items-center gap-2 group`}
                       >
                         {tag}
                         <button
                           onClick={() => removeTag(tag)}
-                          className="hover:bg-white/20 rounded-full p-0.5"
+                          className="hover:text-red-500 transition-colors"
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -329,39 +339,41 @@ const LearningPointsModal = ({ isOpen, onClose, tutee }: LearningPointsModalProp
               </div>
 
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg animate-fade-in">
-                  <p className="text-sm text-red-700">{error}</p>
+                <div className="p-4 bg-red-50 border-2 border-red-100 rounded-2xl animate-shake flex items-center gap-3">
+                  <X className="w-5 h-5 text-red-600" />
+                  <p className="text-sm font-bold text-red-700">{error}</p>
                 </div>
               )}
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-4 pt-4">
                 <button
                   onClick={() => {
                     setShowAddModal(false);
                     setEditingPoint(null);
                     setError('');
                   }}
-                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors-smooth press-effect"
+                  className="flex-1 px-6 py-4 bg-gray-50 text-gray-500 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 transition-all active:scale-95"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors-smooth press-effect"
+                  className={`flex-1 px-6 py-4 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all bg-gradient-to-r ${tutee.colorScheme.gradient}`}
                 >
-                  {editingPoint ? 'Update' : 'Save'} Points
+                  {editingPoint ? 'Update Entry' : 'Save Entry'}
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Delete Confirmation */}
       <ConfirmationModal
         isOpen={deleteConfirm.isOpen}
         onConfirm={handleDelete}
-        onCancel={() => setDeleteConfirm({ isOpen: false, pointId: null })}
+        onClose={() => setDeleteConfirm({ isOpen: false, pointId: null })}
         title="Delete Learning Point"
         message="Are you sure you want to delete this learning point? This action cannot be undone."
         confirmText="Delete"

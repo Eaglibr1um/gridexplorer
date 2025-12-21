@@ -1,6 +1,39 @@
 import { useState, useEffect, useMemo } from 'react';
-import { BookOpen, Plus, Edit2, Trash2, Sparkles, X, Loader2, Save, BarChart3, Search, User, GraduationCap, CheckCircle2, AlertCircle } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { 
+  BookOpen, Plus, Edit2, Trash2, Sparkles, X, Loader2, Save, BarChart3, Search, User, GraduationCap, CheckCircle2, AlertCircle,
+  Star, Heart, Zap, Target, Award, Trophy, Lightbulb, Brain, Rocket, BookMarked, School, PenTool, Calculator, FlaskConical, Atom, Music, Palette, Camera, Gamepad2, Code, Globe, Coffee, Smile
+} from 'lucide-react';
+
+// Icon mapping for tutees
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  BookOpen,
+  GraduationCap,
+  User,
+  Star,
+  Heart,
+  Zap,
+  Target,
+  Award,
+  Trophy,
+  Lightbulb,
+  Brain,
+  Rocket,
+  Sparkles,
+  BookMarked,
+  School,
+  PenTool,
+  Calculator,
+  FlaskConical,
+  Atom,
+  Music,
+  Palette,
+  Camera,
+  Gamepad2,
+  Code,
+  Globe,
+  Coffee,
+  Smile,
+};
 import { SpellingWord, generateSpellingQuestions, WordStatistics, getWordStatistics, SpellingQuestionRecord, saveGeneratedQuestions, confirmQuestions, deleteSpellingQuestion, fetchActiveQuestionsWithDetails, updateSpellingQuestion, generateWordHints } from '../../../services/spellingQuizService';
 import { fetchSpellingWords, createSpellingWord, updateSpellingWord, deleteSpellingWord } from '../../../services/spellingQuizService';
 import { Tutee } from '../../../types/tuition';
@@ -344,14 +377,13 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
   }, [tutees, groupSearchTerm]);
 
   const getIcon = (iconName: string) => {
-    const IconComponent = (LucideIcons as any)[iconName];
-    return IconComponent || GraduationCap;
+    return iconMap[iconName] || GraduationCap;
   };
 
   return (
     <AnimatedCard className="overflow-hidden">
       <div id="spelling-quiz-admin-section" className="p-6 md:p-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-purple-100 rounded-xl text-purple-600 shadow-sm">
               <BookOpen className="w-6 h-6" />
@@ -361,13 +393,13 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
               <p className="text-sm text-gray-500">Curate words and generate AI-powered quiz questions</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <button
               onClick={() => {
                 setBatchWordsInput('');
                 setShowBatchModal(true);
               }}
-              className="flex items-center gap-2 px-5 py-2.5 bg-purple-50 text-purple-700 rounded-xl hover:bg-purple-100 transition-all font-bold text-sm press-effect border border-purple-100"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-50 text-purple-700 rounded-xl hover:bg-purple-100 transition-all font-bold text-xs sm:text-sm press-effect border border-purple-100"
             >
               <Sparkles className="w-4 h-4" />
               <span>Batch Add</span>
@@ -378,7 +410,7 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                 setNewWord({ word: '', hint: '' });
                 setShowAddModal(true);
               }}
-              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 font-bold text-sm press-effect"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 font-bold text-xs sm:text-sm press-effect"
             >
               <Plus className="w-4 h-4" />
               <span>Add Word</span>
@@ -521,19 +553,19 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
               </div>
             ) : (
               <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="bg-gray-50/50 px-4 py-3 border-b border-gray-100 flex items-center">
-                  <div className="flex-1 min-w-0 pr-4">
+                <div className="bg-gray-50/50 px-3 sm:px-4 py-3 border-b border-gray-100 flex items-center">
+                  <div className="flex-1 min-w-0 pr-2">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                       Word ({filteredWords.length})
                     </span>
                   </div>
-                  <div className="hidden md:block flex-1 min-w-0 pr-4">
+                  <div className="hidden md:block flex-[2] min-w-0 pr-4">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hint</span>
                   </div>
-                  <div className="w-20 text-center pr-4">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Accuracy</span>
+                  <div className="w-12 sm:w-24 text-center pr-1 sm:pr-2">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Acc.</span>
                   </div>
-                  <div className="w-20"></div> {/* Actions spacer */}
+                  <div className="w-16 sm:w-24"></div> {/* Actions spacer */}
                 </div>
                 <div className="max-h-[500px] overflow-y-auto custom-scrollbar divide-y divide-gray-50">
                   {filteredWords.map((word) => {
@@ -541,42 +573,42 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                     return (
                       <div
                         key={word.id}
-                        className="group flex items-center justify-between p-4 hover:bg-indigo-50/30 transition-all"
+                        className="group flex items-center justify-between p-2.5 sm:p-4 hover:bg-indigo-50/30 transition-all"
                       >
-                        <div className="flex-1 min-w-0 pr-4">
-                          <h4 className="text-base font-bold text-gray-800 tracking-tight truncate">{word.word}</h4>
-                          <p className="text-[10px] text-gray-400 font-medium truncate md:hidden">Hint: {word.hint}</p>
+                        <div className="flex-1 min-w-0 pr-2">
+                          <h4 className="text-xs sm:text-base font-bold text-gray-800 tracking-tight truncate">{word.word}</h4>
+                          <p className="text-[10px] text-gray-400 font-medium truncate md:hidden">{word.hint}</p>
                         </div>
                         
-                        <div className="hidden md:block flex-1 min-w-0 pr-4">
+                        <div className="hidden md:block flex-[2] min-w-0 pr-4">
                           <p className="text-xs text-gray-500 font-medium truncate">{word.hint}</p>
                         </div>
 
-                        <div className="w-20 text-center flex flex-col items-center pr-4">
+                        <div className="w-12 sm:w-24 text-center flex flex-col items-center pr-1 sm:pr-2">
                           {stat && stat.totalAttempts > 0 ? (
                             <>
-                              <span className={`text-xs font-black ${stat.accuracy >= 70 ? 'text-green-600' : stat.accuracy >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                              <span className={`text-[10px] sm:text-sm font-black ${stat.accuracy >= 70 ? 'text-green-600' : stat.accuracy >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
                                 {stat.accuracy}%
                               </span>
-                              <span className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter">{stat.totalAttempts} tries</span>
+                              <span className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter hidden sm:block">{stat.totalAttempts} {stat.totalAttempts === 1 ? 'try' : 'tries'}</span>
                             </>
                           ) : (
-                            <span className="text-[10px] text-gray-300 font-black uppercase tracking-widest">New</span>
+                            <span className="text-[8px] sm:text-[9px] text-gray-300 font-black uppercase tracking-widest">New</span>
                           )}
                         </div>
 
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-16 sm:w-24 flex justify-end gap-1">
                           <button
                             onClick={() => startEdit(word)}
-                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-indigo-100"
+                            className="p-1.5 sm:p-2 text-gray-400 hover:text-indigo-600 hover:bg-white rounded-lg sm:rounded-xl transition-all shadow-sm border border-transparent hover:border-indigo-100"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteWord(word.id)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-red-100"
+                            className="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-lg sm:rounded-xl transition-all shadow-sm border border-transparent hover:border-red-100"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                         </div>
                       </div>
@@ -584,7 +616,7 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                   })}
                 </div>
               </div>
-            )}
+            ) /* end word bank */ }
           </div>
 
           {/* Sidebar Stats & Active Quiz */}

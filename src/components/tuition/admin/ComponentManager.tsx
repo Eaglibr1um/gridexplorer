@@ -1,6 +1,39 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, X, CheckCircle, Settings, Layout, AlertCircle, Search, User, ChevronRight, Sliders, GraduationCap } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { 
+  Plus, X, CheckCircle, Settings, Layout, AlertCircle, Search, User, ChevronRight, Sliders, GraduationCap,
+  BookOpen, Star, Heart, Zap, Target, Award, Trophy, Lightbulb, Brain, Rocket, Sparkles, BookMarked, School, PenTool, Calculator, FlaskConical, Atom, Music, Palette, Camera, Gamepad2, Code, Globe, Coffee, Smile
+} from 'lucide-react';
+
+// Icon mapping for tutees
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  BookOpen,
+  GraduationCap,
+  User,
+  Star,
+  Heart,
+  Zap,
+  Target,
+  Award,
+  Trophy,
+  Lightbulb,
+  Brain,
+  Rocket,
+  Sparkles,
+  BookMarked,
+  School,
+  PenTool,
+  Calculator,
+  FlaskConical,
+  Atom,
+  Music,
+  Palette,
+  Camera,
+  Gamepad2,
+  Code,
+  Globe,
+  Coffee,
+  Smile,
+};
 import { Tutee } from '../../../types/tuition';
 import {
   fetchDashboardComponents,
@@ -50,8 +83,7 @@ const ComponentManager = ({ tutees, onUpdate }: ComponentManagerProps) => {
 
   // Icon helper
   const getIcon = (iconName: string) => {
-    const IconComponent = (LucideIcons as any)[iconName];
-    return IconComponent || GraduationCap;
+    return iconMap[iconName] || GraduationCap;
   };
 
   useEffect(() => {

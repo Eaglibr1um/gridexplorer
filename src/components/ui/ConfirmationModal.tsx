@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { X, AlertTriangle, CheckCircle, Info, AlertCircle } from 'lucide-react';
 
 export type ConfirmationType = 'danger' | 'warning' | 'info' | 'success';
@@ -66,46 +67,43 @@ const ConfirmationModal = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-modal-backdrop">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full animate-modal-content">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto animate-modal-backdrop">
+      <div className="bg-white rounded-[2rem] shadow-2xl p-6 sm:p-8 max-w-md w-full my-auto animate-modal-content border border-white/20 relative">
         <div className="flex items-start gap-4">
-          <div className={`${getIconBg()} rounded-full p-3 flex-shrink-0`}>
+          <div className={`${getIconBg()} rounded-2xl p-4 flex-shrink-0 shadow-inner`}>
             {getIcon()}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between mb-2">
-              <h3 className="text-xl font-bold text-gray-800">{title}</h3>
+            <div className="flex items-start justify-between mb-3">
+              <h3 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">{title}</h3>
               <button
                 onClick={onClose}
                 disabled={isLoading}
-                className="p-1 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                className="p-2 hover:bg-gray-100 rounded-xl transition-all active:scale-90"
                 aria-label="Close"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5 text-gray-300" />
               </button>
             </div>
-            <div className="text-gray-600 mb-6">
+            <div className="text-gray-600 mb-8 font-medium leading-relaxed">
               {typeof message === 'string' ? <p>{message}</p> : message}
             </div>
             <div className="flex gap-3">
               <button
                 onClick={onClose}
                 disabled={isLoading}
-                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors-smooth press-effect disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-4 bg-gray-50 text-gray-500 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-50"
               >
                 {cancelText}
               </button>
               <button
                 onClick={onConfirm}
                 disabled={isLoading}
-                className={`flex-1 px-4 py-2.5 ${getButtonStyles()} rounded-lg font-semibold transition-colors-smooth press-effect disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+                className={`flex-1 px-6 py-4 ${getButtonStyles()} rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
               >
                 {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Processing...</span>
-                  </>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   confirmText
                 )}
@@ -114,7 +112,8 @@ const ConfirmationModal = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

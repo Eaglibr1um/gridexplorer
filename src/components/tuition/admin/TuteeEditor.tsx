@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Edit2, Save, X } from 'lucide-react';
 import { Tutee } from '../../../types/tuition';
 import { updateTuteeInfo } from '../../../services/tuteeService';
@@ -60,31 +61,31 @@ const TuteeEditor = ({ tutee, onUpdate }: TuteeEditorProps) => {
         <Edit2 className="w-4 h-4" />
       </button>
 
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-modal-backdrop">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full animate-modal-content">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-lg`}>
-                  <Edit2 className="w-6 h-6 text-white" />
+      {isOpen && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-modal-backdrop">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl p-6 sm:p-10 max-w-md w-full my-auto animate-modal-content border border-white/20 relative">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className={`p-4 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-2xl shadow-lg`}>
+                  <Edit2 className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-800">Edit Tutee</h3>
-                  <p className="text-sm text-gray-600">Update name and description</p>
+                  <h3 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">Edit Tutee</h3>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Profile Details</p>
                 </div>
               </div>
               <button
                 onClick={handleClose}
                 disabled={isSaving}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors-smooth"
+                className="p-3 hover:bg-gray-100 rounded-2xl transition-all active:scale-90"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-6 h-6 text-gray-300" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
                   Name *
                 </label>
                 <input
@@ -94,14 +95,14 @@ const TuteeEditor = ({ tutee, onUpdate }: TuteeEditorProps) => {
                     setName(e.target.value);
                     setError('');
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-bold text-gray-800 shadow-inner"
                   placeholder="Tutee name"
                   disabled={isSaving}
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
                   Description
                 </label>
                 <textarea
@@ -111,36 +112,34 @@ const TuteeEditor = ({ tutee, onUpdate }: TuteeEditorProps) => {
                     setError('');
                   }}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-medium text-gray-800 shadow-inner resize-none"
                   placeholder="Tutee description (e.g., 'Primary school Science and Math')"
                   disabled={isSaving}
                 />
               </div>
 
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg animate-fade-in">
-                  <p className="text-sm text-red-700">{error}</p>
+                <div className="p-4 bg-red-50 border-2 border-red-100 rounded-2xl animate-shake flex items-center gap-3">
+                  <X className="w-5 h-5 text-red-600" />
+                  <p className="text-sm font-bold text-red-700 uppercase tracking-wide">{error}</p>
                 </div>
               )}
 
-              <div className="flex gap-3 pt-4 border-t">
+              <div className="flex gap-4 pt-4 border-t border-gray-100">
                 <button
                   onClick={handleClose}
                   disabled={isSaving}
-                  className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors-smooth press-effect disabled:opacity-50"
+                  className="flex-1 px-6 py-4 bg-gray-50 text-gray-500 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={isSaving || !name.trim()}
-                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors-smooth press-effect disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className={`flex-[2] px-6 py-4 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-gradient-to-r ${tutee.colorScheme.gradient}`}
                 >
                   {isSaving ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Saving...</span>
-                    </>
+                    <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
@@ -151,7 +150,8 @@ const TuteeEditor = ({ tutee, onUpdate }: TuteeEditorProps) => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

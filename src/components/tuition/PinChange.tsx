@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Lock, Save, X, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
 import { Tutee } from '../../types/tuition';
 import { updateTuteePin } from '../../services/tuteeService';
@@ -94,45 +95,47 @@ const PinChange = ({ tutee, onUpdate }: PinChangeProps) => {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors-smooth text-sm font-medium text-gray-700"
+        className="flex items-center gap-2 px-5 py-3 bg-white/80 backdrop-blur-sm border border-white/50 rounded-2xl hover:bg-white transition-all shadow-sm hover:shadow-md active:scale-95 text-sm font-black text-gray-600 uppercase tracking-widest"
       >
         <Lock className="w-4 h-4" />
-        <span>Change PIN</span>
+        <span>PIN</span>
       </button>
 
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-modal-backdrop">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full animate-modal-content">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-lg`}>
-                  <Lock className="w-6 h-6 text-white" />
+      {isOpen && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto animate-modal-backdrop">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl p-6 sm:p-10 max-w-md w-full my-auto animate-modal-content border border-white/20 relative">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className={`p-4 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-2xl shadow-lg`}>
+                  <Lock className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-800">Change PIN</h3>
-                  <p className="text-sm text-gray-600">{tutee.name}</p>
+                  <h3 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">Change PIN</h3>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Privacy & Security</p>
                 </div>
               </div>
               <button
                 onClick={handleClose}
                 disabled={isSaving}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors-smooth"
+                className="p-3 hover:bg-gray-100 rounded-2xl transition-all active:scale-90"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-6 h-6 text-gray-300" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Enter your current PIN and choose a new 4-digit PIN.
-              </p>
+            <div className="space-y-6">
+              <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100/50">
+                <p className="text-xs font-bold text-amber-900/70 leading-relaxed">
+                  Enter your current PIN and choose a new 4-digit secret code.
+                </p>
+              </div>
 
               {/* Current PIN */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
                   Current PIN
                 </label>
-                <div className="relative">
+                <div className="relative group">
                   <input
                     type={showCurrentPin ? 'text' : 'password'}
                     value={currentPin}
@@ -141,126 +144,125 @@ const PinChange = ({ tutee, onUpdate }: PinChangeProps) => {
                       setCurrentPin(value);
                       setError('');
                     }}
-                    placeholder="Enter current PIN"
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center text-lg font-mono tracking-widest"
+                    placeholder="••••"
+                    className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all text-center text-2xl font-mono tracking-[1em] text-gray-800 shadow-inner"
                     maxLength={4}
                     disabled={isSaving}
                   />
                   <button
                     type="button"
                     onClick={() => setShowCurrentPin(!showCurrentPin)}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showCurrentPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showCurrentPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
 
-              {/* New PIN */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  New PIN
-                </label>
-                <div className="relative">
-                  <input
-                    type={showNewPin ? 'text' : 'password'}
-                    value={newPin}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                      setNewPin(value);
-                      setError('');
-                    }}
-                    placeholder="Enter new PIN"
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center text-lg font-mono tracking-widest"
-                    maxLength={4}
-                    disabled={isSaving}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPin(!showNewPin)}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700"
-                  >
-                    {showNewPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+              <div className="grid grid-cols-1 gap-4">
+                {/* New PIN */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                    New 4-Digit PIN
+                  </label>
+                  <div className="relative group">
+                    <input
+                      type={showNewPin ? 'text' : 'password'}
+                      value={newPin}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                        setNewPin(value);
+                        setError('');
+                      }}
+                      placeholder="••••"
+                      className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all text-center text-2xl font-mono tracking-[1em] text-gray-800 shadow-inner"
+                      maxLength={4}
+                      disabled={isSaving}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPin(!showNewPin)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showNewPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Confirm PIN */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm New PIN
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPin ? 'text' : 'password'}
-                    value={confirmPin}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                      setConfirmPin(value);
-                      setError('');
-                    }}
-                    placeholder="Confirm new PIN"
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center text-lg font-mono tracking-widest"
-                    maxLength={4}
-                    disabled={isSaving}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPin(!showConfirmPin)}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700"
-                  >
-                    {showConfirmPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+                {/* Confirm PIN */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                    Confirm New PIN
+                  </label>
+                  <div className="relative group">
+                    <input
+                      type={showConfirmPin ? 'text' : 'password'}
+                      value={confirmPin}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                        setConfirmPin(value);
+                        setError('');
+                      }}
+                      placeholder="••••"
+                      className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all text-center text-2xl font-mono tracking-[1em] text-gray-800 shadow-inner"
+                      maxLength={4}
+                      disabled={isSaving}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPin(!showConfirmPin)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showConfirmPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 animate-fade-in">
+                <div className="p-4 bg-red-50 border-2 border-red-100 rounded-2xl animate-shake flex items-center gap-3">
                   <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                  <p className="text-sm text-red-700">{error}</p>
+                  <p className="text-sm font-bold text-red-700">{error}</p>
                 </div>
               )}
 
               {success && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 animate-fade-in">
+                <div className="p-4 bg-green-50 border-2 border-green-100 rounded-2xl animate-fade-in flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <p className="text-sm text-green-700">PIN updated successfully!</p>
+                  <p className="text-sm font-bold text-green-700">Success! Your PIN is now updated.</p>
                 </div>
               )}
 
-              <div className="flex gap-3 pt-4 border-t">
+              <div className="flex gap-4 pt-4 border-t border-gray-100">
                 <button
                   onClick={handleClose}
                   disabled={isSaving}
-                  className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors-smooth press-effect disabled:opacity-50"
+                  className="flex-1 px-6 py-4 bg-gray-50 text-gray-500 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={isSaving || !currentPin || !newPin || !confirmPin}
-                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors-smooth press-effect disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className={`flex-1 px-6 py-4 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 bg-gradient-to-r ${tutee.colorScheme.gradient}`}
                 >
                   {isSaving ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Saving...</span>
-                    </>
+                    <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
-                      <span>Save PIN</span>
+                      <span>Update PIN</span>
                     </>
                   )}
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
 };
 
 export default PinChange;
-

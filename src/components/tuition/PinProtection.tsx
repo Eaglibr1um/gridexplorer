@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Lock, X, AlertCircle } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Lock, AlertCircle } from 'lucide-react';
 
 interface PinProtectionProps {
   tuteeName: string;
@@ -109,52 +110,46 @@ const PinProtection = ({
   }, [attempts, maxAttempts, onPinVerified]);
 
   if (isLocked) {
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full">
+    return createPortal(
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto animate-modal-backdrop">
+        <div className="bg-white rounded-[2rem] shadow-2xl p-8 max-w-md w-full my-auto animate-modal-content border border-white/20 relative">
           <div className="text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-8 h-8 text-red-600" />
+            <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+              <Lock className="w-10 h-10 text-red-500" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Locked</h2>
-            <p className="text-gray-600 mb-6">
+            <h2 className="text-2xl font-black text-gray-800 mb-2 uppercase tracking-tight">Access Denied</h2>
+            <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px] mb-8">
               Too many failed attempts. Please contact your tutor to reset access.
             </p>
             <button
               onClick={onCancel}
-              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+              className="w-full px-8 py-4 bg-gray-100 text-gray-400 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95"
             >
-              Go Back
+              Return Home
             </button>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-modal-backdrop">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full animate-modal-content">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-              <Lock className="w-6 h-6 text-indigo-600" />
+  return createPortal(
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto animate-modal-backdrop">
+      <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl p-6 sm:p-10 max-w-md w-full my-auto animate-modal-content border border-white/20 relative">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center shadow-inner">
+              <Lock className="w-7 h-7 text-indigo-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">Enter PIN</h2>
-              <p className="text-sm text-gray-600">Access {tuteeName}'s page</p>
+              <h2 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">Identity Check</h2>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Accessing {tuteeName}</p>
             </div>
           </div>
-          <button
-            onClick={onCancel}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-8">
           <div className="flex gap-3 justify-center">
             {pin.map((digit, index) => (
               <input
@@ -162,15 +157,16 @@ const PinProtection = ({
                 ref={(el) => (inputRefs.current[index] = el)}
                 type="text"
                 inputMode="numeric"
+                pattern="[0-9]*"
                 maxLength={1}
                 value={digit}
                 onChange={(e) => handlePinChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={index === 0 ? handlePaste : undefined}
-                className="w-14 h-14 sm:w-16 sm:h-16 text-center text-2xl font-bold border-2 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none bg-white text-gray-900"
+                className="w-14 h-16 sm:w-16 sm:h-20 text-center text-3xl font-black rounded-2xl border-4 border-gray-50 focus:border-indigo-500 focus:bg-white transition-all outline-none bg-gray-50 text-gray-900 shadow-inner"
                 style={{
-                  borderColor: error ? '#ef4444' : '#e5e7eb',
-                  color: '#111827'
+                  borderColor: error ? '#fee2e2' : undefined,
+                  color: error ? '#ef4444' : '#111827'
                 }}
                 disabled={isLocked}
               />
@@ -179,35 +175,20 @@ const PinProtection = ({
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="mb-6 p-4 bg-red-50 border-2 border-red-100 rounded-2xl flex items-center gap-3 animate-shake">
+            <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
+            <p className="text-xs font-bold text-red-700 uppercase tracking-wide">{error}</p>
           </div>
         )}
 
-        <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors-smooth press-effect"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => handleSubmit()}
-            disabled={pin.some(d => !d) || isLocked}
-            className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors-smooth press-effect"
-          >
-            Verify
-          </button>
-        </div>
-
         {attempts > 0 && attempts < maxAttempts && (
-          <p className="mt-4 text-center text-sm text-gray-500">
-            {maxAttempts - attempts} attempt(s) remaining
+          <p className="mt-6 text-center text-[10px] font-black text-gray-300 uppercase tracking-widest">
+            Security Warning: {maxAttempts - attempts} attempts left
           </p>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

@@ -1,9 +1,46 @@
 import { useState } from 'react';
-import { MessageSquare, X, Send, Bug, Lightbulb, HelpCircle, FileText, Sparkles } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { 
+  MessageSquare, X, Send, Bug, Lightbulb, HelpCircle, FileText, Sparkles, Loader2,
+  BookOpen, GraduationCap, User, Star, Heart, Zap, Target, Award, 
+  Trophy, Brain, Rocket, BookMarked, School, PenTool, Calculator, 
+  FlaskConical, Atom, Music, Palette, Camera, Gamepad2, Code, Globe, 
+  Coffee, Smile
+} from 'lucide-react';
 import { Tutee } from '../../types/tuition';
 import { createFeedback } from '../../services/feedbackService';
-import * as LucideIcons from 'lucide-react';
 import ChatWithGPT from './ChatWithGPT';
+
+// Icon mapping for tutees
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  BookOpen,
+  GraduationCap,
+  User,
+  Star,
+  Heart,
+  Zap,
+  Target,
+  Award,
+  Trophy,
+  Lightbulb,
+  Brain,
+  Rocket,
+  Sparkles,
+  BookMarked,
+  School,
+  PenTool,
+  Calculator,
+  FlaskConical,
+  Atom,
+  Music,
+  Palette,
+  Camera,
+  Gamepad2,
+  Code,
+  Globe,
+  Coffee,
+  Smile,
+};
 
 interface FeedbackButtonProps {
   tutee: Tutee;
@@ -20,7 +57,7 @@ const FeedbackButton = ({ tutee }: FeedbackButtonProps) => {
   const [success, setSuccess] = useState(false);
 
   const getIcon = (iconName: string) => {
-    const IconComponent = (LucideIcons as any)[iconName];
+    const IconComponent = iconMap[iconName];
     return IconComponent || MessageSquare;
   };
 
@@ -82,33 +119,23 @@ const FeedbackButton = ({ tutee }: FeedbackButtonProps) => {
       </button>
 
       {/* Modal */}
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-modal-backdrop">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full animate-modal-content border-2" style={{ 
-            borderColor: tutee.colorScheme.primary === 'pink' ? '#ec4899' : 
-                         tutee.colorScheme.primary === 'purple' ? '#a855f7' : 
-                         tutee.colorScheme.primary === 'blue' ? '#3b82f6' : 
-                         tutee.colorScheme.primary === 'green' ? '#10b981' : 
-                         tutee.colorScheme.primary === 'indigo' ? '#6366f1' : 
-                         tutee.colorScheme.primary === 'orange' ? '#f97316' :
-                         tutee.colorScheme.primary === 'red' ? '#ef4444' :
-                         tutee.colorScheme.primary === 'yellow' ? '#eab308' :
-                         '#6366f1'
-          }}>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
+      {isOpen && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-modal-backdrop">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl p-6 sm:p-10 max-w-lg w-full my-auto animate-modal-content border border-white/20 relative">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
                 <button 
                   onClick={() => setShowChat(true)}
-                  className={`p-2 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-lg hover:scale-110 transition-transform active:scale-95 shadow-md group relative`}
+                  className={`p-4 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-2xl hover:scale-110 active:scale-95 transition-all shadow-lg group relative`}
                 >
-                  <TuteeIcon className="w-6 h-6 text-white" />
-                  <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Sparkles className="w-2.5 h-2.5 text-indigo-500 animate-pulse" />
+                  <TuteeIcon className="w-7 h-7 text-white" />
+                  <div className="absolute -top-1 -right-1 bg-white rounded-full p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Sparkles className="w-3 h-3 text-indigo-500 animate-pulse" />
                   </div>
                 </button>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-800">Send Feedback</h3>
-                  <p className="text-sm text-gray-600">{tutee.name}</p>
+                  <h3 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">Feedback Hub</h3>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Talk to {tutee.name}</p>
                 </div>
               </div>
               <button
@@ -120,23 +147,19 @@ const FeedbackButton = ({ tutee }: FeedbackButtonProps) => {
                   }
                 }}
                 disabled={isSubmitting}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors-smooth"
+                className="p-3 hover:bg-gray-100 rounded-2xl transition-all active:scale-90"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-6 h-6 text-gray-300" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Found a bug? Have a feature request? We'd love to hear from you!
-              </p>
-
+            <div className="space-y-6">
               {/* Type Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Type
+              <div className="space-y-3">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                  Select Category
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   {feedbackTypes.map((ft) => {
                     const Icon = ft.icon;
                     const isSelected = type === ft.value;
@@ -148,17 +171,17 @@ const FeedbackButton = ({ tutee }: FeedbackButtonProps) => {
                           setError('');
                         }}
                         className={`
-                          p-3 rounded-lg border-2 transition-all text-left
+                          p-4 rounded-2xl border-2 transition-all text-left group
                           ${isSelected 
-                            ? `border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200` 
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? `border-indigo-500 bg-indigo-50/50 shadow-inner` 
+                            : 'border-gray-50 bg-gray-50/50 hover:border-indigo-100'
                           }
                         `}
                       >
-                        <div className="flex items-center gap-2">
-                          <Icon className={`w-4 h-4 ${isSelected ? 'text-indigo-600' : ft.color}`} />
-                          <span className={`text-sm font-medium ${isSelected ? 'text-indigo-700' : 'text-gray-700'}`}>
-                            {ft.label}
+                        <div className="flex items-center gap-3">
+                          <Icon className={`w-5 h-5 transition-colors ${isSelected ? 'text-indigo-600' : ft.color}`} />
+                          <span className={`text-[10px] font-black uppercase tracking-widest ${isSelected ? 'text-indigo-700' : 'text-gray-400'}`}>
+                            {ft.label.split(' ')[0]}
                           </span>
                         </div>
                       </button>
@@ -168,9 +191,9 @@ const FeedbackButton = ({ tutee }: FeedbackButtonProps) => {
               </div>
 
               {/* Title */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Title *
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                  Subject *
                 </label>
                 <input
                   type="text"
@@ -179,16 +202,16 @@ const FeedbackButton = ({ tutee }: FeedbackButtonProps) => {
                     setTitle(e.target.value);
                     setError('');
                   }}
-                  placeholder="Brief description of your feedback"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="What's this about?"
+                  className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-bold text-gray-800 shadow-inner"
                   disabled={isSubmitting}
                 />
               </div>
 
               {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description *
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                  Message Details *
                 </label>
                 <textarea
                   value={description}
@@ -196,26 +219,27 @@ const FeedbackButton = ({ tutee }: FeedbackButtonProps) => {
                     setDescription(e.target.value);
                     setError('');
                   }}
-                  rows={5}
-                  placeholder="Please provide as much detail as possible..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  rows={4}
+                  placeholder="Share your thoughts or report an issue..."
+                  className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-medium text-gray-800 shadow-inner resize-none"
                   disabled={isSubmitting}
                 />
               </div>
 
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg animate-fade-in">
-                  <p className="text-sm text-red-700">{error}</p>
+                <div className="p-4 bg-red-50 border-2 border-red-100 rounded-2xl animate-shake">
+                  <p className="text-xs font-bold text-red-700 uppercase tracking-wide text-center">{error}</p>
                 </div>
               )}
 
               {success && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg animate-fade-in">
-                  <p className="text-sm text-green-700">Thank you! Your feedback has been submitted.</p>
+                <div className="p-4 bg-green-50 border-2 border-green-100 rounded-2xl animate-fade-in text-center">
+                  <p className="text-sm font-black text-green-700 uppercase tracking-tight">Mission Accomplished! 🚀</p>
+                  <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest mt-1">Feedback transmitted</p>
                 </div>
               )}
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-4 pt-2">
                 <button
                   onClick={() => {
                     if (!isSubmitting) {
@@ -225,32 +249,31 @@ const FeedbackButton = ({ tutee }: FeedbackButtonProps) => {
                     }
                   }}
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors-smooth press-effect disabled:opacity-50"
+                  className="flex-1 px-6 py-4 bg-gray-50 text-gray-500 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 transition-all active:scale-95"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={isSubmitting || !title.trim() || !description.trim()}
-                  className={`flex-1 px-4 py-2.5 bg-gradient-to-r ${tutee.colorScheme.gradient} text-white rounded-lg font-semibold hover:opacity-90 transition-colors-smooth press-effect disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+                  className={`flex-[2] flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r ${tutee.colorScheme.gradient} text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:shadow-xl active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {isSubmitting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Submitting...</span>
-                    </>
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
-                      <Send className="w-4 h-4" />
-                      <span>Submit Feedback</span>
+                      <Send className="w-5 h-5" />
+                      <span>Dispatch</span>
                     </>
                   )}
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
+
 
       {/* GPT Chat Component */}
       <ChatWithGPT 

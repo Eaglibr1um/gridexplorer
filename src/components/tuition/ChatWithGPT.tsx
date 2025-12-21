@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Send, Sparkles, Loader2, MessageSquare, Bot, User, CheckCircle2, MoreHorizontal } from 'lucide-react';
 import { Tutee } from '../../types/tuition';
 import { callChatGPT } from '../../services/chatgptService';
@@ -69,38 +70,36 @@ const ChatWithGPT = ({ tutee, isOpen, onClose }: ChatWithGPTProps) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-modal-backdrop">
-      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col overflow-hidden animate-modal-content border border-indigo-100">
-        {/* Header */}
-        <div className={`p-6 bg-gradient-to-r ${tutee.colorScheme.gradient} text-white flex items-center justify-between shadow-lg`}>
+  return createPortal(
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-modal-backdrop">
+      <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl p-6 sm:p-10 max-w-2xl w-full my-auto animate-modal-content border border-white/20 relative">
+        <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <div className="bg-white/20 p-2 rounded-2xl backdrop-blur-sm">
-              <Sparkles className="w-6 h-6 text-white" />
+            <div className={`p-4 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-2xl shadow-lg transform rotate-3`}>
+              <Sparkles className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-black tracking-tight">Ask anything!</h3>
-              <p className="text-xs text-white/80 font-bold uppercase tracking-widest">AI Tuition Assistant</p>
+              <h3 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">AI Assistant</h3>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Talk to {tutee.name}'s AI</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+            className="p-3 hover:bg-gray-100 rounded-2xl transition-all active:scale-90"
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6 text-gray-300" />
           </button>
         </div>
 
-        {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-gray-50/50">
+        <div className="flex-1 overflow-y-auto max-h-[60vh] space-y-6 custom-scrollbar bg-gray-50/50 p-6 rounded-3xl mb-6 shadow-inner">
           {chatHistory.length === 0 && !isTyping && (
-            <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-60">
-              <div className="w-20 h-20 bg-indigo-100 rounded-3xl flex items-center justify-center">
+            <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-60 py-10">
+              <div className="w-20 h-20 bg-indigo-100 rounded-[2rem] flex items-center justify-center shadow-inner">
                 <Bot className="w-10 h-10 text-indigo-600" />
               </div>
               <div>
-                <p className="text-lg font-bold text-gray-800">Hello {tutee.name}!</p>
-                <p className="text-sm text-gray-500 max-w-xs">Ask me any questions about your studies or anything else!</p>
+                <p className="text-lg font-black text-gray-800 tracking-tight">Hello {tutee.name}!</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest max-w-[200px] leading-relaxed mx-auto mt-2">Ask me any questions about your studies!</p>
               </div>
             </div>
           )}
@@ -111,7 +110,7 @@ const ChatWithGPT = ({ tutee, isOpen, onClose }: ChatWithGPTProps) => {
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}
             >
               <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${
+                <div className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center shadow-sm ${
                   msg.role === 'user' ? `bg-gradient-to-br ${tutee.colorScheme.gradient}` : 'bg-white border border-indigo-100'
                 }`}>
                   {msg.role === 'user' ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4 text-indigo-600" />}
@@ -130,7 +129,7 @@ const ChatWithGPT = ({ tutee, isOpen, onClose }: ChatWithGPTProps) => {
           {isTyping && (
             <div className="flex justify-start animate-pulse">
               <div className="flex gap-3 max-w-[85%]">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white border border-indigo-100 flex items-center justify-center shadow-sm">
+                <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-white border border-indigo-100 flex items-center justify-center shadow-sm">
                   <Bot className="w-4 h-4 text-indigo-600" />
                 </div>
                 <div className="bg-white p-4 rounded-3xl rounded-tl-none border border-indigo-50 shadow-sm flex items-center gap-1">
@@ -143,7 +142,7 @@ const ChatWithGPT = ({ tutee, isOpen, onClose }: ChatWithGPTProps) => {
           )}
 
           {error && (
-            <div className="p-4 bg-red-50 text-red-600 text-sm font-bold rounded-2xl border border-red-100 text-center mx-4">
+            <div className="p-4 bg-red-50 text-red-600 text-xs font-black uppercase tracking-widest rounded-2xl border-2 border-red-100 text-center mx-4 animate-shake">
               {error}
             </div>
           )}
@@ -153,14 +152,14 @@ const ChatWithGPT = ({ tutee, isOpen, onClose }: ChatWithGPTProps) => {
             <div className="flex justify-start ml-11 gap-2 animate-in fade-in zoom-in duration-300">
               <button
                 onClick={() => setChatHistory(prev => [...prev, { role: 'assistant', content: "Great! Let me know if you need anything else." }])}
-                className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-green-200 transition-colors shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-200 transition-colors shadow-sm active:scale-95"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Ok!
               </button>
               <button
                 onClick={() => handleAsk(chatHistory[chatHistory.length - 2].content, true)}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-200 transition-colors shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-200 transition-colors shadow-sm active:scale-95"
               >
                 <MoreHorizontal className="w-3.5 h-3.5" />
                 Elaborate
@@ -172,7 +171,7 @@ const ChatWithGPT = ({ tutee, isOpen, onClose }: ChatWithGPTProps) => {
         </div>
 
         {/* Input area */}
-        <div className="p-6 bg-white border-t border-gray-100">
+        <div className="space-y-4">
           <div className="relative flex items-center gap-3">
             <textarea
               value={question}
@@ -184,28 +183,29 @@ const ChatWithGPT = ({ tutee, isOpen, onClose }: ChatWithGPTProps) => {
                 }
               }}
               placeholder="Ask me something..."
-              className="flex-1 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 rounded-3xl px-6 py-4 outline-none transition-all text-sm font-medium resize-none max-h-32"
+              className="flex-1 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 rounded-2xl px-6 py-4 outline-none transition-all text-sm font-medium resize-none max-h-32 shadow-inner"
               rows={1}
               disabled={isTyping}
             />
             <button
               onClick={() => handleAsk()}
               disabled={isTyping || !question.trim()}
-              className={`p-4 rounded-2xl text-white shadow-xl transition-all press-effect ${
+              className={`p-4 rounded-2xl text-white shadow-xl transition-all active:scale-95 ${
                 !question.trim() || isTyping 
-                  ? 'bg-gray-300 shadow-none' 
-                  : `bg-gradient-to-br ${tutee.colorScheme.gradient} hover:scale-105`
+                  ? 'bg-gray-200 shadow-none' 
+                  : `bg-gradient-to-br ${tutee.colorScheme.gradient} hover:shadow-2xl`
               }`}
             >
               {isTyping ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             </button>
           </div>
-          <p className="text-[10px] text-center text-gray-400 font-bold uppercase tracking-widest mt-4">
+          <p className="text-[10px] text-center text-gray-400 font-black uppercase tracking-[0.2em]">
             Powered by GPT-4o Mini
           </p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

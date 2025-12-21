@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, BookOpen, Plus, Trash2, Edit2, Save, Sparkles, CheckCircle2, Calendar, Tag, Clock, RotateCcw } from 'lucide-react';
+import { ArrowLeft, BookOpen, Plus, Trash2, Edit2, Save, Sparkles, CheckCircle2, Calendar, Tag, Clock, RotateCcw, X } from 'lucide-react';
 import { Tutee } from '../../types/tuition';
 import {
   fetchLearningPoints,
@@ -587,201 +587,161 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4 sm:p-6 md:p-8 safe-area-inset">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 pb-20 sm:pb-8 safe-area-inset">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
         {/* Header */}
-        <div className="mb-6 sm:mb-8">
+        <div className="pt-6 mb-6 sm:mb-8">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4 transition-colors"
+            className="group flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6 transition-all bg-white/50 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm hover:shadow-md active:scale-95"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Back to Dashboard</span>
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <span className="font-bold">Back</span>
           </button>
           
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-6 sm:p-8">
-            <div className="flex items-center gap-4 mb-4">
-              <div className={`p-3 sm:p-4 bg-gradient-to-br ${gradientClass} rounded-xl flex-shrink-0`}>
+          <div className="bg-white/40 backdrop-blur-md p-6 sm:p-8 rounded-3xl shadow-xl border border-white/20">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+              <div className={`p-4 bg-gradient-to-br ${gradientClass} rounded-2xl shadow-lg flex-shrink-0 self-start sm:self-auto`}>
                 <BookOpen className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
               <div className="flex-1">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1">
-                  Learning Points
-                </h1>
-                <p className="text-gray-600">{tutee.name}</p>
+                <div className="flex items-center gap-3 mb-1">
+                  <h1 className="text-3xl font-black text-gray-900 tracking-tight">
+                    Vault
+                  </h1>
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-gradient-to-r ${gradientClass} text-white shadow-sm`}>
+                    Points
+                  </span>
+                </div>
+                <p className="text-gray-600 font-medium">{tutee.name}'s Knowledge Base</p>
               </div>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className={`bg-gradient-to-br ${gradientClass} rounded-lg p-4 text-white`}>
-                <p className="text-sm opacity-90 mb-1">Total Sessions</p>
-                <p className="text-3xl font-bold">{uniqueSessionDates.size}</p>
+            <div className="grid grid-cols-2 gap-4 mt-8">
+              <div className={`bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-white/50 shadow-sm`}>
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Sessions</p>
+                <p className="text-3xl font-black text-gray-800 tracking-tighter">{uniqueSessionDates.size}</p>
               </div>
-              <div className={`bg-gradient-to-br ${gradientClass} rounded-lg p-4 text-white`}>
-                <p className="text-sm opacity-90 mb-1">Total Learning Points</p>
-                <p className="text-3xl font-bold">{totalLearningPoints}</p>
+              <div className={`bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-white/50 shadow-sm`}>
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Points</p>
+                <p className="text-3xl font-black text-gray-800 tracking-tighter">{totalLearningPoints}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Success Message */}
-        {showSuccess && (
-          <div className="mb-6 bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-center gap-3 animate-fade-in">
-            <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0" />
-            <p className="text-green-800 font-medium">Learning points saved successfully! 🎉</p>
-          </div>
-        )}
+        {/* Alerts & Feedback */}
+        <div className="space-y-4 mb-6">
+          {showSuccess && (
+            <div className="bg-green-500 text-white rounded-2xl p-4 flex items-center gap-3 shadow-lg shadow-green-100 animate-fade-in">
+              <CheckCircle2 className="w-6 h-6 flex-shrink-0" />
+              <p className="font-bold text-sm">Learning points secured! 🎉</p>
+            </div>
+          )}
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 bg-red-50 border-2 border-red-200 rounded-xl p-4 animate-fade-in">
-            <p className="text-red-700">{error}</p>
-          </div>
-        )}
+          {error && (
+            <div className="bg-red-500 text-white rounded-2xl p-4 shadow-lg shadow-red-100 animate-shake">
+              <p className="font-bold text-sm">{error}</p>
+            </div>
+          )}
+        </div>
 
         {/* Add/Edit Form */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-6 sm:p-8 mb-6 animate-fade-in-up">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
-              <Sparkles className={`w-6 h-6 bg-gradient-to-br ${gradientClass} bg-clip-text text-transparent`} />
-              {editingPoint ? 'Edit Learning Points' : 'Add New Learning Points'}
-            </h2>
+        <div className="bg-white/80 backdrop-blur-sm rounded-[2.5rem] shadow-xl p-6 sm:p-10 mb-8 border border-white/40 animate-fade-in-up">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">
+                {editingPoint ? 'Refine Points' : 'Record Progress'}
+              </h2>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                {editingPoint ? 'Update your existing session' : 'Log what you learned today'}
+              </p>
+            </div>
             {editingPoint && (
               <button
                 onClick={handleAddNew}
-                className="text-sm text-gray-600 hover:text-gray-800 font-medium"
+                className="px-4 py-2 bg-gray-100 text-gray-500 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95"
               >
-                Cancel Edit
+                Cancel
               </button>
             )}
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Date Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+              <label className="block text-[10px] font-black text-gray-400 mb-3 uppercase tracking-widest ml-1 flex items-center gap-2">
+                <Calendar className="w-3.5 h-3.5" />
                 Session Date
               </label>
               <input
                 type="date"
                 value={formData.sessionDate}
                 onChange={(e) => setFormData({ ...formData, sessionDate: e.target.value })}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className="w-full px-6 py-4 bg-gray-50/50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-2xl outline-none transition-all text-lg font-bold text-gray-800 shadow-inner"
               />
             </div>
 
             {/* Bullet Points Input */}
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" />
-                  Learning Points *
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Insights & Notes *
                 </label>
-                <span className="text-xs text-gray-500 italic">
-                  💡 Tip: Paste multiple points in the first field!
-                </span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <div className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-black uppercase tracking-tighter w-fit">
+                    Multiline Paste Supported
+                  </div>
+                  <div className="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-[9px] font-black uppercase tracking-tighter w-fit">
+                    Tip: Use /H2O/ for subscripts
+                  </div>
+                </div>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {formData.bulletPoints.map((point, index) => (
                   <div key={index} className="flex items-start gap-3 group animate-fade-in">
-                    <div className={`flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br ${gradientClass} flex items-center justify-center mt-1`}>
-                      <span className="text-white font-bold text-sm">{index + 1}</span>
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-2xl bg-gradient-to-br ${gradientClass} flex items-center justify-center shadow-lg transform group-hover:rotate-6 transition-transform`}>
+                      <span className="text-white font-black text-sm">{index + 1}</span>
                     </div>
                     <textarea
                       value={point}
-                      onChange={(e) => updateBulletPoint(index, e.target.value)}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        const lastChar = newValue.slice(-1);
+                        
+                        // Check if we should trigger conversion (on space or enter)
+                        if (lastChar === ' ' || lastChar === '\n') {
+                          const processed = convertChemistryNotation(newValue);
+                          updateBulletPoint(index, processed);
+                        } else {
+                          updateBulletPoint(index, newValue);
+                        }
+                      }}
                       onPaste={(e) => handlePaste(e, index)}
                       onBlur={(e) => {
-                        // Process chemistry notation on blur (when user finishes typing)
                         const processed = convertChemistryNotation(e.target.value);
                         if (processed !== e.target.value) {
                           updateBulletPoint(index, processed);
                         }
                       }}
-                      placeholder={index === 0 ? `Learning point ${index + 1}... (Paste multiple points here!)` : `Learning point ${index + 1}...`}
-                      className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-y min-h-[44px]"
+                      placeholder={index === 0 ? "What's the key takeaway?" : "Add another point..."}
+                      className="flex-1 px-4 sm:px-6 py-3 sm:py-4 bg-gray-50/50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-xl sm:rounded-2xl outline-none transition-all text-[16px] sm:text-base font-medium text-gray-800 shadow-inner min-h-[60px]"
                       rows={1}
-                      style={{
-                        height: 'auto',
-                        minHeight: '44px',
-                      }}
                       onInput={(e) => {
-                        // Auto-expand textarea
                         const target = e.target as HTMLTextAreaElement;
                         target.style.height = 'auto';
-                        target.style.height = `${Math.max(44, target.scrollHeight)}px`;
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          addBulletPoint();
-                          // Focus next textarea after a brief delay
-                          setTimeout(() => {
-                            const nextTextarea = document.querySelectorAll('textarea[placeholder*="Learning point"]')[index + 1] as HTMLTextAreaElement;
-                            nextTextarea?.focus();
-                          }, 50);
-                        }
-                        
-                        const target = e.target as HTMLTextAreaElement;
-                        const cursorPos = target.selectionStart;
-                        const textBefore = target.value.substring(0, cursorPos);
-                        
-                        // If closing slash is typed, check if we have a complete /formula/ pattern
-                        if (e.key === '/') {
-                          // Check if there's an opening slash before cursor
-                          const lastOpenSlash = textBefore.lastIndexOf('/');
-                          if (lastOpenSlash !== -1) {
-                            const formula = textBefore.substring(lastOpenSlash + 1);
-                            // If we have a valid formula pattern, convert it immediately
-                            if (formula.length > 0 && /^[A-Z][A-Za-z0-9]*$/.test(formula)) {
-                              setTimeout(() => {
-                                const textAfter = target.value.substring(cursorPos + 1); // +1 to skip the / we just typed
-                                const beforeFormula = target.value.substring(0, lastOpenSlash);
-                                const convertedFormula = formula.replace(/\d/g, (digit: string) => {
-                                  const subscriptMap: Record<string, string> = {
-                                    '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
-                                    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉'
-                                  };
-                                  return subscriptMap[digit] || digit;
-                                });
-                                const newValue = beforeFormula + convertedFormula + textAfter;
-                                updateBulletPoint(index, newValue);
-                                // Position cursor after converted formula
-                                setTimeout(() => {
-                                  const newCursorPos = beforeFormula.length + convertedFormula.length;
-                                  target.setSelectionRange(newCursorPos, newCursorPos);
-                                }, 0);
-                              }, 0);
-                            }
-                          }
-                        }
-                        
-                        // Process chemistry notation on space
-                        if (e.key === ' ') {
-                          setTimeout(() => {
-                            const processed = convertChemistryNotation(target.value);
-                            if (processed !== target.value) {
-                              updateBulletPoint(index, processed);
-                              // Restore cursor position (adjust for length change)
-                              const lengthDiff = processed.length - target.value.length;
-                              setTimeout(() => {
-                                target.setSelectionRange(cursorPos + lengthDiff, cursorPos + lengthDiff);
-                              }, 0);
-                            }
-                          }, 10);
-                        }
+                        target.style.height = `${Math.max(60, target.scrollHeight)}px`;
                       }}
                     />
                     {formData.bulletPoints.length > 1 && (
                       <button
                         onClick={() => removeBulletPoint(index)}
-                        className="flex-shrink-0 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                        className="flex-shrink-0 p-3 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                         aria-label="Remove point"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-5 h-5" />
                       </button>
                     )}
                   </div>
@@ -789,20 +749,20 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
               </div>
               <button
                 onClick={addBulletPoint}
-                className="mt-3 flex items-center gap-2 px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors font-medium"
+                className="mt-6 flex items-center gap-2 px-6 py-3 bg-gray-50 text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all font-black text-xs uppercase tracking-widest active:scale-95"
               >
                 <Plus className="w-4 h-4" />
-                Add Another Point
+                Add Entry
               </button>
             </div>
 
             {/* Tags */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <Tag className="w-4 h-4" />
-                Tags (optional)
+              <label className="block text-[10px] font-black text-gray-400 mb-3 uppercase tracking-widest ml-1 flex items-center gap-2">
+                <Tag className="w-3.5 h-3.5" />
+                Category Tags
               </label>
-              <div className="flex gap-2 mb-2">
+              <div className="flex gap-2 mb-4">
                 <input
                   type="text"
                   value={tagInput}
@@ -813,12 +773,12 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
                       addTag();
                     }
                   }}
-                  placeholder="Add a tag and press Enter"
-                  className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="Topic (e.g. Physics)"
+                  className="flex-1 min-w-0 px-3 sm:px-6 py-2.5 sm:py-4 bg-gray-50/50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-xl sm:rounded-2xl outline-none transition-all font-bold text-gray-800 shadow-inner text-xs sm:text-base"
                 />
                 <button
                   onClick={addTag}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                  className="px-4 sm:px-8 py-2.5 sm:py-4 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-xs shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all flex-shrink-0"
                 >
                   Add
                 </button>
@@ -828,14 +788,14 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
                   {formData.tags.map((tag) => (
                     <span
                       key={tag}
-                      className={`px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r ${gradientClass} text-white flex items-center gap-2`}
+                      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-gradient-to-r ${gradientClass} text-white flex items-center gap-2 sm:gap-3 shadow-sm`}
                     >
                       {tag}
                       <button
                         onClick={() => removeTag(tag)}
-                        className="hover:bg-white/20 rounded-full p-0.5"
+                        className="hover:bg-white/20 rounded-lg p-0.5 sm:p-1"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                       </button>
                     </span>
                   ))}
@@ -847,17 +807,17 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className={`w-full bg-gradient-to-r ${gradientClass} text-white py-4 rounded-lg font-semibold text-lg hover:opacity-90 transition-all press-effect disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+              className={`w-full bg-gradient-to-r ${gradientClass} text-white py-4 sm:py-5 rounded-2xl sm:rounded-[2rem] font-black text-base sm:text-xl shadow-xl hover:shadow-2xl hover:opacity-95 transform active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 uppercase tracking-widest mt-4`}
             >
               {isSaving ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Saving...</span>
+                  <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin" />
+                  <span className="text-sm sm:text-base">Syncing...</span>
                 </>
               ) : (
                 <>
-                  <Save className="w-5 h-5" />
-                  <span>{editingPoint ? 'Update' : 'Save'} Learning Points</span>
+                  <Save className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <span className="text-sm sm:text-base">{editingPoint ? 'Confirm Edit' : 'Commit to Vault'}</span>
                 </>
               )}
             </button>
@@ -866,64 +826,64 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
 
         {/* Spaced Repetition Review Section */}
         {mergedSessions.length > 0 && (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-6 sm:p-8 mb-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
-                <RotateCcw className={`w-6 h-6 bg-gradient-to-br ${gradientClass} bg-clip-text text-transparent`} />
-                Review Sessions
-              </h2>
+          <div className="bg-white/80 backdrop-blur-sm rounded-[2.5rem] shadow-xl p-6 sm:p-10 mb-8 border border-white/40 overflow-hidden">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">Memory Refresh</h2>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Review items due today</p>
+              </div>
+              <div className="p-3 bg-yellow-50 rounded-2xl">
+                <RotateCcw className="w-6 h-6 text-yellow-600 animate-spin-slow" />
+              </div>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-4">
               {mergedSessions
-                .filter(session => {
-                  const status = getReviewStatus(session.sessionDate);
-                  return status.isDue;
-                })
+                .filter(session => getReviewStatus(session.sessionDate).isDue)
                 .map((session, index) => {
                   const status = getReviewStatus(session.sessionDate);
                   return (
                     <div
                       key={session.sessionDate}
-                      className="p-4 border-2 border-yellow-300 bg-yellow-50 rounded-lg animate-fade-in-up"
-                      style={{ animationDelay: `${index * 50}ms` }}
+                      className="p-4 sm:p-6 bg-gradient-to-br from-yellow-50 to-orange-50/50 border-2 border-yellow-100 rounded-2xl sm:rounded-3xl shadow-sm animate-fade-in-up flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6"
+                      style={{ animationDelay: `${index * 100}ms` }}
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-5 h-5 text-yellow-600" />
-                          <span className="font-semibold text-gray-800">
-                            {format(parseISO(session.sessionDate), 'EEEE, d MMMM yyyy')}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2 flex-wrap">
+                          <span className="font-black text-gray-800 text-base sm:text-lg tracking-tight">
+                            {format(parseISO(session.sessionDate), 'EEE, MMM d')}
                           </span>
                           {status.reviewCount !== undefined && (
-                            <span className="text-xs text-gray-600">
-                              (Reviewed {status.reviewCount} time{status.reviewCount !== 1 ? 's' : ''})
+                            <span className="px-2 py-0.5 bg-white/60 text-[8px] font-black text-yellow-700 uppercase tracking-widest rounded-full border border-yellow-200 shadow-sm">
+                              Cycle {status.reviewCount}
                             </span>
                           )}
                         </div>
-                        <button
-                          onClick={() => {
-                            setReviewModal({
-                              isOpen: true,
-                              sessionDate: session.sessionDate,
-                              learningPoints: session.bulletPoints,
-                            });
-                          }}
-                          className={`px-4 py-2 bg-gradient-to-r ${gradientClass} text-white rounded-lg hover:opacity-90 transition-all font-medium text-sm flex items-center gap-2`}
-                        >
-                          <Sparkles className="w-4 h-4" />
-                          Let's Review
-                        </button>
+                        <p className="text-[10px] sm:text-xs font-bold text-yellow-700 uppercase tracking-widest opacity-80">Strengthen your neural pathways!</p>
                       </div>
-                      <div className="text-sm text-gray-600">
-                        <p>Review these learning points to strengthen your memory!</p>
-                      </div>
+                      <button
+                        onClick={() => {
+                          setReviewModal({
+                            isOpen: true,
+                            sessionDate: session.sessionDate,
+                            learningPoints: session.bulletPoints,
+                          });
+                        }}
+                        className={`w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r ${gradientClass} text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 sm:gap-3`}
+                      >
+                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                        <span>Start Review</span>
+                      </button>
                     </div>
                   );
                 })}
               {mergedSessions.filter(s => getReviewStatus(s.sessionDate).isDue).length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <CheckCircle2 className="w-12 h-12 mx-auto mb-2 text-green-500" />
-                  <p>All sessions are up to date! 🎉</p>
+                <div className="text-center py-12 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100">
+                  <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-gray-50">
+                    <CheckCircle2 className="w-10 h-10 text-green-400" />
+                  </div>
+                  <p className="text-xl font-black text-gray-400 uppercase tracking-tight">All Caught Up!</p>
+                  <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mt-2">Your memory is sharp today</p>
                 </div>
               )}
             </div>
@@ -931,120 +891,118 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
         )}
 
         {/* Previous Learning Points */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-6 sm:p-8">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6">Previous Sessions</h2>
+        <div className="bg-white/80 backdrop-blur-sm rounded-[2.5rem] shadow-xl p-6 sm:p-10 border border-white/40">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-2xl font-black text-gray-800 tracking-tight leading-tight text-left">The Archive</h2>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Historical Learning Data</p>
+            </div>
+            <div className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100">
+              {mergedSessions.length} Sessions
+            </div>
+          </div>
           
           {loading ? (
-            <div className="text-center py-12 text-gray-500">Loading...</div>
+            <div className="py-20 flex flex-col items-center justify-center gap-4">
+              <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-400 font-black uppercase tracking-widest text-[10px]">Loading vault...</p>
+            </div>
           ) : mergedSessions.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <p className="text-lg mb-2">No learning points yet</p>
-              <p className="text-sm">Add your first learning points above! ✨</p>
+            <div className="py-24 text-center bg-gray-50/50 rounded-[3rem] border-2 border-dashed border-gray-100">
+              <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-gray-50">
+                <BookOpen className="w-12 h-12 text-gray-200" />
+              </div>
+              <h3 className="text-2xl font-black text-gray-400 uppercase tracking-tight">Vault Empty</h3>
+              <p className="text-gray-300 font-bold uppercase tracking-widest text-[10px] mt-2 px-6">Start logging to build your library</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {mergedSessions.map((session, index) => {
                 const reviewStatus = getReviewStatus(session.sessionDate);
-                // Use the first point's ID for editing (we'll edit all points for that date)
                 
                 return (
                   <div
                     key={session.sessionDate}
-                    className={`p-5 border-2 rounded-xl transition-all card-hover animate-fade-in-up ${
+                    className={`relative p-4 sm:p-8 border-2 rounded-[1.5rem] sm:rounded-[2.5rem] transition-all duration-300 group hover:shadow-2xl active:scale-[0.99] touch-manipulation overflow-hidden ${
                       reviewStatus.isDue 
-                        ? 'border-yellow-300 bg-yellow-50' 
-                        : 'border-gray-200 hover:border-indigo-300'
+                        ? 'border-yellow-200 bg-yellow-50/30' 
+                        : 'border-gray-50 bg-white/50 hover:border-indigo-100'
                     }`}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div className="flex items-start justify-between gap-4 mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-6 mb-4 sm:mb-8">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Calendar className="w-5 h-5 text-gray-500" />
-                          <span className="font-semibold text-gray-800">
-                            {format(parseISO(session.sessionDate), 'EEEE, d MMMM yyyy')}
+                        <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3 flex-wrap">
+                          <span className="font-black text-gray-800 text-base sm:text-xl tracking-tight leading-tight">
+                            {format(parseISO(session.sessionDate), 'EEEE, d MMM')}
                           </span>
                           {reviewStatus.isDue && (
-                            <span className="px-2 py-1 bg-yellow-200 text-yellow-800 rounded-full text-xs font-medium">
-                              Due for Review
+                            <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-yellow-500 text-white rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest shadow-lg shadow-yellow-100 animate-pulse">
+                              Urgent Review
                             </span>
                           )}
                         </div>
-                        <div className="flex flex-wrap gap-3 text-xs text-gray-500 mt-2">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            Posted: {format(parseISO(session.createdAt), 'd MMM yyyy, h:mm a')}
-                          </span>
-                          {session.updatedAt !== session.createdAt && (
-                            <span className="flex items-center gap-1">
-                              <Edit2 className="w-3 h-3" />
-                              Edited: {format(parseISO(session.updatedAt), 'd MMM yyyy, h:mm a')}
-                            </span>
-                          )}
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2 sm:mt-4">
+                          <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-gray-50 text-[8px] sm:text-[9px] font-black text-gray-400 uppercase tracking-widest rounded-lg border border-gray-100">
+                            <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                            {format(parseISO(session.createdAt), 'MMM d, h:mm a')}
+                          </div>
                           {reviewStatus.lastReviewed && (
-                            <span className="flex items-center gap-1 text-blue-600">
-                              <RotateCcw className="w-3 h-3" />
-                              Last reviewed: {format(parseISO(reviewStatus.lastReviewed), 'd MMM yyyy, h:mm a')}
-                            </span>
-                          )}
-                          {reviewStatus.nextReview && !reviewStatus.isDue && (
-                            <span className="flex items-center gap-1 text-green-600">
-                              <CheckCircle2 className="w-3 h-3" />
-                              Next review: {format(reviewStatus.nextReview, 'd MMM yyyy')}
-                              {reviewStatus.daysUntil > 0 && ` (in ${reviewStatus.daysUntil} day${reviewStatus.daysUntil !== 1 ? 's' : ''})`}
-                            </span>
+                            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 text-[8px] sm:text-[9px] font-black text-blue-500 uppercase tracking-widest rounded-lg border border-blue-100">
+                              <RotateCcw className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                              Refreshed: {format(parseISO(reviewStatus.lastReviewed), 'MMM d')}
+                            </div>
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 self-end sm:self-auto">
                         <button
                           onClick={() => handleEdit(session)}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          className="p-3 sm:p-4 bg-white text-indigo-600 rounded-xl sm:rounded-2xl shadow-sm border border-gray-50 hover:bg-indigo-50 active:scale-90 transition-all group-hover:shadow-md"
                           aria-label="Edit"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
                         <button
                           onClick={() => {
-                            // Delete all points for this session date
                             const idsToDelete = session.ids;
                             if (idsToDelete.length > 0) {
                               setDeleteConfirm({ isOpen: true, pointId: idsToDelete.join(',') });
                             }
                           }}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-3 sm:p-4 bg-white text-red-400 rounded-xl sm:rounded-2xl shadow-sm border border-gray-50 hover:bg-red-50 active:scale-90 transition-all group-hover:shadow-md"
                           aria-label="Delete"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
                       </div>
                     </div>
                     
-                    <div className="space-y-2 mb-4">
+                    <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-8 bg-white/40 p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-inner border border-white/20">
                       {session.bulletPoints.map((bp, bpIndex) => (
-                        <div key={bpIndex} className="flex items-start gap-3">
-                          <div className={`flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br ${gradientClass} flex items-center justify-center mt-0.5`}>
-                            <span className="text-white text-xs font-bold">•</span>
+                        <div key={bpIndex} className="flex items-start gap-3 sm:gap-4">
+                          <div className={`flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-lg sm:rounded-xl bg-gradient-to-br ${gradientClass} flex items-center justify-center shadow-md transform -rotate-12`}>
+                            <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-white rounded-full" />
                           </div>
-                          <p className="text-gray-700 flex-1 whitespace-pre-wrap">{convertChemistryNotation(bp)}</p>
+                          <p className="text-gray-700 flex-1 font-medium leading-relaxed text-xs sm:text-sm md:text-base">{convertChemistryNotation(bp)}</p>
                         </div>
                       ))}
                     </div>
                     
                     {session.tags && session.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2 px-1">
                         {session.tags.map((tag) => (
                           <span
                             key={tag}
-                            className={`px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${gradientClass} text-white flex items-center gap-1`}
+                            className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[8px] sm:text-[9px] font-black uppercase tracking-widest bg-gray-100 text-gray-400 border border-gray-200 shadow-sm`}
                           >
-                            <Tag className="w-3 h-3" />
-                            {tag}
+                            #{tag}
                           </span>
                         ))}
                       </div>
                     )}
+
+                    <div className={`absolute top-0 right-0 w-1.5 h-full bg-gradient-to-b ${gradientClass} opacity-0 group-hover:opacity-100 transition-all duration-500`} />
                   </div>
                 );
               })}

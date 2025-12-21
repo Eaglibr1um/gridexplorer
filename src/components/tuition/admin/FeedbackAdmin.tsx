@@ -1,37 +1,39 @@
 import { useState, useEffect, useMemo } from 'react';
-import { MessageSquare, X, Filter, Bug, Lightbulb, HelpCircle, FileText, CheckCircle, Clock, AlertCircle, XCircle, Edit2, Save, BookOpen, GraduationCap, Search, RotateCcw, ChevronDown } from 'lucide-react';
+import { 
+  MessageSquare, X, Filter, Bug, Lightbulb, HelpCircle, FileText, CheckCircle, Clock, AlertCircle, XCircle, Edit2, Save, BookOpen, GraduationCap, Search, RotateCcw, ChevronDown,
+  User, Star, Heart, Zap, Target, Award, Trophy, Brain, Rocket, Sparkles, BookMarked, School, PenTool, Calculator, FlaskConical, Atom, Music, Palette, Camera, Gamepad2, Code, Globe, Coffee, Smile
+} from 'lucide-react';
 import { fetchAllFeedback, updateFeedback, FeedbackWithTutee, UpdateFeedbackInput } from '../../../services/feedbackService';
-import * as LucideIcons from 'lucide-react';
 
-// Icon mapping for tutees - dynamically import icons as needed
+// Icon mapping for tutees
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   BookOpen,
   GraduationCap,
-  User: LucideIcons.User,
-  Star: LucideIcons.Star,
-  Heart: LucideIcons.Heart,
-  Zap: LucideIcons.Zap,
-  Target: LucideIcons.Target,
-  Award: LucideIcons.Award,
-  Trophy: LucideIcons.Trophy,
-  Lightbulb: LucideIcons.Lightbulb,
-  Brain: LucideIcons.Brain,
-  Rocket: LucideIcons.Rocket,
-  Sparkles: LucideIcons.Sparkles,
-  BookMarked: LucideIcons.BookMarked,
-  School: LucideIcons.School,
-  PenTool: LucideIcons.PenTool,
-  Calculator: LucideIcons.Calculator,
-  FlaskConical: LucideIcons.FlaskConical,
-  Atom: LucideIcons.Atom,
-  Music: LucideIcons.Music,
-  Palette: LucideIcons.Palette,
-  Camera: LucideIcons.Camera,
-  Gamepad2: LucideIcons.Gamepad2,
-  Code: LucideIcons.Code,
-  Globe: LucideIcons.Globe,
-  Coffee: LucideIcons.Coffee,
-  Smile: LucideIcons.Smile,
+  User,
+  Star,
+  Heart,
+  Zap,
+  Target,
+  Award,
+  Trophy,
+  Lightbulb,
+  Brain,
+  Rocket,
+  Sparkles,
+  BookMarked,
+  School,
+  PenTool,
+  Calculator,
+  FlaskConical,
+  Atom,
+  Music,
+  Palette,
+  Camera,
+  Gamepad2,
+  Code,
+  Globe,
+  Coffee,
+  Smile,
 };
 
 const FeedbackAdmin = () => {
@@ -51,13 +53,7 @@ const FeedbackAdmin = () => {
   const [editAdminNotes, setEditAdminNotes] = useState('');
 
   const getIcon = (iconName: string) => {
-    // Try direct mapping first
-    if (iconMap[iconName]) {
-      return iconMap[iconName];
-    }
-    // Try dynamic lookup from LucideIcons
-    const IconComponent = (LucideIcons as any)[iconName];
-    return IconComponent || BookOpen;
+    return iconMap[iconName] || BookOpen;
   };
 
   useEffect(() => {

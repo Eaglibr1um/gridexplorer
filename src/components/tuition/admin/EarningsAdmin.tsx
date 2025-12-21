@@ -1,6 +1,40 @@
 import { useState, useEffect, useMemo } from 'react';
-import { DollarSign, Calendar, TrendingUp, History, Copy, Check, Plus, Trash2, Edit2, Settings, FileText, Eye, Save, X, GraduationCap, ChevronRight, Search, User } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { 
+  DollarSign, Calendar, TrendingUp, History, Copy, Check, Plus, Trash2, Edit2, Settings, FileText, Eye, Save, X, GraduationCap, ChevronRight, Search, User,
+  BookOpen, Star, Heart, Zap, Target, Award, Trophy, Lightbulb, Brain, Rocket, Sparkles, BookMarked, School, PenTool, Calculator, FlaskConical, Atom, Music, Palette, Camera, Gamepad2, Code, Globe, Coffee, Smile
+} from 'lucide-react';
+
+// Icon mapping for tutees
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  BookOpen,
+  GraduationCap,
+  User,
+  Star,
+  Heart,
+  Zap,
+  Target,
+  Award,
+  Trophy,
+  Lightbulb,
+  Brain,
+  Rocket,
+  Sparkles,
+  BookMarked,
+  School,
+  PenTool,
+  Calculator,
+  FlaskConical,
+  Atom,
+  Music,
+  Palette,
+  Camera,
+  Gamepad2,
+  Code,
+  Globe,
+  Coffee,
+  Smile,
+};
 import { Tutee } from '../../../types/tuition';
 import {
   fetchEarningsRecords,
@@ -83,8 +117,7 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
 
   // Icon helper
   const getIcon = (iconName: string) => {
-    const IconComponent = (LucideIcons as any)[iconName];
-    return IconComponent || GraduationCap;
+    return iconMap[iconName] || GraduationCap;
   };
 
   // Update selected tutee when initialTuteeId changes
@@ -461,22 +494,18 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
           </div>
         </div>
         {selectedTuteeId && (
-          <button
-            onClick={() => {
-              setShowSettings(!showSettings);
-              if (!showSettings) {
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setShowSettings(true);
                 loadSettingsForEdit();
-              }
-            }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors-smooth press-effect text-sm font-medium ${
-              showSettings
-                ? 'bg-indigo-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <Settings className="w-4 h-4" />
-            {showSettings ? 'View Earnings' : 'Settings'}
-          </button>
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors-smooth press-effect text-sm font-medium"
+            >
+              <Settings className="w-4 h-4" />
+              Settings
+            </button>
+          </div>
         )}
       </div>
 
@@ -551,233 +580,10 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading earnings data...</p>
         </div>
-      ) : selectedTuteeId && selectedTutee ? (
-        showSettings ? (
-          /* Settings View */
-          <div className="space-y-6">
-            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                Earnings Settings for {selectedTutee.name}
-              </h3>
-
-              {/* Calculation Type Selection */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">Fee Calculation Method</label>
-                <div className="flex p-1 bg-gray-100 rounded-xl w-full max-w-sm">
-                  <button
-                    onClick={() => setSettingsForm({ ...settingsForm, calculationType: 'hourly' })}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${
-                      settingsForm.calculationType === 'hourly'
-                        ? 'bg-white text-indigo-600 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <Calendar className="w-4 h-4" />
-                    Hourly Rate
-                  </button>
-                  <button
-                    onClick={() => setSettingsForm({ ...settingsForm, calculationType: 'per_session' })}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${
-                      settingsForm.calculationType === 'per_session'
-                        ? 'bg-white text-indigo-600 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <DollarSign className="w-4 h-4" />
-                    Per Session
-                  </button>
-                </div>
-              </div>
-
-              {/* Fee Input */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <DollarSign className="w-4 h-4" />
-                  {settingsForm.calculationType === 'hourly' ? 'Fee Per Hour ($)' : 'Fee Per Session ($)'} *
-                </label>
-                {settingsForm.calculationType === 'hourly' ? (
-                  <input
-                    type="number"
-                    value={settingsForm.feePerHour === 0 ? '' : settingsForm.feePerHour}
-                    onChange={(e) => {
-                      const valueStr = e.target.value;
-                      if (valueStr === '') {
-                        setSettingsForm({ ...settingsForm, feePerHour: 0 });
-                        return;
-                      }
-                      const value = parseFloat(valueStr);
-                      if (!isNaN(value) && value >= 0) {
-                        setSettingsForm({ ...settingsForm, feePerHour: value });
-                        setSettingsError('');
-                      }
-                    }}
-                    min="0"
-                    step="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 bg-white"
-                    placeholder="e.g. 140.00"
-                    disabled={savingSettings}
-                  />
-                ) : (
-                  <input
-                    type="number"
-                    value={settingsForm.feePerSession === 0 ? '' : settingsForm.feePerSession}
-                    onChange={(e) => {
-                      const valueStr = e.target.value;
-                      if (valueStr === '') {
-                        setSettingsForm({ ...settingsForm, feePerSession: 0 });
-                        return;
-                      }
-                      const value = parseFloat(valueStr);
-                      if (!isNaN(value) && value >= 0) {
-                        setSettingsForm({ ...settingsForm, feePerSession: value });
-                        setSettingsError('');
-                      }
-                    }}
-                    min="0"
-                    step="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 bg-white"
-                    placeholder="e.g. 200.00"
-                    disabled={savingSettings}
-                  />
-                )}
-                <p className="text-xs text-gray-500 mt-1">
-                  {settingsForm.calculationType === 'hourly' 
-                    ? 'This will be used to calculate session amounts based on duration' 
-                    : 'Each session will be billed at this fixed amount'}
-                </p>
-              </div>
-
-              {/* Message Template */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Message Template *
-                </label>
-                <textarea
-                  value={settingsForm.messageTemplate}
-                  onChange={(e) => {
-                    setSettingsForm({ ...settingsForm, messageTemplate: e.target.value });
-                    setSettingsError('');
-                  }}
-                  rows={12}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm text-gray-900 bg-white"
-                  placeholder="Enter message template..."
-                  disabled={savingSettings}
-                />
-                <div className="mt-4 p-5 bg-white rounded-xl border border-indigo-100 shadow-sm">
-                  <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3">Available variables</p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-y-3 gap-x-4">
-                    <div className="flex flex-col">
-                      <code className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded w-fit font-bold mb-1">&#123;month&#125;</code>
-                      <span className="text-[10px] text-gray-400 font-medium uppercase">Month name</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <code className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded w-fit font-bold mb-1">&#123;year&#125;</code>
-                      <span className="text-[10px] text-gray-400 font-medium uppercase">Year</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <code className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded w-fit font-bold mb-1">&#123;tutee_name&#125;</code>
-                      <span className="text-[10px] text-gray-400 font-medium uppercase">Tutee name</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <code className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded w-fit font-bold mb-1">&#123;sessions_list&#125;</code>
-                      <span className="text-[10px] text-gray-400 font-medium uppercase">Session list</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <code className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded w-fit font-bold mb-1">&#123;sessions_dates&#125;</code>
-                      <span className="text-[10px] text-gray-400 font-medium uppercase">Dates only</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <code className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded w-fit font-bold mb-1">&#123;total_sessions&#125;</code>
-                      <span className="text-[10px] text-gray-400 font-medium uppercase">Total count</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <code className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded w-fit font-bold mb-1">&#123;total_hours&#125;</code>
-                      <span className="text-[10px] text-gray-400 font-medium uppercase">Total hours</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <code className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded w-fit font-bold mb-1">&#123;total_amount&#125;</code>
-                      <span className="text-[10px] text-gray-400 font-medium uppercase">Total $</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <code className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded w-fit font-bold mb-1">&#123;fee_per_hour&#125;</code>
-                      <span className="text-[10px] text-gray-400 font-medium uppercase">$/Hour</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <code className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded w-fit font-bold mb-1">&#123;fee_per_session&#125;</code>
-                      <span className="text-[10px] text-gray-400 font-medium uppercase">$/Session</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Preview Section */}
-                <div className="mt-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Eye className="w-4 h-4 text-indigo-600" />
-                    <p className="text-sm font-bold text-gray-700 uppercase tracking-wider">Live Preview</p>
-                  </div>
-                  {previewMessage ? (
-                    <div className="bg-white rounded-xl p-5 border border-indigo-100 shadow-sm relative overflow-hidden">
-                      <div className="font-mono text-sm whitespace-pre-wrap text-gray-800 leading-relaxed relative z-10">
-                        {previewMessage}
-                      </div>
-                      <div className="absolute -right-2 -bottom-2 text-indigo-50 pointer-events-none">
-                        <Eye className="w-16 h-16 opacity-20" />
-                      </div>
-                      <p className="text-[10px] font-bold text-indigo-400 mt-4 uppercase tracking-widest text-right">
-                        Simulated using {previewSessions.length} current sessions
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="bg-white/50 rounded-xl p-8 border-2 border-dashed border-gray-200 text-center">
-                      <p className="text-sm text-gray-400 italic">
-                        {previewSessions.length === 0 
-                          ? "Add some sessions to see how your template looks with real data" 
-                          : "Complete the template to see a preview"}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {settingsError && (
-                <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg animate-fade-in">
-                  <p className="text-sm text-red-700">{settingsError}</p>
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-4 border-t">
-                <button
-                  onClick={() => setShowSettings(false)}
-                  disabled={savingSettings}
-                  className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors-smooth press-effect disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-              <button
-                onClick={handleSaveSettings}
-                disabled={savingSettings || !settingsForm.messageTemplate.trim() || (settingsForm.calculationType === 'hourly' ? settingsForm.feePerHour <= 0 : settingsForm.feePerSession <= 0)}
-                className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors-smooth press-effect disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                  {savingSettings ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      <span>Save Settings</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
+      ) : (
+        selectedTuteeId && selectedTutee ? (
           /* Earnings View */
-        <div className="space-y-6">
+          <div className="space-y-6">
           {/* Current Month Summary */}
           <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
@@ -798,29 +604,29 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-indigo-100 flex items-center gap-4">
                   <div className="p-3 bg-indigo-50 rounded-lg text-indigo-600">
-                    <Calendar className="w-6 h-6" />
+                    <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Sessions</p>
-                    <p className="text-2xl font-bold text-gray-900">{currentMonthRecord.totalSessions}</p>
+                    <p className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Sessions</p>
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{currentMonthRecord.totalSessions}</p>
                   </div>
                 </div>
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-purple-100 flex items-center gap-4">
                   <div className="p-3 bg-purple-50 rounded-lg text-purple-600">
-                    <History className="w-6 h-6" />
+                    <History className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Hours</p>
-                    <p className="text-2xl font-bold text-gray-900">{currentMonthRecord.totalHours.toFixed(2)}h</p>
+                    <p className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Total Hours</p>
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{currentMonthRecord.totalHours.toFixed(2)}h</p>
                   </div>
                 </div>
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-green-100 flex items-center gap-4">
                   <div className="p-3 bg-green-50 rounded-lg text-green-600">
-                    <DollarSign className="w-6 h-6" />
+                    <DollarSign className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Earnings</p>
-                    <p className="text-2xl font-bold text-gray-900">${currentMonthRecord.totalAmount.toFixed(2)}</p>
+                    <p className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Earnings</p>
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900">${currentMonthRecord.totalAmount.toFixed(2)}</p>
                   </div>
                 </div>
               </div>
@@ -868,9 +674,9 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <p className="text-lg font-bold text-gray-900">${session.amount.toFixed(2)}</p>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-2 sm:gap-4">
+                        <p className="text-sm sm:text-lg font-bold text-gray-900">${session.amount.toFixed(2)}</p>
+                        <div className="flex gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => {
                               setEditingSession(session);
@@ -880,17 +686,17 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
                                 endTime: session.endTime,
                               });
                             }}
-                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            className="p-1.5 sm:p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                             title="Edit session"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                           <button
                             onClick={() => setDeleteConfirm({ isOpen: true, sessionId: session.id })}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Delete session"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                         </div>
                       </div>
@@ -997,13 +803,12 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+          )}
         </div>
-        )
-      ) : (
-        /* No tutee selected - show total monthly summary */
-        <div className="space-y-6 animate-fade-in">
+      </div>
+    ) : (
+      /* No tutee selected - show total monthly summary */
+      <div className="space-y-6 animate-fade-in">
           <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-8">
@@ -1087,16 +892,25 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
             </div>
           )}
         </div>
-      )}
+      )
+    )}
 
-      {/* Add/Edit Session Modal */}
-      {(showAddSession || editingSession) && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-modal-backdrop">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full animate-modal-content">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-800">
-                {editingSession ? 'Edit Session' : 'Add Session'}
-              </h3>
+    {/* Add/Edit Session Modal */}
+      {(showAddSession || editingSession) && createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-modal-backdrop">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl p-6 sm:p-10 max-w-md w-full my-auto animate-modal-content border border-white/20 relative">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl shadow-inner">
+                  <Plus className={`w-7 h-7 transition-transform duration-500 ${editingSession ? 'rotate-90' : ''}`} />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">
+                    {editingSession ? 'Edit Session' : 'Add Session'}
+                  </h3>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Earnings Record</p>
+                </div>
+              </div>
               <button
                 onClick={() => {
                   setShowAddSession(false);
@@ -1107,85 +921,251 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
                     endTime: '17:00',
                   });
                 }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-3 hover:bg-gray-100 rounded-2xl transition-all active:scale-90"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-6 h-6 text-gray-300" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Date</label>
                 <input
                   type="date"
                   value={sessionForm.sessionDate}
                   onChange={(e) => setSessionForm({ ...sessionForm, sessionDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 bg-white"
+                  className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-bold text-gray-800 shadow-inner"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Start Time</label>
                   <input
                     type="time"
                     value={sessionForm.startTime}
                     onChange={(e) => setSessionForm({ ...sessionForm, startTime: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 bg-white"
+                    className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-bold text-gray-800 shadow-inner text-center"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">End Time</label>
                   <input
                     type="time"
                     value={sessionForm.endTime}
                     onChange={(e) => setSessionForm({ ...sessionForm, endTime: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 bg-white"
+                    className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-bold text-gray-800 shadow-inner text-center"
                   />
                 </div>
               </div>
               {settings && (
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">
-                    Estimated: {settings.calculationType === 'hourly' 
-                      ? `${calculateSessionAmount(sessionForm.startTime, sessionForm.endTime, settings.feePerHour, 'hourly').durationHours.toFixed(2)}h • $${calculateSessionAmount(sessionForm.startTime, sessionForm.endTime, settings.feePerHour, 'hourly').amount.toFixed(2)}`
-                      : `$${(settings.feePerSession || 0).toFixed(2)} per session`}
-                  </p>
+                <div className="p-5 bg-indigo-50/50 border-2 border-indigo-100 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <DollarSign className="w-5 h-5 text-indigo-600" />
+                    <div>
+                      <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-0.5">Estimated Earnings</p>
+                      <p className="text-lg font-black text-indigo-700">
+                        {settings.calculationType === 'hourly' 
+                          ? `${calculateSessionAmount(sessionForm.startTime, sessionForm.endTime, settings.feePerHour, 'hourly').durationHours.toFixed(2)}h • $${calculateSessionAmount(sessionForm.startTime, sessionForm.endTime, settings.feePerHour, 'hourly').amount.toFixed(2)}`
+                          : `$${(settings.feePerSession || 0).toFixed(2)} total`}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
-            </div>
 
-            <div className="flex gap-3 mt-6 pt-4 border-t">
-              <button
-                onClick={() => {
-                  setShowAddSession(false);
-                  setEditingSession(null);
-                }}
-                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={editingSession ? handleUpdateSession : handleAddSession}
-                className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
-              >
-                {editingSession ? 'Update' : 'Add'} Session
-              </button>
+              <div className="flex gap-4 pt-4 border-t border-gray-100">
+                <button
+                  onClick={() => {
+                    setShowAddSession(false);
+                    setEditingSession(null);
+                  }}
+                  className="flex-1 px-6 py-4 bg-gray-50 text-gray-500 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 transition-all active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={editingSession ? handleUpdateSession : handleAddSession}
+                  className="flex-[2] px-6 py-4 text-white bg-indigo-600 rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:bg-indigo-700 hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{editingSession ? 'Update' : 'Add'} Session</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Earnings Settings Modal */}
+      {showSettings && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-modal-backdrop">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl p-6 sm:p-10 max-w-2xl w-full my-auto animate-modal-content border border-white/20 relative">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl shadow-inner">
+                  <Settings className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">Earnings Settings</h3>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">{selectedTutee?.name}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSettings(false)}
+                disabled={savingSettings}
+                className="p-3 hover:bg-gray-100 rounded-2xl transition-all active:scale-90"
+              >
+                <X className="w-6 h-6 text-gray-300" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Calculation Type Selection */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Fee Calculation Method</label>
+                <div className="flex p-2 bg-gray-100 rounded-2xl">
+                  <button
+                    onClick={() => setSettingsForm({ ...settingsForm, calculationType: 'hourly' })}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                      settingsForm.calculationType === 'hourly'
+                        ? 'bg-white text-indigo-600 shadow-sm scale-[1.02]'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Hourly Rate
+                  </button>
+                  <button
+                    onClick={() => setSettingsForm({ ...settingsForm, calculationType: 'per_session' })}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                      settingsForm.calculationType === 'per_session'
+                        ? 'bg-white text-indigo-600 shadow-sm scale-[1.02]'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    <DollarSign className="w-4 h-4" />
+                    Per Session
+                  </button>
+                </div>
+              </div>
+
+              {/* Fee Input */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                  {settingsForm.calculationType === 'hourly' ? 'Fee Per Hour ($)' : 'Fee Per Session ($)'}
+                </label>
+                <div className="relative">
+                  <div className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</div>
+                  <input
+                    type="number"
+                    value={settingsForm.feePerHour === 0 && settingsForm.calculationType === 'hourly' ? '' : (settingsForm.calculationType === 'hourly' ? settingsForm.feePerHour : settingsForm.feePerSession)}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value) || 0;
+                      if (settingsForm.calculationType === 'hourly') {
+                        setSettingsForm({ ...settingsForm, feePerHour: value });
+                      } else {
+                        setSettingsForm({ ...settingsForm, feePerSession: value });
+                      }
+                      setSettingsError('');
+                    }}
+                    className="w-full pl-10 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-bold text-gray-800 shadow-inner"
+                    placeholder="0.00"
+                    disabled={savingSettings}
+                  />
+                </div>
+              </div>
+
+              {/* Message Template */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Message Template</label>
+                <textarea
+                  value={settingsForm.messageTemplate}
+                  onChange={(e) => {
+                    setSettingsForm({ ...settingsForm, messageTemplate: e.target.value });
+                    setSettingsError('');
+                  }}
+                  rows={6}
+                  className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all font-mono text-xs text-gray-800 shadow-inner resize-none"
+                  placeholder="Enter message template..."
+                  disabled={savingSettings}
+                />
+                
+                {/* Live Preview Section */}
+                <div className="mt-4">
+                  <div className="flex items-center gap-2 mb-2 ml-1">
+                    <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Live Preview</span>
+                  </div>
+                  {previewMessage ? (
+                    <div className="bg-white rounded-2xl p-5 border-2 border-indigo-50 shadow-sm relative overflow-hidden group">
+                      <div className="font-mono text-[11px] whitespace-pre-wrap text-gray-600 leading-relaxed relative z-10 max-h-[150px] overflow-y-auto">
+                        {previewMessage}
+                      </div>
+                      <div className="absolute -right-2 -bottom-2 text-indigo-50 pointer-events-none group-hover:scale-110 transition-transform duration-500">
+                        <Eye className="w-16 h-16 opacity-10" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50/50 rounded-2xl p-6 border-2 border-dashed border-gray-100 text-center">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest italic">
+                        Preview Unavailable
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {settingsError && (
+                <div className="p-4 bg-red-50 border-2 border-red-100 rounded-2xl animate-shake flex items-center gap-3">
+                  <X className="w-5 h-5 text-red-600" />
+                  <p className="text-sm font-bold text-red-700 uppercase tracking-wide">{settingsError}</p>
+                </div>
+              )}
+
+              <div className="flex gap-4 pt-4 border-t border-gray-100">
+                <button
+                  onClick={() => setShowSettings(false)}
+                  disabled={savingSettings}
+                  className="flex-1 px-6 py-4 bg-gray-50 text-gray-500 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={savingSettings || !settingsForm.messageTemplate.trim() || (settingsForm.calculationType === 'hourly' ? settingsForm.feePerHour <= 0 : settingsForm.feePerSession <= 0)}
+                  className={`flex-[2] px-6 py-4 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-gradient-to-r ${selectedTutee?.colorScheme.gradient || 'from-indigo-600 to-purple-600'}`}
+                >
+                  {savingSettings ? (
+                    <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Save Settings</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* Delete Confirmation */}
-      <ConfirmationModal
-        isOpen={deleteConfirm.isOpen}
-        onConfirm={handleDeleteSession}
-        onCancel={() => setDeleteConfirm({ isOpen: false, sessionId: null })}
-        title="Delete Session"
-        message="Are you sure you want to delete this session? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        type="danger"
-      />
+      {deleteConfirm.isOpen && createPortal(
+        <ConfirmationModal
+          isOpen={deleteConfirm.isOpen}
+          onConfirm={handleDeleteSession}
+          onCancel={() => setDeleteConfirm({ isOpen: false, sessionId: null })}
+          title="Delete Session"
+          message="Are you sure you want to delete this session? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          type="danger"
+        />,
+        document.body
+      )}
     </div>
   );
 };

@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, Bug, Lightbulb, HelpCircle, FileText, CheckCircle, Clock, AlertCircle, XCircle, ChevronDown, ChevronUp, Edit2, Trash2, Save, X } from 'lucide-react';
+import { 
+  MessageSquare, Bug, Lightbulb, HelpCircle, FileText, CheckCircle, Clock, 
+  AlertCircle, XCircle, ChevronDown, ChevronUp, Edit2, Trash2, Save, X, Shield, Calendar, Loader2,
+  BookOpen, GraduationCap, User, Star, Heart, Zap, Target, Award, Trophy, 
+  Brain, Rocket, Sparkles, BookMarked, School, PenTool, Calculator, 
+  FlaskConical, Atom, Music, Palette, Camera, Gamepad2, Code, Globe, Coffee, Smile
+} from 'lucide-react';
 import { fetchFeedback, updateFeedback, deleteFeedback, Feedback, UpdateFeedbackInput } from '../../services/feedbackService';
 import { Tutee } from '../../types/tuition';
 import ConfirmationModal from '../ui/ConfirmationModal';
-import * as LucideIcons from 'lucide-react';
 
 interface MyFeedbackProps {
   tutee: Tutee;
@@ -11,33 +16,33 @@ interface MyFeedbackProps {
 
 // Icon mapping for tutees
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  BookOpen: LucideIcons.BookOpen,
-  GraduationCap: LucideIcons.GraduationCap,
-  User: LucideIcons.User,
-  Star: LucideIcons.Star,
-  Heart: LucideIcons.Heart,
-  Zap: LucideIcons.Zap,
-  Target: LucideIcons.Target,
-  Award: LucideIcons.Award,
-  Trophy: LucideIcons.Trophy,
-  Lightbulb: LucideIcons.Lightbulb,
-  Brain: LucideIcons.Brain,
-  Rocket: LucideIcons.Rocket,
-  Sparkles: LucideIcons.Sparkles,
-  BookMarked: LucideIcons.BookMarked,
-  School: LucideIcons.School,
-  PenTool: LucideIcons.PenTool,
-  Calculator: LucideIcons.Calculator,
-  FlaskConical: LucideIcons.FlaskConical,
-  Atom: LucideIcons.Atom,
-  Music: LucideIcons.Music,
-  Palette: LucideIcons.Palette,
-  Camera: LucideIcons.Camera,
-  Gamepad2: LucideIcons.Gamepad2,
-  Code: LucideIcons.Code,
-  Globe: LucideIcons.Globe,
-  Coffee: LucideIcons.Coffee,
-  Smile: LucideIcons.Smile,
+  BookOpen,
+  GraduationCap,
+  User,
+  Star,
+  Heart,
+  Zap,
+  Target,
+  Award,
+  Trophy,
+  Lightbulb,
+  Brain,
+  Rocket,
+  Sparkles,
+  BookMarked,
+  School,
+  PenTool,
+  Calculator,
+  FlaskConical,
+  Atom,
+  Music,
+  Palette,
+  Camera,
+  Gamepad2,
+  Code,
+  Globe,
+  Coffee,
+  Smile,
 };
 
 const MyFeedback = ({ tutee }: MyFeedbackProps) => {
@@ -213,26 +218,26 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-5 sm:p-6 md:p-8">
+    <div className="bg-white/60 backdrop-blur-sm rounded-[2.5rem] shadow-xl p-6 sm:p-8 border border-white/40 animate-fade-in-up">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between mb-4 hover:opacity-80 transition-opacity"
+        className="w-full flex items-center justify-between group"
       >
-        <div className="flex items-center gap-3">
-          <div className={`p-2 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-lg`}>
-            <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+        <div className="flex items-center gap-4">
+          <div className={`p-4 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-2xl shadow-lg transform group-hover:rotate-6 transition-transform`}>
+            <MessageSquare className="w-6 h-6 text-white" />
           </div>
           <div className="text-left">
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-800">My Feedback</h3>
-            <p className="text-sm text-gray-600">
+            <h3 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">My Feedback</h3>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
               {feedback.length === 0 
-                ? 'No feedback submitted yet' 
-                : `${feedback.length} feedback item${feedback.length !== 1 ? 's' : ''}`}
+                ? 'Share your thoughts' 
+                : `${feedback.length} Submissions`}
             </p>
           </div>
         </div>
         {feedback.length > 0 && (
-          <div className="text-gray-400">
+          <div className="p-3 bg-gray-50 rounded-2xl text-gray-400 group-hover:text-indigo-600 transition-colors shadow-inner border border-gray-100">
             {isExpanded ? (
               <ChevronUp className="w-5 h-5" />
             ) : (
@@ -243,21 +248,22 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
       </button>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg animate-fade-in">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="mt-6 p-4 bg-red-50 border-2 border-red-100 rounded-2xl animate-shake">
+          <p className="text-xs font-bold text-red-700 uppercase tracking-wide text-center">{error}</p>
         </div>
       )}
 
       {isExpanded && (
-        <>
+        <div className="mt-8">
           {feedback.length === 0 ? (
-            <div className="text-center py-8">
-              <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600 mb-2">You haven't submitted any feedback yet.</p>
-              <p className="text-sm text-gray-500">Use the feedback button to share your thoughts!</p>
+            <div className="text-center py-12 bg-gray-50/50 rounded-[2rem] border-2 border-dashed border-gray-100">
+              <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <MessageSquare className="w-10 h-10 text-gray-200" />
+              </div>
+              <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] px-6">No entries yet. Use the feedback button to start!</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {feedback.map((item) => {
                 const TypeIcon = getTypeIcon(item.type);
                 const StatusIcon = getStatusIcon(item.status);
@@ -266,14 +272,12 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                 return (
                   <div
                     key={item.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    className="group bg-white/80 border border-gray-100 rounded-3xl p-5 sm:p-6 hover:shadow-xl hover:border-indigo-100 transition-all duration-300 touch-manipulation"
                   >
                     {isEditing ? (
-                      <div className="space-y-4">
+                      <div className="space-y-6">
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Type
-                          </label>
+                          <label className="block text-[10px] font-black text-gray-400 mb-3 uppercase tracking-widest ml-1">Category</label>
                           <div className="grid grid-cols-2 gap-2">
                             {[
                               { value: 'feature_request' as const, label: 'Feature', icon: Lightbulb },
@@ -287,15 +291,15 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                                 <button
                                   key={ft.value}
                                   onClick={() => setEditType(ft.value)}
-                                  className={`p-2 rounded-lg border-2 transition-all text-left text-sm ${
+                                  className={`p-3 rounded-2xl border-2 transition-all text-left ${
                                     isSelected
-                                      ? 'border-indigo-500 bg-indigo-50'
-                                      : 'border-gray-200 hover:border-gray-300'
+                                      ? 'border-indigo-500 bg-indigo-50 shadow-inner'
+                                      : 'border-gray-50 bg-gray-50/50 hover:border-indigo-100'
                                   }`}
                                 >
                                   <div className="flex items-center gap-2">
-                                    <Icon className={`w-4 h-4 ${isSelected ? 'text-indigo-600' : 'text-gray-600'}`} />
-                                    <span className={isSelected ? 'text-indigo-700 font-medium' : 'text-gray-700'}>
+                                    <Icon className={`w-4 h-4 ${isSelected ? 'text-indigo-600' : 'text-gray-400'}`} />
+                                    <span className={`text-xs font-black uppercase tracking-widest ${isSelected ? 'text-indigo-700' : 'text-gray-400'}`}>
                                       {ft.label}
                                     </span>
                                   </div>
@@ -306,100 +310,97 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Priority
-                          </label>
-                          <select
-                            value={editPriority}
-                            onChange={(e) => setEditPriority(e.target.value as any)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                          >
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                            <option value="urgent">Urgent</option>
-                          </select>
+                          <label className="block text-[10px] font-black text-gray-400 mb-3 uppercase tracking-widest ml-1">Priority</label>
+                          <div className="grid grid-cols-4 gap-2">
+                            {(['low', 'medium', 'high', 'urgent'] as const).map((p) => (
+                              <button
+                                key={p}
+                                onClick={() => setEditPriority(p)}
+                                className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
+                                  editPriority === p
+                                    ? 'bg-gray-800 border-gray-800 text-white shadow-md'
+                                    : 'bg-white border-gray-100 text-gray-400'
+                                }`}
+                              >
+                                {p}
+                              </button>
+                            ))}
+                          </div>
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Title *
-                          </label>
+                          <label className="block text-[10px] font-black text-gray-400 mb-3 uppercase tracking-widest ml-1">Summary *</label>
                           <input
                             type="text"
                             value={editTitle}
                             onChange={(e) => setEditTitle(e.target.value)}
-                            placeholder="Brief description"
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            placeholder="What's on your mind?"
+                            className="w-full px-6 py-4 bg-gray-50/50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-800 shadow-inner"
                             disabled={isSaving}
                           />
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Description *
-                          </label>
+                          <label className="block text-[10px] font-black text-gray-400 mb-3 uppercase tracking-widest ml-1">Details *</label>
                           <textarea
                             value={editDescription}
                             onChange={(e) => setEditDescription(e.target.value)}
                             rows={4}
-                            placeholder="Please provide details..."
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            placeholder="Explain further..."
+                            className="w-full px-6 py-4 bg-gray-50/50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-2xl outline-none transition-all font-medium text-gray-800 shadow-inner resize-none"
                             disabled={isSaving}
                           />
                         </div>
 
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleSave(item.id)}
-                            disabled={isSaving || !editTitle.trim() || !editDescription.trim()}
-                            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r ${tutee.colorScheme.gradient} text-white rounded-lg font-semibold hover:opacity-90 transition-colors-smooth press-effect disabled:opacity-50 disabled:cursor-not-allowed text-sm`}
-                          >
-                            {isSaving ? (
-                              <>
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                <span>Saving...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Save className="w-4 h-4" />
-                                <span>Save</span>
-                              </>
-                            )}
-                          </button>
+                        <div className="flex gap-3">
                           <button
                             onClick={handleCancelEdit}
                             disabled={isSaving}
-                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors-smooth press-effect disabled:opacity-50 text-sm font-medium"
+                            className="px-6 py-4 bg-gray-100 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-200 transition-all active:scale-95"
                           >
-                            <X className="w-4 h-4" />
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => handleSave(item.id)}
+                            disabled={isSaving || !editTitle.trim() || !editDescription.trim()}
+                            className={`flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r ${tutee.colorScheme.gradient} text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:shadow-xl active:scale-[0.98] transition-all disabled:opacity-50`}
+                          >
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            <span>Secure Edit</span>
                           </button>
                         </div>
                       </div>
                     ) : (
                       <>
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2 flex-1">
-                            <div className={`p-1.5 rounded ${getTypeColor(item.type)}`}>
-                              <TypeIcon className="w-4 h-4" />
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className={`p-3 rounded-2xl shadow-inner border border-gray-100 ${getTypeColor(item.type)}`}>
+                              <TypeIcon className="w-5 h-5" />
                             </div>
-                            <h4 className="font-semibold text-gray-800 flex-1">{item.title}</h4>
-                            <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium border ${getStatusColor(item.status)}`}>
-                              <StatusIcon className="w-3 h-3" />
-                              <span className="capitalize">{item.status.replace('_', ' ')}</span>
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-black text-gray-800 text-lg leading-tight truncate">{item.title}</h4>
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm border ${getStatusColor(item.status)}`}>
+                                  <StatusIcon className="w-3 h-3" />
+                                  <span>{item.status.replace('_', ' ')}</span>
+                                </div>
+                                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-gray-100 text-gray-400 bg-gray-50 shadow-sm`}>
+                                  {item.priority} priority
+                                </span>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex gap-1 ml-2">
+                          <div className="flex gap-2 self-end sm:self-auto opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => handleEdit(item)}
-                              className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors-smooth press-effect"
+                              className="p-3 bg-gray-50 text-indigo-600 rounded-xl hover:bg-indigo-50 active:scale-90 transition-all border border-transparent hover:border-indigo-100"
                               title="Edit feedback"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => setDeleteConfirmId(item.id)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors-smooth press-effect"
+                              className="p-3 bg-gray-50 text-red-400 rounded-xl hover:bg-red-50 active:scale-90 transition-all border border-transparent hover:border-red-100"
                               title="Delete feedback"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -407,21 +408,33 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                           </div>
                         </div>
                         
-                        <p className="text-sm text-gray-600 mb-3">{item.description}</p>
+                        <div className="bg-white/40 p-5 rounded-2xl border border-gray-50 shadow-inner mb-6">
+                          <p className="text-sm font-medium text-gray-600 leading-relaxed">{item.description}</p>
+                        </div>
                         
                         {item.adminNotes && (
-                          <div className="mt-3 pt-3 border-t border-gray-100">
-                            <p className="text-xs font-medium text-gray-700 mb-1">Admin Response:</p>
-                            <p className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded">{item.adminNotes}</p>
+                          <div className="mb-6 p-5 bg-indigo-50/50 border-2 border-indigo-50 rounded-2xl relative overflow-hidden group/response">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Shield className="w-4 h-4 text-indigo-600" />
+                              <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Tutor Response</p>
+                            </div>
+                            <p className="text-sm font-bold text-indigo-900 leading-relaxed">{item.adminNotes}</p>
+                            <div className="absolute top-0 right-0 w-1 h-full bg-indigo-200" />
                           </div>
                         )}
                         
-                        <div className="flex items-center gap-3 text-xs text-gray-500 mt-3">
-                          <span>{formatDate(item.createdAt)}</span>
+                        <div className="flex items-center gap-3 text-[9px] font-black text-gray-300 uppercase tracking-widest">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3 h-3" />
+                            <span>{formatDate(item.createdAt)}</span>
+                          </div>
                           {item.updatedAt !== item.createdAt && (
                             <>
-                              <span>•</span>
-                              <span>Updated: {formatDate(item.updatedAt)}</span>
+                              <span className="w-1 h-1 bg-gray-200 rounded-full" />
+                              <div className="flex items-center gap-1.5 text-indigo-300">
+                                <Clock className="w-3 h-3" />
+                                <span>Edited: {formatDate(item.updatedAt)}</span>
+                              </div>
                             </>
                           )}
                         </div>
@@ -432,7 +445,7 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
               })}
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* Delete Confirmation Modal */}

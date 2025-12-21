@@ -131,22 +131,22 @@ const GPTChatAdmin = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="relative pl-6 border-l-2 border-indigo-100">
+                  <div className="relative pl-3 sm:pl-6 border-l-2 border-indigo-100">
                     <div className="absolute -left-[9px] top-0 w-4 h-4 bg-white border-2 border-indigo-200 rounded-full" />
-                    <p className="text-sm font-bold text-gray-700 mb-1 flex items-center gap-2">
+                    <p className="text-[10px] sm:text-sm font-bold text-gray-700 mb-1 flex items-center gap-2 uppercase tracking-wider">
                       <User className="w-3 h-3 text-indigo-400" />
                       Student Question
                     </p>
-                    <p className="text-gray-600 leading-relaxed italic">"{item.question}"</p>
+                    <p className="text-gray-600 leading-relaxed italic text-[11px] sm:text-sm">"{item.question}"</p>
                   </div>
 
-                  <div className="relative pl-6 border-l-2 border-emerald-100">
+                  <div className="relative pl-3 sm:pl-6 border-l-2 border-emerald-100">
                     <div className="absolute -left-[9px] top-0 w-4 h-4 bg-white border-2 border-emerald-200 rounded-full" />
-                    <p className="text-sm font-bold text-emerald-700 mb-1 flex items-center gap-2">
+                    <p className="text-[10px] sm:text-sm font-bold text-emerald-700 mb-1 flex items-center gap-2 uppercase tracking-wider">
                       <Bot className="w-3 h-3 text-emerald-400" />
                       AI Response
                     </p>
-                    <div className="bg-emerald-50/50 p-4 rounded-2xl text-gray-700 text-sm leading-relaxed border border-emerald-50">
+                    <div className="bg-emerald-50/50 p-2 sm:p-4 rounded-2xl text-gray-700 text-[11px] sm:text-sm leading-relaxed border border-emerald-50">
                       {item.answer}
                     </div>
                   </div>

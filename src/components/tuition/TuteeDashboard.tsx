@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, GraduationCap, BarChart3, Clock, Trophy } from 'lucide-react';
+import { format } from 'date-fns';
+import { ArrowLeft, BookOpen, GraduationCap, BarChart3, Clock, Trophy, Play } from 'lucide-react';
 import { Tutee, QuizRecord } from '../../types/tuition';
 import ScienceSpellingQuiz from '../ScienceSpellingQuiz';
 import IBChemistryQuiz from '../IBChemistryQuiz';
 import TuitionCalendar from './TuitionCalendar';
-import ColorCustomization from './ColorCustomization';
+import ProfileCustomization from './ProfileCustomization';
 import PinChange from './PinChange';
-import IconCustomization from './IconCustomization';
 import LearningPoints from './components/LearningPoints';
 import WorksheetTracker from './components/WorksheetTracker';
 import SharedFiles from './components/SharedFiles';
@@ -217,45 +217,47 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4 sm:p-6 md:p-8 safe-area-inset">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 pb-20 sm:pb-8 safe-area-inset">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
+        {/* Header - Mobile Friendly */}
+        <div className="pt-6 mb-6 sm:mb-8">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4 transition-colors"
+            className="group flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6 transition-all bg-white/50 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm hover:shadow-md active:scale-95"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Back to Tuition Portal</span>
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <span className="font-bold">Back</span>
           </button>
           
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-indigo-700 px-2">
-                {tutee.id === 'primary-school' ? tutee.name : `${tutee.name}'s Dashboard`}
-              </h1>
-              <span 
-                className={`px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r ${tutee.colorScheme.gradient} text-white`}
-              >
-                {tutee.name}
-              </span>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white/40 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/20">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">
+                  {tutee.id === 'primary-school' ? tutee.name : tutee.name}
+                </h1>
+                <span 
+                  className={`px-4 py-1.5 rounded-2xl text-xs sm:text-sm font-black bg-gradient-to-r ${tutee.colorScheme.gradient} text-white shadow-lg uppercase tracking-wider`}
+                >
+                  Dashboard
+                </span>
+              </div>
+              <p className="text-gray-600 text-base sm:text-lg max-w-xl">{tutee.description}</p>
             </div>
-            <p className="text-gray-600 text-base sm:text-lg px-2 mb-4">{tutee.description}</p>
-            <div className="flex items-center justify-center gap-3 flex-wrap">
-              <ColorCustomization tutee={tutee} onUpdate={setTutee} />
-              <IconCustomization tutee={tutee} onUpdate={setTutee} />
+            
+            <div className="flex items-center gap-2 flex-wrap sm:justify-end">
+              <ProfileCustomization tutee={tutee} onUpdate={setTutee} />
               <PinChange tutee={tutee} onUpdate={setTutee} />
             </div>
           </div>
         </div>
 
         {/* Calendar Section */}
-        <div className="mb-6 sm:mb-8">
+        <div className="mb-6 sm:mb-8 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
           <TuitionCalendar isAdmin={false} tutee={tutee} onTuteeUpdate={setTutee} />
         </div>
 
-        {/* Quiz Cards & Components */}
-        <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        {/* Dashboard Modules */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {loadingComponents ? (
             <>
               <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-5 sm:p-6 md:p-8 space-y-4">
@@ -340,57 +342,66 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
             return (
               <div 
                 key={quiz.type} 
-                className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-5 sm:p-6 md:p-8 hover:shadow-2xl transition-smooth card-hover animate-fade-in-up"
-                style={{ animationDelay: `${index * 100}ms` }}
+                className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 group border border-white/40 overflow-hidden flex flex-col animate-fade-in-up touch-manipulation"
+                style={{ animationDelay: `${index * 150}ms` }}
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`p-2 sm:p-3 bg-gradient-to-br ${gradientClass} rounded-lg sm:rounded-xl flex-shrink-0`}>
-                    <Icon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                <div className="p-6 sm:p-8 flex-1">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className={`p-4 bg-gradient-to-br ${gradientClass} rounded-2xl shadow-lg transform group-hover:rotate-6 transition-transform duration-300`}>
+                      <Icon className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="text-2xl font-black text-gray-800 leading-tight">{quiz.name}</h2>
+                      <p className="text-gray-500 font-medium">Practice & Master</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <h2 className="text-xl sm:text-2xl font-bold text-gray-800">{quiz.name}</h2>
-                    <p className="text-sm sm:text-base text-gray-600">{tutee.name}</p>
+
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">
+                    <div className={`${bgClass} rounded-2xl p-4 border border-white/50 shadow-inner`}>
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Best Score</p>
+                      <p className={`text-2xl font-black ${textClass}`}>
+                        {bestScore ? `${bestScore}%` : '---'}
+                      </p>
+                    </div>
+                    <div className={`${bgClass} rounded-2xl p-4 border border-white/50 shadow-inner`}>
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Attempts</p>
+                      <p className={`text-2xl font-black ${textClass}`}>{totalAttempts}</p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-                  <div className={`${bgClass} rounded-lg p-3 sm:p-4`}>
-                    <p className="text-xs sm:text-sm text-gray-600 mb-1">Best Score</p>
-                    <p className={`text-xl sm:text-2xl font-bold ${textClass}`}>
-                      {bestScore ? `${bestScore}%` : 'N/A'}
-                    </p>
-                  </div>
-                  <div className={`${bgClass} rounded-lg p-3 sm:p-4`}>
-                    <p className="text-xs sm:text-sm text-gray-600 mb-1">Total Attempts</p>
-                    <p className={`text-xl sm:text-2xl font-bold ${textClass}`}>{totalAttempts}</p>
-                  </div>
+                <div className="p-6 pt-0">
+                  <button
+                    onClick={() => navigateToQuiz(quiz.type)}
+                    className={`w-full bg-gradient-to-r ${gradientClass} text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl hover:opacity-95 transform active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2`}
+                  >
+                    <span>Start Practice</span>
+                    <Play className="w-5 h-5 fill-current" />
+                  </button>
                 </div>
-
-                <button
-                  onClick={() => navigateToQuiz(quiz.type)}
-                  className={`w-full bg-gradient-to-r ${gradientClass} text-white py-3.5 sm:py-3 rounded-lg font-semibold text-base sm:text-lg hover:opacity-90 transition-smooth press-effect min-h-[44px] touch-manipulation`}
-                >
-                  Start {quiz.name}
-                </button>
               </div>
             );
           })}
         </div>
 
         {/* My Feedback Section */}
-        <div className="mb-6 sm:mb-8">
+        <div className="mb-6 sm:mb-8 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
           <MyFeedback tutee={tutee} />
         </div>
 
         {/* Recent Activity */}
         {availableQuizzes.some(q => getTotalAttempts(q.type) > 0) && (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-5 sm:p-6 md:p-8">
-            <div className="flex items-center gap-2 mb-4 sm:mb-6">
-              <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 flex-shrink-0" />
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-800">Recent Activity</h3>
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-6 sm:p-8 border border-white/40 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-100 rounded-xl">
+                  <BarChart3 className="w-6 h-6 text-indigo-600" />
+                </div>
+                <h3 className="text-2xl font-black text-gray-800">Recent Activity</h3>
+              </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-8">
               {availableQuizzes.map((quiz) => {
                 if (getTotalAttempts(quiz.type) === 0) return null;
                 
@@ -399,30 +410,39 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
                 const Icon = quiz.type === 'spelling' ? Clock : Trophy;
 
                 return (
-                  <div key={quiz.type}>
-                    <h4 className={`font-semibold ${textClass} mb-3 flex items-center gap-2`}>
-                      <Icon className="w-5 h-5" />
+                  <div key={quiz.type} className="animate-fade-in">
+                    <h4 className={`font-black uppercase tracking-widest text-sm ${textClass} mb-4 flex items-center gap-2 px-1`}>
+                      <Icon className="w-4 h-4" />
                       {quiz.name} History
                     </h4>
-                    <div className="space-y-2 mb-4">
+                    <div className="space-y-3">
                       {getRecentAttempts(quiz.type, 5).map((record, index) => (
-                        <div key={index} className={`${bgClass} rounded-lg p-3 sm:p-4 flex justify-between items-center gap-3`}>
+                        <div key={index} className={`${bgClass} rounded-2xl p-4 sm:p-5 flex justify-between items-center gap-4 border border-white shadow-sm hover:shadow-md transition-shadow`}>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm sm:text-base font-medium text-gray-700">
+                            <p className="text-base font-bold text-gray-800 truncate">
                               {quiz.type === 'spelling' && record.student 
-                                ? `${quiz.name} - ${record.student}`
+                                ? record.student
                                 : quiz.name}
                             </p>
-                            <p className="text-xs text-gray-500 truncate">
-                              {new Date(record.timestamp || record.date).toLocaleString()}
-                              {record.timeSpent && ` • ${Math.floor(record.timeSpent / 60)}m ${record.timeSpent % 60}s`}
-                            </p>
+                            <div className="flex items-center gap-2 text-xs font-medium text-gray-500 mt-0.5">
+                              <span className="bg-white/60 px-2 py-0.5 rounded-lg border border-gray-100">
+                                {format(new Date(record.timestamp || record.date), 'MMM d, h:mm a')}
+                              </span>
+                              {record.timeSpent && (
+                                <span className="bg-white/60 px-2 py-0.5 rounded-lg border border-gray-100 flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {Math.floor(record.timeSpent / 60)}m {record.timeSpent % 60}s
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className={`text-base sm:text-lg font-bold ${textClass}`}>
+                          <div className="text-right flex-shrink-0 bg-white px-4 py-2 rounded-2xl border border-gray-100 shadow-sm min-w-[80px]">
+                            <p className={`text-xl font-black ${textClass}`}>
                               {record.percentage}%
                             </p>
-                            <p className="text-xs text-gray-500">{record.score}/{record.total}</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                              {record.score}/{record.total} Correct
+                            </p>
                           </div>
                         </div>
                       ))}
@@ -435,6 +455,7 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
         )}
       </div>
     </div>
+
   );
 };
 
