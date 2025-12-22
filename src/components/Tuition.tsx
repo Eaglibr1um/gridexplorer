@@ -23,6 +23,7 @@ import EarningsAdmin from './tuition/admin/EarningsAdmin';
 import SpellingQuizConfig from './tuition/admin/SpellingQuizConfig';
 import GPTChatAdmin from './tuition/admin/GPTChatAdmin';
 import GlobalFileManager from './tuition/admin/GlobalFileManager';
+import NotificationAdmin from './tuition/admin/NotificationAdmin';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -320,6 +321,7 @@ const Tuition = () => {
               />
               <ComponentManager tutees={tutees} />
               <GlobalFileManager tutees={tutees} />
+              <NotificationAdmin />
               <SpellingQuizConfig tutees={tutees} />
               <GPTChatAdmin />
             </div>

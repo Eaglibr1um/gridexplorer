@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { BookOpen, RotateCcw, AlertCircle, ArrowRight } from 'lucide-react';
+import { BookOpen, RotateCcw, AlertCircle, ArrowRight, Bell } from 'lucide-react';
 import { Tutee } from '../../../types/tuition';
 import { fetchLearningPoints, LearningPoint as LearningPointType } from '../../../services/componentService';
 import { fetchLearningPointReviews } from '../../../services/learningPointReviewService';
+import { notificationService } from '../../../services/notificationService';
 import Skeleton from '../../ui/Skeleton';
 
 interface LearningPointsProps {
@@ -15,11 +16,30 @@ const LearningPoints = ({ tutee }: LearningPointsProps) => {
   const [points, setPoints] = useState<LearningPointType[]>([]);
   const [loading, setLoading] = useState(true);
   const [reviewData, setReviewData] = useState<Record<string, { lastReviewed: string; reviewCount: number }>>({});
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
     loadPoints();
     loadReviewData();
+    checkSubscription();
   }, [tutee.id]);
+
+  const checkSubscription = async () => {
+    if (notificationService.isSupported()) {
+      const subscribed = await notificationService.isSubscribed();
+      setIsSubscribed(subscribed);
+    }
+  };
+
+  const handleSubscribe = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await notificationService.subscribeUser(tutee.id);
+      setIsSubscribed(true);
+    } catch (err) {
+      console.error('Failed to subscribe:', err);
+    }
+  };
 
   const loadPoints = async () => {
     try {
@@ -169,14 +189,31 @@ const LearningPoints = ({ tutee }: LearningPointsProps) => {
 
           {/* Review Alert Banner */}
           {sessionsDueForReview > 0 && (
-            <div className="mb-6 p-4 bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl flex items-center gap-3 animate-fade-in shadow-sm">
-              <RotateCcw className="w-6 h-6 text-yellow-600 flex-shrink-0 animate-spin-slow" />
-              <div className="flex-1">
-                <p className="text-sm font-black text-yellow-800 uppercase tracking-tight">
-                  Review Due! 📚
-                </p>
-                <p className="text-xs font-bold text-yellow-700/80 uppercase tracking-widest mt-0.5">Time to strengthen memory</p>
+            <div className="mb-6 flex flex-col gap-2">
+              <div className="p-4 bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl flex items-center gap-3 animate-fade-in shadow-sm">
+                <RotateCcw className="w-6 h-6 text-yellow-600 flex-shrink-0 animate-spin-slow" />
+                <div className="flex-1">
+                  <p className="text-sm font-black text-yellow-800 uppercase tracking-tight">
+                    Review Due! 📚
+                  </p>
+                  <p className="text-xs font-bold text-yellow-700/80 uppercase tracking-widest mt-0.5">Time to strengthen memory</p>
+                </div>
               </div>
+              
+              {!isSubscribed && notificationService.isSupported() && (
+                <button
+                  onClick={handleSubscribe}
+                  className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center gap-3 hover:bg-indigo-100 transition-colors group/notif"
+                >
+                  <div className="p-2 bg-white rounded-lg shadow-sm text-indigo-600 group-hover/notif:scale-110 transition-transform">
+                    <Bell className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs font-bold text-indigo-900">Get reminders?</p>
+                    <p className="text-[10px] text-indigo-600 font-medium">Get notified when reviews are due</p>
+                  </div>
+                </button>
+              )}
             </div>
           )}
 

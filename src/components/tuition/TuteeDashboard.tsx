@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, BookOpen, GraduationCap, BarChart3, Clock, Trophy, Play } from 'lucide-react';
+import { ArrowLeft, BookOpen, GraduationCap, BarChart3, Clock, Trophy, Play, Bell, BellOff, Info, Share } from 'lucide-react';
 import { Tutee, QuizRecord } from '../../types/tuition';
 import ScienceSpellingQuiz from '../ScienceSpellingQuiz';
 import IBChemistryQuiz from '../IBChemistryQuiz';
@@ -16,6 +16,7 @@ import FeedbackButton from './FeedbackButton';
 import MyFeedback from './MyFeedback';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { fetchTuteeComponents, TuteeComponent } from '../../services/componentService';
+import { notificationService } from '../../services/notificationService';
 import Skeleton from '../ui/Skeleton';
 
 interface TuteeDashboardProps {
@@ -28,9 +29,48 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
   const [searchParams, setSearchParams] = useSearchParams();
   const [components, setComponents] = useState<TuteeComponent[]>([]);
   const [loadingComponents, setLoadingComponents] = useState(true);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
+  const [showIOSTip, setShowIOSTip] = useState(false);
   
   // Update document title
   useDocumentTitle(`Tuition - ${tutee.name}`);
+
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if (notificationService.isSupported()) {
+        const subscribed = await notificationService.isSubscribed();
+        setIsSubscribed(subscribed);
+        
+        // Show iOS tip if on iOS and not in standalone mode
+        if (notificationService.isIOS() && !notificationService.isStandalone()) {
+          setShowIOSTip(true);
+        }
+      }
+      setIsCheckingSubscription(false);
+    };
+    checkSubscription();
+  }, []);
+
+  const handleNotificationToggle = async () => {
+    try {
+      if (notificationService.isIOS() && !notificationService.isStandalone()) {
+        setShowIOSTip(true);
+        return;
+      }
+      
+      if (isSubscribed) {
+        await notificationService.unsubscribeUser(tutee.id);
+        setIsSubscribed(false);
+      } else {
+        await notificationService.subscribeUser(tutee.id);
+        setIsSubscribed(true);
+      }
+    } catch (error) {
+      console.error('Failed to toggle notifications:', error);
+      alert('Failed to update notification settings. Please check your browser permissions.');
+    }
+  };
   const quizParam = searchParams.get('quiz') as 'spelling' | 'chemistry' | null;
   const currentQuiz = quizParam && ['spelling', 'chemistry'].includes(quizParam) ? quizParam : null;
   const showLearningPoints = searchParams.get('learningPoints') === 'true';
@@ -245,11 +285,72 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
             </div>
             
             <div className="flex items-center gap-2 flex-wrap sm:justify-end">
+              {notificationService.isSupported() && (
+                <button
+                  onClick={handleNotificationToggle}
+                  disabled={isCheckingSubscription}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all font-bold ${
+                    isSubscribed 
+                      ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                      : 'bg-white/50 text-indigo-600 hover:bg-white/80'
+                  }`}
+                  title={isSubscribed ? 'Disable Notifications' : 'Enable Notifications'}
+                >
+                  {isSubscribed ? (
+                    <>
+                      <Bell className="w-5 h-5 fill-current" />
+                      <span className="hidden sm:inline">Notifications On</span>
+                    </>
+                  ) : (
+                    <>
+                      <BellOff className="w-5 h-5" />
+                      <span className="hidden sm:inline">Enable Notifications</span>
+                    </>
+                  )}
+                </button>
+              )}
               <ProfileCustomization tutee={tutee} onUpdate={setTutee} />
               <PinChange tutee={tutee} onUpdate={setTutee} />
             </div>
           </div>
         </div>
+
+        {/* iOS Notification Tip */}
+        {showIOSTip && (
+          <div className="mb-6 animate-fade-in">
+            <div className="bg-indigo-600 text-white p-4 rounded-3xl shadow-lg flex items-start gap-4 border-2 border-indigo-400">
+              <div className="p-2 bg-white/20 rounded-xl mt-1">
+                <Info className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-black text-lg mb-1 uppercase tracking-tight">Enable Notifications on iOS 📱</h4>
+                <p className="text-indigo-50 text-sm font-medium leading-relaxed mb-3">
+                  To receive review reminders on iPhone, you must add this app to your Home Screen:
+                </p>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-3 bg-black/10 p-3 rounded-2xl">
+                    <span className="bg-white text-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">1</span>
+                    <p className="text-xs font-bold">Tap the <Share className="w-4 h-4 inline mx-1" /> "Share" button in Safari</p>
+                  </div>
+                  <div className="flex items-center gap-3 bg-black/10 p-3 rounded-2xl">
+                    <span className="bg-white text-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">2</span>
+                    <p className="text-xs font-bold">Scroll down and tap "Add to Home Screen"</p>
+                  </div>
+                  <div className="flex items-center gap-3 bg-black/10 p-3 rounded-2xl">
+                    <span className="bg-white text-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">3</span>
+                    <p className="text-xs font-bold">Open the app from your Home Screen to enable notifications!</p>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowIOSTip(false)}
+                className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 rotate-90" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Calendar Section */}
         <div className="mb-6 sm:mb-8 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
