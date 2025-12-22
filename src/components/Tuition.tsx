@@ -24,7 +24,9 @@ import SpellingQuizConfig from './tuition/admin/SpellingQuizConfig';
 import GPTChatAdmin from './tuition/admin/GPTChatAdmin';
 import GlobalFileManager from './tuition/admin/GlobalFileManager';
 import NotificationAdmin from './tuition/admin/NotificationAdmin';
+import { notificationService } from '../services/notificationService';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { Bell, BellOff, Loader2 } from 'lucide-react';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   BookOpen,
@@ -65,6 +67,80 @@ const Tuition = () => {
   const [tutees, setTutees] = useState<Tutee[]>([]);
   const [loadingTutees, setLoadingTutees] = useState(true);
   const [selectedEarningsTuteeId, setSelectedEarningsTuteeId] = useState<string | null>(null);
+  const [isAdminSubscribed, setIsAdminSubscribed] = useState(false);
+  const [isCheckingAdminSub, setIsCheckingAdminSub] = useState(true);
+  const [isTogglingAdminSub, setIsTogglingAdminSub] = useState(false);
+  const [isAdminTestingNotification, setIsAdminTestingNotification] = useState(false);
+
+  // Check admin subscription status
+  useEffect(() => {
+    const checkAdminSub = async () => {
+      if (isAdmin && notificationService.isSupported()) {
+        const subscribed = await notificationService.isSubscribed('admin');
+        setIsAdminSubscribed(subscribed);
+      }
+      setIsCheckingAdminSub(false);
+    };
+    checkAdminSub();
+  }, [isAdmin]);
+
+  const handleAdminNotificationToggle = async () => {
+    try {
+      setIsTogglingAdminSub(true);
+      if (isAdminSubscribed) {
+        await notificationService.unsubscribeUser('admin');
+        setIsAdminSubscribed(false);
+      } else {
+        await notificationService.subscribeUser('admin');
+        setIsAdminSubscribed(true);
+        
+        // Immediate "Welcome" notification for the Admin
+        setTimeout(() => {
+          notificationService.notify({
+            type: 'admin_welcome',
+            tuteeId: 'admin',
+            title: 'Admin Notifications Enabled! 🛡️',
+            message: 'You will now receive alerts for new requests, feedback, and uploads.',
+            url: '/tuition'
+          });
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Failed to toggle admin notifications:', error);
+      alert('Failed to update notification settings.');
+    } finally {
+      setIsTogglingAdminSub(false);
+    }
+  };
+
+  const handleAdminTestNotification = async (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    if (!isAdminSubscribed || isAdminTestingNotification) return;
+
+    setIsAdminTestingNotification(true);
+    const btn = e.currentTarget as HTMLButtonElement;
+
+    try {
+      await notificationService.notify({
+        type: 'admin_test',
+        tuteeId: 'admin',
+        title: 'Admin Test! 🚀',
+        message: 'Your admin notification system is working perfectly.',
+        url: '/tuition'
+      });
+      
+      // Success feedback: quick flash
+      const originalColor = btn.className;
+      btn.className = `${originalColor} ring-4 ring-green-400 scale-95 transition-all`;
+      setTimeout(() => {
+        btn.className = originalColor;
+      }, 500);
+    } catch (error) {
+      console.error('Failed to send admin test notification:', error);
+    } finally {
+      setIsAdminTestingNotification(false);
+    }
+  };
 
   // Load tutees from Supabase
   useEffect(() => {
@@ -302,13 +378,57 @@ const Tuition = () => {
                   <h3 className="font-bold text-xl sm:text-2xl">Admin Mode Active</h3>
                 </div>
               </div>
-              <button
-                onClick={handleExitAdmin}
-                className="flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 font-bold rounded-xl hover:bg-purple-50 transition-all shadow-lg press-effect w-full sm:w-auto justify-center"
-              >
-                <LogOut className="w-5 h-5" />
-                <span>Exit Admin</span>
-              </button>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                {notificationService.isSupported() && (
+                  <button
+                    onClick={handleAdminNotificationToggle}
+                    onContextMenu={handleAdminTestNotification}
+                    onTouchStart={(e) => {
+                      const timer = setTimeout(() => handleAdminTestNotification(e as any), 800);
+                      (e.currentTarget as any)._longPressTimer = timer;
+                    }}
+                    onTouchEnd={(e) => {
+                      clearTimeout((e.currentTarget as any)._longPressTimer);
+                    }}
+                    disabled={isCheckingAdminSub || isTogglingAdminSub || isAdminTestingNotification}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-lg flex-1 sm:flex-none justify-center relative overflow-hidden ${
+                      isAdminSubscribed 
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                        : 'bg-white/20 text-white hover:bg-white/30 border border-white/30'
+                    }`}
+                    title={isAdminSubscribed ? 'Right-click to test / Click to disable' : 'Enable Admin Notifs'}
+                  >
+                    {/* Background Pulse during testing */}
+                    {isAdminTestingNotification && (
+                      <div className="absolute inset-0 bg-green-200/50 animate-pulse" />
+                    )}
+
+                    <div className="relative flex items-center gap-2">
+                      {isTogglingAdminSub || isAdminTestingNotification ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : isAdminSubscribed ? (
+                        <Bell className="w-5 h-5 fill-current" />
+                      ) : (
+                        <BellOff className="w-5 h-5" />
+                      )}
+                      <span>
+                        {isAdminTestingNotification 
+                          ? 'Testing...' 
+                          : isAdminSubscribed 
+                            ? 'Admin Notifs On' 
+                            : 'Enable Admin Notifs'}
+                      </span>
+                    </div>
+                  </button>
+                )}
+                <button
+                  onClick={handleExitAdmin}
+                  className="flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 font-bold rounded-xl hover:bg-purple-50 transition-all shadow-lg press-effect flex-1 sm:flex-none justify-center"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Exit Admin</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6">

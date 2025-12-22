@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
 import { AvailableDate } from '../types/tuition';
+import { notificationService } from './notificationService';
 
 /**
  * Calendar Service
@@ -116,6 +117,17 @@ export const createAvailableDate = async (
       .single();
 
     if (error) throw error;
+
+    // Notify Admin of new exam/test date
+    if (input.eventType === 'exam' || input.eventType === 'test') {
+      notificationService.notify({
+        type: 'new_exam',
+        tuteeId: 'admin',
+        title: `New ${input.eventType === 'exam' ? 'Exam' : 'Test'} Date! 📝`,
+        message: `A new ${input.eventType} has been added for ${input.date}.`,
+        url: '/tuition'
+      });
+    }
 
     return {
       id: data.id,

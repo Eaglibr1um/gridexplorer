@@ -30,116 +30,116 @@ const getNextReviewDate = (reviewCount: number, lastReviewed: string): Date => {
   return lastDate;
 };
 
+async function logNotification(tuteeId: string, title: string, message: string, type: string, status: string, deviceLabel?: string | null, error?: string) {
+  try {
+    await supabase.from('notification_logs').insert({
+      tutee_id: tuteeId,
+      title,
+      message,
+      type,
+      status,
+      device_label: deviceLabel,
+      error_message: error
+    });
+  } catch (err) {
+    console.error('Failed to log notification:', err);
+  }
+}
+
 Deno.serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     const body = await req.json().catch(() => ({}));
-    const isTest = body.test === true;
+    const { test, type, tuteeId, title, message, url } = body;
     const now = new Date();
 
-    if (isTest) {
-      console.log('Running in TEST mode - sending to all subscriptions');
-      const { data: allSubs, error: allSubsError } = await supabase.from('push_subscriptions').select('*, tutees(name)');
-      if (allSubsError) throw allSubsError;
+    // 1. Manual/Targeted Notifications (Test, Admin Alerts, Tutee Alerts)
+    if (test || type) {
+      console.log(`Sending notification: ${type || 'test'} to ${tuteeId || 'everyone'}`);
+      
+      let query = supabase.from('push_subscriptions').select('*');
+      if (tuteeId) query = query.eq('tutee_id', tuteeId);
+
+      const { data: subscriptions, error: subsError } = await query;
+      if (subsError) throw subsError;
+
+      // Fetch tutee names for personalization (since FK link is loose)
+      const { data: tuteeList } = await supabase.from('tutees').select('id, name');
+      const tuteeMap = Object.fromEntries((tuteeList || []).map(t => [t.id, t.name]));
 
       const results = [];
-      for (const sub of allSubs) {
+      for (const sub of subscriptions) {
         try {
+          const name = sub.tutee_id === 'admin' ? 'Admin' : (tuteeMap[sub.tutee_id] || 'Student');
+          const finalTitle = title || (test ? 'Test Notification! 🚀' : 'New Update! 🔔');
+          const finalMessage = message || (test ? `Hello ${name}! This is a test push notification.` : 'You have a new update.');
+          const finalType = type || (test ? 'test' : 'manual');
+
           await webpush.sendNotification(
             sub.subscription,
             JSON.stringify({
-              title: 'Test Notification! 🚀',
-              body: `Hello ${sub.tutees?.name || 'Student'}! This is a test push notification.`,
-              data: { url: '/tuition' }
+              title: finalTitle,
+              body: finalMessage,
+              data: { url: url || '/tuition' }
             })
           );
           results.push({ success: true, tutee: sub.tutee_id });
+          await logNotification(sub.tutee_id, finalTitle, finalMessage, finalType, 'sent', sub.label);
         } catch (e) {
           results.push({ success: false, error: e.message });
+          await logNotification(sub.tutee_id, finalTitle, finalMessage, finalType, 'failed', sub.label, e.message);
+          if (e.statusCode === 410 || e.statusCode === 404) {
+            await supabase.from('push_subscriptions').delete().eq('id', sub.id);
+          }
         }
       }
-      return new Response(JSON.stringify({ test_results: results }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
+      return new Response(JSON.stringify({ success: true, results }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     
-    // 1. Fetch all learning point reviews
-    const { data: reviews, error: reviewsError } = await supabase
-      .from('learning_point_reviews')
-      .select('*, tutees(name)');
-
+    // 2. Scheduled Spaced Repetition Reviews
+    const { data: reviews, error: reviewsError } = await supabase.from('learning_point_reviews').select('*');
     if (reviewsError) throw reviewsError;
 
-    const notificationsSent = [];
+    const { data: tutees } = await supabase.from('tutees').select('id, name');
+    const nameMap = Object.fromEntries((tutees || []).map(t => [t.id, t.name]));
 
-    // 2. Filter due reviews
+    const notificationsSent = [];
     for (const review of reviews) {
       const nextReviewDate = getNextReviewDate(review.review_count, review.last_reviewed);
-      
       if (nextReviewDate <= now) {
-        // This review is due. Get subscriptions for this tutee.
-        const { data: subscriptions, error: subsError } = await supabase
-          .from('push_subscriptions')
-          .select('*')
-          .eq('tutee_id', review.tutee_id);
+        const { data: subs } = await supabase.from('push_subscriptions').select('*').eq('tutee_id', review.tutee_id);
+        if (!subs) continue;
 
-        if (subsError) {
-          console.error(`Error fetching subscriptions for ${review.tutee_id}:`, subsError);
-          continue;
-        }
+        const tuteeName = nameMap[review.tutee_id] || 'Student';
+        const finalTitle = 'Review Time! 📚';
+        const finalMessage = `Hey ${tuteeName}, time to review points from ${review.session_date}!`;
 
-        const tuteeName = review.tutees?.name || 'Student';
-
-        // 3. Send notifications to all devices of this tutee
-        for (const sub of subscriptions) {
+        for (const sub of subs) {
           try {
             await webpush.sendNotification(
               sub.subscription,
               JSON.stringify({
-                title: 'Review Time! 📚',
-                body: `Hey ${tuteeName}, it's time to review your learning points from ${review.session_date}!`,
-                data: {
-                  url: `/tuition?tuteeId=${review.tutee_id}&learningPoints=true`
-                }
+                title: finalTitle,
+                body: finalMessage,
+                data: { url: `/tuition?tuteeId=${review.tutee_id}&learningPoints=true` }
               })
             );
-            notificationsSent.push({ tutee_id: review.tutee_id, session_date: review.session_date });
-          } catch (pushError) {
-            console.error(`Error sending push to ${review.tutee_id}:`, pushError);
-            // If subscription is expired or invalid, delete it
-            if (pushError.statusCode === 410 || pushError.statusCode === 404) {
-              await supabase.from('push_subscriptions').delete().eq('id', sub.id);
-            }
+            notificationsSent.push({ tutee_id: review.tutee_id });
+            await logNotification(review.tutee_id, finalTitle, finalMessage, 'spaced_repetition', 'sent', sub.label);
+          } catch (e) {
+            await logNotification(review.tutee_id, finalTitle, finalMessage, 'spaced_repetition', 'failed', sub.label, e.message);
+            if (e.statusCode === 410 || e.statusCode === 404) await supabase.from('push_subscriptions').delete().eq('id', sub.id);
           }
         }
       }
     }
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Sent ${notificationsSent.length} notifications`,
-        sent: notificationsSent
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
-    );
+    return new Response(JSON.stringify({ success: true, sentCount: notificationsSent.length }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {
-    console.error('Error in send-notifications function:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
   }
 });
-

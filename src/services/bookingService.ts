@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
 import { BookingRequest } from '../types/tuition';
+import { notificationService } from './notificationService';
 
 /**
  * Booking Service
@@ -142,6 +143,15 @@ export const createBookingRequest = async (
 
     if (error) throw error;
 
+    // Notify Admin of new request
+    notificationService.notify({
+      type: 'new_booking',
+      tuteeId: 'admin',
+      title: 'New Booking Request! 📅',
+      message: `A new session has been requested for ${input.requestedDate}.`,
+      url: '/tuition'
+    });
+
     return {
       id: data.id,
       tuteeId: data.tutee_id,
@@ -183,6 +193,17 @@ export const updateBookingRequest = async (
       .single();
 
     if (error) throw error;
+
+    // Notify Tutee of status change (approved/rejected)
+    if (input.status === 'approved' || input.status === 'rejected') {
+      notificationService.notify({
+        type: 'booking_update',
+        tuteeId: data.tutee_id,
+        title: input.status === 'approved' ? 'Request Approved! ✅' : 'Request Update ℹ️',
+        message: `Your booking for ${data.requested_date} has been ${input.status}.`,
+        url: '/tuition'
+      });
+    }
 
     return {
       id: data.id,

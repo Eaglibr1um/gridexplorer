@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { notificationService } from './notificationService';
 
 /**
  * Feedback Service
@@ -46,6 +47,15 @@ export const createFeedback = async (
       .single();
 
     if (error) throw error;
+
+    // Notify Admin of new feedback
+    notificationService.notify({
+      type: 'new_feedback',
+      tuteeId: 'admin',
+      title: 'New Feedback Received! 💬',
+      message: `New ${input.type.replace('_', ' ')} from a student: "${input.title}"`,
+      url: '/tuition'
+    });
 
     return {
       id: data.id,

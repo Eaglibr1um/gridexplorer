@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { notificationService } from './notificationService';
 
 export interface SharedFile {
   id: string;
@@ -51,6 +52,17 @@ export const uploadFile = async (
       // Cleanup storage if database insert fails
       await supabase.storage.from(BUCKET_NAME).remove([filePath]);
       throw dbError;
+    }
+
+    // Notify Admin of new file upload (only if uploaded by a student)
+    if (uploadedBy !== 'Admin') {
+      notificationService.notify({
+        type: 'new_file',
+        tuteeId: 'admin',
+        title: 'New File Uploaded! 📄',
+        message: `${uploadedBy} uploaded a new file: "${file.name}"`,
+        url: '/tuition'
+      });
     }
 
     return {

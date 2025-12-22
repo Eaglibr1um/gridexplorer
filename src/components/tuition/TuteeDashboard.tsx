@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, BookOpen, GraduationCap, BarChart3, Clock, Trophy, Play, Bell, BellOff, Info, Share } from 'lucide-react';
+import { ArrowLeft, BookOpen, GraduationCap, BarChart3, Clock, Trophy, Play, Bell, BellOff, Info, Share, Loader2 } from 'lucide-react';
 import { Tutee, QuizRecord } from '../../types/tuition';
 import ScienceSpellingQuiz from '../ScienceSpellingQuiz';
 import IBChemistryQuiz from '../IBChemistryQuiz';
@@ -17,6 +17,7 @@ import MyFeedback from './MyFeedback';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { fetchTuteeComponents, TuteeComponent } from '../../services/componentService';
 import { notificationService } from '../../services/notificationService';
+import { supabase } from '../../config/supabase';
 import Skeleton from '../ui/Skeleton';
 
 interface TuteeDashboardProps {
@@ -32,6 +33,7 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
   const [showIOSTip, setShowIOSTip] = useState(false);
+  const [isTestingNotification, setIsTestingNotification] = useState(false);
   
   // Update document title
   useDocumentTitle(`Tuition - ${tutee.name}`);
@@ -39,7 +41,7 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
   useEffect(() => {
     const checkSubscription = async () => {
       if (notificationService.isSupported()) {
-        const subscribed = await notificationService.isSubscribed();
+        const subscribed = await notificationService.isSubscribed(tutee.id);
         setIsSubscribed(subscribed);
         
         // Show iOS tip if on iOS and not in standalone mode
@@ -50,7 +52,7 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
       setIsCheckingSubscription(false);
     };
     checkSubscription();
-  }, []);
+  }, [tutee.id]);
 
   const handleNotificationToggle = async () => {
     try {
@@ -65,10 +67,47 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
       } else {
         await notificationService.subscribeUser(tutee.id);
         setIsSubscribed(true);
+
+        // Immediate "Welcome" notification for the Student
+        setTimeout(() => {
+          notificationService.notify({
+            type: 'student_welcome',
+            tuteeId: tutee.id,
+            title: 'Notifications Enabled! ✨',
+            message: `Hey ${tutee.name}, you'll now get reminders when it's time to review your learning points!`,
+            url: '/tuition'
+          });
+        }, 1000);
       }
     } catch (error) {
       console.error('Failed to toggle notifications:', error);
       alert('Failed to update notification settings. Please check your browser permissions.');
+    }
+  };
+
+  const handleTestNotification = async (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    if (!isSubscribed || isTestingNotification) return;
+
+    setIsTestingNotification(true);
+    const btn = e.currentTarget as HTMLButtonElement;
+
+    try {
+      const { error } = await supabase.functions.invoke('send-notifications', {
+        body: { test: true },
+      });
+      if (error) throw error;
+      
+      // Success feedback: quick flash
+      const originalColor = btn.className;
+      btn.className = `${originalColor} ring-4 ring-green-400 scale-95 transition-all`;
+      setTimeout(() => {
+        btn.className = originalColor;
+      }, 500);
+    } catch (error) {
+      console.error('Failed to send test notification:', error);
+    } finally {
+      setIsTestingNotification(false);
     }
   };
   const quizParam = searchParams.get('quiz') as 'spelling' | 'chemistry' | null;
@@ -288,25 +327,45 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
               {notificationService.isSupported() && (
                 <button
                   onClick={handleNotificationToggle}
-                  disabled={isCheckingSubscription}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all font-bold ${
+                  onContextMenu={handleTestNotification}
+                  onTouchStart={(e) => {
+                    const timer = setTimeout(() => handleTestNotification(e as any), 800);
+                    (e.currentTarget as any)._longPressTimer = timer;
+                  }}
+                  onTouchEnd={(e) => {
+                    clearTimeout((e.currentTarget as any)._longPressTimer);
+                  }}
+                  disabled={isCheckingSubscription || isTestingNotification}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all font-bold relative overflow-hidden ${
                     isSubscribed 
                       ? 'bg-green-100 text-green-700 hover:bg-green-200' 
                       : 'bg-white/50 text-indigo-600 hover:bg-white/80'
-                  }`}
-                  title={isSubscribed ? 'Disable Notifications' : 'Enable Notifications'}
+                  } ${isTestingNotification ? 'pr-10' : ''}`}
+                  title={isSubscribed ? 'Right-click to test / Click to disable' : 'Enable Notifications'}
                 >
-                  {isSubscribed ? (
-                    <>
-                      <Bell className="w-5 h-5 fill-current" />
-                      <span className="hidden sm:inline">Notifications On</span>
-                    </>
-                  ) : (
-                    <>
-                      <BellOff className="w-5 h-5" />
-                      <span className="hidden sm:inline">Enable Notifications</span>
-                    </>
+                  {/* Background Pulse during testing */}
+                  {isTestingNotification && (
+                    <div className="absolute inset-0 bg-green-200/50 animate-pulse" />
                   )}
+                  
+                  <div className="relative flex items-center gap-2">
+                    {isTestingNotification ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span className="hidden sm:inline">Sending Test...</span>
+                      </>
+                    ) : isSubscribed ? (
+                      <>
+                        <Bell className="w-5 h-5 fill-current" />
+                        <span className="hidden sm:inline">Notifications On</span>
+                      </>
+                    ) : (
+                      <>
+                        <BellOff className="w-5 h-5" />
+                        <span className="hidden sm:inline">Enable Notifications</span>
+                      </>
+                    )}
+                  </div>
                 </button>
               )}
               <ProfileCustomization tutee={tutee} onUpdate={setTutee} />

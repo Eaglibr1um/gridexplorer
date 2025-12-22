@@ -121,13 +121,49 @@ export const notificationService = {
   },
 
   /**
-   * Check if user is already subscribed
+   * Check if user is already subscribed for a specific tuteeId
    */
-  isSubscribed: async () => {
+  isSubscribed: async (tuteeId: string) => {
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) return false;
+    
     const subscription = await registration.pushManager.getSubscription();
-    return !!subscription;
+    if (!subscription) return false;
+
+    // Check if this specific tutee has this endpoint registered in Supabase
+    const { data, error } = await supabase
+      .from('push_subscriptions')
+      .select('id')
+      .eq('tutee_id', tuteeId)
+      .eq('endpoint', subscription.endpoint)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error checking subscription in database:', error);
+      return false;
+    }
+
+    return !!data;
+  },
+
+  /**
+   * Send a notification via the edge function
+   */
+  notify: async (params: {
+    type: string;
+    tuteeId?: string;
+    title: string;
+    message: string;
+    url?: string;
+  }) => {
+    try {
+      const { error } = await supabase.functions.invoke('send-notifications', {
+        body: params,
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error sending notification:', error);
+    }
   }
 };
 
