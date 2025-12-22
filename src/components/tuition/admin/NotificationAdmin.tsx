@@ -40,6 +40,8 @@ interface NotificationLog {
   status: string;
   device_label: string | null;
   error_message: string | null;
+  triggered_by: string | null;
+  triggered_from_device: string | null;
   created_at: string;
   tutee_name?: string;
   tutee_color?: string;
@@ -57,6 +59,7 @@ const NotificationAdmin = () => {
   const [editLabel, setEditLabel] = useState('');
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [testingDeviceId, setTestingDeviceId] = useState<string | null>(null);
   
   // Logs state
   const [logs, setLogs] = useState<NotificationLog[]>([]);
@@ -115,16 +118,25 @@ const NotificationAdmin = () => {
     }
   };
 
-  const handleTestNotification = async () => {
+  const handleTestNotification = async (subscriptionId?: string) => {
     try {
-      setLoading(true);
+      if (subscriptionId) {
+        setTestingDeviceId(subscriptionId);
+      } else {
+        setLoading(true);
+      }
       setStatus(null);
 
       const { data, error } = await supabase.functions.invoke('send-notifications', {
         body: { 
           test: true,
-          title: 'System Test! 🚀',
-          message: 'The notification system is working for all devices.'
+          subscriptionId,
+          title: subscriptionId ? 'Device Test! 📱' : 'System Broadcast! 🚀',
+          message: subscriptionId 
+            ? 'Testing this specific device for connectivity.' 
+            : 'The notification system is working for all devices.',
+          triggeredBy: 'admin',
+          triggeredFromDevice: navigator.userAgent
         },
       });
 
@@ -137,12 +149,16 @@ const NotificationAdmin = () => {
       if (totalCount === 0) {
         setStatus({
           type: 'error',
-          message: 'No devices found! Please enable notifications on at least one device first.'
+          message: subscriptionId 
+            ? 'Failed to reach this specific device.' 
+            : 'No devices found! Please enable notifications on at least one device first.'
         });
       } else {
         setStatus({
           type: 'success',
-          message: `Successfully sent ${successCount}/${totalCount} test notifications.`
+          message: subscriptionId 
+            ? 'Test notification sent to this device!' 
+            : `Successfully broadcasted to ${successCount}/${totalCount} devices.`
         });
         fetchLogs(); // Refresh logs after sending
       }
@@ -154,6 +170,7 @@ const NotificationAdmin = () => {
       });
     } finally {
       setLoading(false);
+      setTestingDeviceId(null);
     }
   };
 
@@ -333,10 +350,14 @@ const NotificationAdmin = () => {
                 </div>
               ) : subscriptions.map(sub => {
                 const TuteeIcon = iconMap[sub.tutee_icon || 'User'] || User;
+                const isTesting = testingDeviceId === sub.id;
                 return (
-                  <div key={sub.id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="p-3 bg-gray-50 rounded-xl text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">
+                  <div key={sub.id} className={`bg-white border ${isTesting ? 'border-indigo-300 ring-2 ring-indigo-100' : 'border-gray-100'} rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group relative overflow-hidden`}>
+                    {isTesting && (
+                      <div className="absolute inset-0 bg-indigo-50/30 animate-pulse" />
+                    )}
+                    <div className="flex items-start justify-between gap-4 relative">
+                      <div className={`p-3 rounded-xl transition-colors ${isTesting ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-50 text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-500'}`}>
                         {getDeviceIcon(sub.user_agent)}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -379,13 +400,32 @@ const NotificationAdmin = () => {
                           {sub.user_agent || 'Unknown browser'}
                         </p>
                       </div>
-                    <button
-                      onClick={() => setIsDeletingId(sub.id)}
-                      className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                      title="Remove Device"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => setIsDeletingId(sub.id)}
+                          disabled={isTesting}
+                          className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all disabled:opacity-30"
+                          title="Remove Device"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleTestNotification(sub.id)}
+                          disabled={isTesting || loading}
+                          className={`p-2 rounded-xl transition-all ${
+                            isTesting 
+                              ? 'bg-indigo-100 text-indigo-600' 
+                              : 'text-gray-300 hover:text-indigo-500 hover:bg-indigo-50'
+                          }`}
+                          title="Test this device"
+                        >
+                          {isTesting ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Send className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -412,6 +452,7 @@ const NotificationAdmin = () => {
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4">Recipient</th>
                     <th className="px-6 py-4">Device</th>
+                    <th className="px-6 py-4">Triggered By</th>
                     <th className="px-6 py-4">Type</th>
                     <th className="px-6 py-4">Content</th>
                     <th className="px-6 py-4 text-right">Time</th>
@@ -441,6 +482,14 @@ const NotificationAdmin = () => {
                             <span className="text-xs font-bold text-gray-600">
                               {log.device_label || 'Default Device'}
                             </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-gray-700 capitalize">{log.triggered_by || 'System'}</span>
+                            {log.triggered_from_device && (
+                              <span className="text-[10px] text-gray-400 truncate max-w-[100px]">{log.triggered_from_device}</span>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

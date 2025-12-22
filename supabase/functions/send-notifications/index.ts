@@ -30,16 +30,28 @@ const getNextReviewDate = (reviewCount: number, lastReviewed: string): Date => {
   return lastDate;
 };
 
-async function logNotification(tuteeId: string, title: string, message: string, type: string, status: string, deviceLabel?: string | null, error?: string) {
+async function logNotification(params: {
+  tuteeId: string, 
+  title: string, 
+  message: string, 
+  type: string, 
+  status: string, 
+  deviceLabel?: string | null, 
+  error?: string,
+  triggeredBy?: string,
+  triggeredFromDevice?: string
+}) {
   try {
     await supabase.from('notification_logs').insert({
-      tutee_id: tuteeId,
-      title,
-      message,
-      type,
-      status,
-      device_label: deviceLabel,
-      error_message: error
+      tutee_id: params.tuteeId,
+      title: params.title,
+      message: params.message,
+      type: params.type,
+      status: params.status,
+      device_label: params.deviceLabel,
+      error_message: params.error,
+      triggered_by: params.triggeredBy,
+      triggered_from_device: params.triggeredFromDevice
     });
   } catch (err) {
     console.error('Failed to log notification:', err);
@@ -53,20 +65,26 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { test, type, tuteeId, title, message, url } = body;
+    const { test, type, tuteeId, subscriptionId, title, message, url, triggeredBy, triggeredFromDevice } = body;
     const now = new Date();
 
-    // 1. Manual/Targeted Notifications (Test, Admin Alerts, Tutee Alerts)
+    // 1. Manual/Targeted Notifications
     if (test || type) {
-      console.log(`Sending notification: ${type || 'test'} to ${tuteeId || 'everyone'}`);
-      
       let query = supabase.from('push_subscriptions').select('*');
-      if (tuteeId) query = query.eq('tutee_id', tuteeId);
+      
+      // Targeting Logic
+      if (subscriptionId) {
+        // Target ONE specific device
+        query = query.eq('id', subscriptionId);
+      } else if (tuteeId) {
+        // Target ALL devices for ONE student
+        query = query.eq('tutee_id', tuteeId);
+      }
+      // If neither subscriptionId nor tuteeId is provided, it targets EVERYONE (Broadcast)
 
       const { data: subscriptions, error: subsError } = await query;
       if (subsError) throw subsError;
 
-      // Fetch tutee names for personalization (since FK link is loose)
       const { data: tuteeList } = await supabase.from('tutees').select('id, name');
       const tuteeMap = Object.fromEntries((tuteeList || []).map(t => [t.id, t.name]));
 
@@ -86,11 +104,30 @@ Deno.serve(async (req) => {
               data: { url: url || '/tuition' }
             })
           );
-          results.push({ success: true, tutee: sub.tutee_id });
-          await logNotification(sub.tutee_id, finalTitle, finalMessage, finalType, 'sent', sub.label);
+          results.push({ success: true, tutee: sub.tutee_id, device: sub.label });
+          await logNotification({
+            tuteeId: sub.tutee_id, 
+            title: finalTitle, 
+            message: finalMessage, 
+            type: finalType, 
+            status: 'sent', 
+            deviceLabel: sub.label,
+            triggeredBy,
+            triggeredFromDevice
+          });
         } catch (e) {
           results.push({ success: false, error: e.message });
-          await logNotification(sub.tutee_id, finalTitle, finalMessage, finalType, 'failed', sub.label, e.message);
+          await logNotification({
+            tuteeId: sub.tutee_id, 
+            title: finalTitle, 
+            message: finalMessage, 
+            type: finalType, 
+            status: 'failed', 
+            deviceLabel: sub.label, 
+            error: e.message,
+            triggeredBy,
+            triggeredFromDevice
+          });
           if (e.statusCode === 410 || e.statusCode === 404) {
             await supabase.from('push_subscriptions').delete().eq('id', sub.id);
           }
@@ -128,9 +165,24 @@ Deno.serve(async (req) => {
               })
             );
             notificationsSent.push({ tutee_id: review.tutee_id });
-            await logNotification(review.tutee_id, finalTitle, finalMessage, 'spaced_repetition', 'sent', sub.label);
+            await logNotification({
+              tuteeId: review.tutee_id, 
+              title: finalTitle, 
+              message: finalMessage, 
+              type: 'spaced_repetition', 
+              status: 'sent', 
+              deviceLabel: sub.label
+            });
           } catch (e) {
-            await logNotification(review.tutee_id, finalTitle, finalMessage, 'spaced_repetition', 'failed', sub.label, e.message);
+            await logNotification({
+              tuteeId: review.tutee_id, 
+              title: finalTitle, 
+              message: finalMessage, 
+              type: 'spaced_repetition', 
+              status: 'failed', 
+              deviceLabel: sub.label, 
+              error: e.message
+            });
             if (e.statusCode === 410 || e.statusCode === 404) await supabase.from('push_subscriptions').delete().eq('id', sub.id);
           }
         }
