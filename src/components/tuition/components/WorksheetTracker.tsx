@@ -162,39 +162,60 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
     (w.notes || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalWorksheets = worksheets.length;
+  const completedWorksheets = worksheets.filter(w => w.status === 'Completed').length;
+
   return (
-    <AnimatedCard className="overflow-hidden border-white/40 bg-white/60 backdrop-blur-sm rounded-[2.5rem] shadow-xl">
+    <AnimatedCard className="!p-0 overflow-hidden border-white/40 bg-white/60 backdrop-blur-sm rounded-[2rem] sm:rounded-[2.5rem] shadow-xl">
       {/* Header with Gradient */}
-      <div className={`p-6 sm:p-8 bg-gradient-to-r ${gradientClass} text-white shadow-lg`}>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-md shadow-inner">
-              <ClipboardList className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-black tracking-tight leading-tight">Worksheet Tracker</h2>
-              <p className="text-xs text-white/80 font-bold uppercase tracking-widest mt-1">Status & Progress</p>
-            </div>
+      <div className={`p-4 sm:p-8 bg-gradient-to-r ${gradientClass} text-white shadow-lg`}>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="p-3 sm:p-4 bg-white/20 rounded-xl sm:rounded-2xl backdrop-blur-md shadow-inner flex-shrink-0">
+            <ClipboardList className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
           </div>
-          <button
-            onClick={() => {
-              if (showAddForm) {
-                setShowAddForm(false);
-                setEditingEntry(null);
-                resetForm();
-              } else {
-                setShowAddForm(true);
-              }
-            }}
-            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-4 bg-white ${textPrimary} rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl hover:scale-105 active:scale-95 transition-all`}
-          >
-            <Plus className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? 'rotate-45' : ''}`} />
-            {showAddForm ? 'Cancel' : 'Add New'}
-          </button>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-tight truncate">Worksheet Tracker</h2>
+            <p className="text-[10px] sm:text-xs text-white/80 font-bold uppercase tracking-widest mt-0.5 sm:mt-1 truncate">Status & Progress</p>
+          </div>
         </div>
       </div>
 
       <div className="p-5 sm:p-8">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">
+          <div className={`bg-${primaryColor}-50 rounded-2xl p-4 border border-${primaryColor}-100/50 shadow-inner`}>
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total</p>
+            <p className={`text-2xl font-black ${textPrimary}`}>
+              {totalWorksheets}
+            </p>
+          </div>
+          <div className={`bg-${primaryColor}-50 rounded-2xl p-4 border border-${primaryColor}-100/50 shadow-inner`}>
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Completed</p>
+            <p className={`text-2xl font-black ${textPrimary}`}>
+              {completedWorksheets}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            if (showAddForm) {
+              setShowAddForm(false);
+              setEditingEntry(null);
+              resetForm();
+            } else {
+              setShowAddForm(true);
+            }
+          }}
+          className={`w-full mb-8 flex items-center justify-center gap-2 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-lg transition-all transform active:scale-95 ${
+            showAddForm 
+              ? 'bg-red-50 text-red-600 border-2 border-red-100' 
+              : `bg-gradient-to-r ${gradientClass} text-white hover:opacity-90`
+          }`}
+        >
+          <Plus className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? 'rotate-45' : ''}`} />
+          {showAddForm ? 'Cancel Entry' : 'Add New Worksheet'}
+        </button>
+
         {error && (
           <div className="mb-8 p-4 bg-red-50 border-2 border-red-100 rounded-2xl flex items-center gap-3 text-red-600 text-sm font-bold animate-shake">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />

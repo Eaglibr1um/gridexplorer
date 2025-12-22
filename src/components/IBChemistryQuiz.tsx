@@ -199,15 +199,15 @@ const IBChemistryQuiz = ({ tutee, onBack }: IBChemistryQuizProps) => {
   return (
     <div className={`min-h-screen bg-gradient-to-br from-${primaryColor}-100 to-${secondaryColor}-100 p-3 sm:p-4 md:p-8 safe-area-inset`}>
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-4 sm:p-6 md:p-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="bg-white rounded-[2rem] sm:rounded-2xl shadow-xl sm:shadow-2xl p-4 sm:p-6 md:p-8">
+          <div className="flex flex-row justify-between items-center gap-3 mb-4 sm:mb-6">
             <div className="flex items-center gap-2 min-w-0">
               <BookOpen className={`w-5 h-5 sm:w-6 sm:h-6 ${textPrimary} flex-shrink-0`} />
               <h1 className={`text-lg sm:text-xl md:text-2xl font-bold text-${primaryColor}-700 truncate`}>IB Chemistry Quiz</h1>
             </div>
-            <div className="text-right flex-shrink-0 w-full sm:w-auto">
-              <p className="text-xs sm:text-sm text-gray-600">Question {currentQ + 1}/{questions.length}</p>
-              <p className={`text-base sm:text-lg font-bold ${textPrimary}`}>Score: {score}</p>
+            <div className="text-right flex-shrink-0">
+              <p className="text-[10px] sm:text-sm text-gray-600 font-bold uppercase tracking-wider">Q {currentQ + 1}/{questions.length}</p>
+              <p className={`text-sm sm:text-lg font-black ${textPrimary}`}>Score: {score}</p>
             </div>
           </div>
 

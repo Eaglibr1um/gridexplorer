@@ -154,38 +154,38 @@ const ChatModule = ({ tutee, role }: ChatModuleProps) => {
     return (
       <button
         onClick={handleExpand}
-        className="w-full bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 group border border-white/40 overflow-hidden flex flex-col animate-fade-in-up touch-manipulation relative"
+        className="w-full bg-white/60 backdrop-blur-sm rounded-[2rem] sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 group border border-white/40 overflow-hidden flex flex-col animate-fade-in-up touch-manipulation relative"
       >
-        <div className="p-6 sm:p-8 w-full">
-          <div className="flex items-center gap-4">
-            <div className={`p-4 bg-gradient-to-br ${role === 'admin' ? 'from-purple-600 to-indigo-600' : tutee.colorScheme.gradient} rounded-2xl shadow-lg transform group-hover:rotate-6 transition-transform duration-300 relative`}>
-              <MessageCircle className="w-8 h-8 text-white" />
+        <div className={`p-4 sm:p-8 w-full bg-gradient-to-r ${role === 'admin' ? 'from-purple-600 to-indigo-600' : tutee.colorScheme.gradient} text-white shadow-lg`}>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="p-3 sm:p-4 bg-white/20 rounded-xl sm:rounded-2xl backdrop-blur-md shadow-inner relative flex-shrink-0">
+              <MessageCircle className="w-6 h-6 sm:w-8 sm:h-8" />
               {unreadCount > 0 && (
-                <div className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border-4 border-white animate-bounce">
+                <div className="absolute -top-1 -right-1 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white animate-bounce">
                   {unreadCount}
                 </div>
               )}
             </div>
             <div className="min-w-0 flex-1 text-left">
-              <h2 className="text-2xl font-black text-gray-800 leading-tight">
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-tight truncate">
                 {role === 'admin' ? `Chat with ${tutee.name}` : 'Message Tutor'}
               </h2>
               {messages.length > 0 ? (
-                <div className="mt-1">
-                  <p className="text-gray-600 font-bold text-sm truncate pr-8">
+                <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
+                  <p className="text-[10px] sm:text-xs text-white/80 font-bold uppercase tracking-widest truncate flex-1">
                     {messages[messages.length - 1].sender_id === senderId ? 'You: ' : ''}
                     {messages[messages.length - 1].content}
                   </p>
-                  <p className="text-gray-400 font-medium text-[10px] uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                  <p className="text-[9px] sm:text-[10px] text-white/60 font-black uppercase tracking-widest flex items-center gap-1 flex-shrink-0">
                     <Clock className="w-3 h-3" />
                     {formatLastMessageDate(new Date(messages[messages.length - 1].created_at))}
                   </p>
                 </div>
               ) : (
-                <p className="text-gray-500 font-medium italic mt-1">Start a conversation...</p>
+                <p className="text-white/60 text-[10px] sm:text-xs font-bold uppercase tracking-widest mt-0.5 sm:mt-1 italic">Start a conversation...</p>
               )}
             </div>
-            <ChevronRight className="w-6 h-6 text-gray-300 group-hover:translate-x-1 transition-transform" />
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-white/60 group-hover:translate-x-1 transition-transform flex-shrink-0" />
           </div>
         </div>
       </button>
@@ -197,22 +197,22 @@ const ChatModule = ({ tutee, role }: ChatModuleProps) => {
     <div className="fixed inset-0 z-[100] bg-black/20 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
       <div className="bg-white w-full max-w-2xl h-[100dvh] sm:h-[80vh] sm:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-modal-content">
         {/* Chat Header */}
-        <div className={`p-6 sm:p-8 bg-gradient-to-r ${role === 'admin' ? tutee.colorScheme.gradient : 'from-purple-600 to-indigo-600'} text-white flex items-center justify-between`}>
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+        <div className={`p-4 sm:p-8 bg-gradient-to-r ${role === 'admin' ? 'from-purple-600 to-indigo-600' : tutee.colorScheme.gradient} text-white shadow-lg flex items-center justify-between`}>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="p-3 bg-white/20 rounded-xl sm:rounded-2xl backdrop-blur-md shadow-inner">
               {(() => {
                 const Icon = role === 'admin' ? (iconMap[tutee.icon] || User) : Shield;
                 return <Icon className="w-6 h-6" />;
               })()}
             </div>
             <div>
-              <h3 className="text-xl font-black">{role === 'admin' ? tutee.name : 'Jianxiang'}</h3>
-              <p className="text-white/70 text-xs font-bold uppercase tracking-widest">Always Online</p>
+              <h3 className="text-lg sm:text-xl font-black">{role === 'admin' ? tutee.name : 'Jianxiang'}</h3>
+              <p className="text-white/70 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Always Online</p>
             </div>
           </div>
           <button 
             onClick={() => setIsExpanded(false)}
-            className="p-3 hover:bg-white/10 rounded-2xl transition-colors"
+            className="p-2 sm:p-3 hover:bg-white/10 rounded-xl sm:rounded-2xl transition-colors"
           >
             <X className="w-6 h-6" />
           </button>

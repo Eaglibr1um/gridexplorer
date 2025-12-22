@@ -225,18 +225,18 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
   }
 
   return (
-    <div className="bg-white/60 backdrop-blur-sm rounded-[2.5rem] shadow-xl p-6 sm:p-8 border border-white/40 animate-fade-in-up">
+    <div className="bg-white/60 backdrop-blur-sm rounded-[2rem] sm:rounded-[2.5rem] shadow-xl border border-white/40 overflow-hidden animate-fade-in-up">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between group"
+        className={`w-full p-4 sm:p-8 bg-gradient-to-r ${gradientClass} text-white shadow-lg flex items-center justify-between group`}
       >
-        <div className="flex items-center gap-4">
-          <div className={`p-4 bg-gradient-to-br ${gradientClass} rounded-2xl shadow-lg transform group-hover:rotate-6 transition-transform`}>
-            <MessageSquare className="w-6 h-6 text-white" />
+        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+          <div className="p-3 sm:p-4 bg-white/20 rounded-xl sm:rounded-2xl backdrop-blur-md shadow-inner flex-shrink-0">
+            <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
           </div>
-          <div className="text-left">
-            <h3 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">My Feedback</h3>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+          <div className="min-w-0 text-left">
+            <h3 className="text-xl sm:text-2xl font-black tracking-tight leading-tight truncate">My Feedback</h3>
+            <p className="text-[10px] sm:text-xs text-white/80 font-bold uppercase tracking-widest mt-0.5 sm:mt-1 truncate">
               {feedback.length === 0 
                 ? 'Share your thoughts' 
                 : `${feedback.length} Submissions`}
@@ -244,7 +244,7 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
           </div>
         </div>
         {feedback.length > 0 && (
-          <div className={`p-3 bg-gray-50 rounded-2xl text-gray-400 ${textPrimary.replace('text-', 'group-hover:text-')} transition-colors shadow-inner border border-gray-100`}>
+          <div className="p-2 sm:p-3 bg-white/20 rounded-xl sm:rounded-2xl text-white transition-all shadow-inner group-hover:scale-110 flex-shrink-0">
             {isExpanded ? (
               <ChevronUp className="w-5 h-5" />
             ) : (
@@ -255,13 +255,13 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
       </button>
 
       {error && (
-        <div className="mt-6 p-4 bg-red-50 border-2 border-red-100 rounded-2xl animate-shake">
+        <div className="mx-6 sm:mx-8 mt-6 p-4 bg-red-50 border-2 border-red-100 rounded-2xl animate-shake">
           <p className="text-xs font-bold text-red-700 uppercase tracking-wide text-center">{error}</p>
         </div>
       )}
 
       {isExpanded && (
-        <div className="mt-8">
+        <div className="p-5 sm:p-8">
           {feedback.length === 0 ? (
             <div className="text-center py-12 bg-gray-50/50 rounded-[2rem] border-2 border-dashed border-gray-100">
               <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm">

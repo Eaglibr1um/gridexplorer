@@ -167,16 +167,16 @@ const LearningPoints = ({ tutee }: LearningPointsProps) => {
 
   return (
     <>
-      <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 group border border-white/40 overflow-hidden flex flex-col animate-fade-in-up touch-manipulation relative h-full">
+      <div className="bg-white/60 backdrop-blur-sm rounded-[2rem] sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 group border border-white/40 overflow-hidden flex flex-col animate-fade-in-up touch-manipulation relative h-full">
         {/* Header with Gradient */}
-        <div className={`p-6 sm:p-8 bg-gradient-to-r ${gradientClass} text-white shadow-lg`}>
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-md shadow-inner">
-              <BookOpen className="w-8 h-8 text-white" />
+        <div className={`p-4 sm:p-8 bg-gradient-to-r ${gradientClass} text-white shadow-lg`}>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="p-3 sm:p-4 bg-white/20 rounded-xl sm:rounded-2xl backdrop-blur-md shadow-inner flex-shrink-0">
+              <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-2xl font-black tracking-tight leading-tight">Learning Points</h2>
-              <p className="text-xs text-white/80 font-bold uppercase tracking-widest mt-1">Spaced Repetition</p>
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-tight truncate">Learning Points</h2>
+              <p className="text-[10px] sm:text-xs text-white/80 font-bold uppercase tracking-widest mt-0.5 sm:mt-1 truncate">Spaced Repetition</p>
             </div>
           </div>
         </div>

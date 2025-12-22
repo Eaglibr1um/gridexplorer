@@ -109,21 +109,31 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
   const shadowPrimary = `shadow-${primaryColor}-100`;
 
   return (
-    <div className="bg-white/60 backdrop-blur-sm rounded-[2.5rem] shadow-xl overflow-hidden border border-white/40 animate-fade-in-up">
+    <div className="bg-white/60 backdrop-blur-sm rounded-[2rem] sm:rounded-[2.5rem] shadow-xl overflow-hidden border border-white/40 animate-fade-in-up">
       {/* Header */}
-      <div className={`p-6 sm:p-8 bg-gradient-to-r ${gradientClass} text-white shadow-lg`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-md shadow-inner">
-              <HardDrive className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-black tracking-tight leading-tight">Shared Files</h2>
-              <p className="text-xs text-white/80 font-bold uppercase tracking-widest mt-1">Cloud Storage</p>
-            </div>
+      <div className={`p-4 sm:p-8 bg-gradient-to-r ${gradientClass} text-white shadow-lg`}>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="p-3 sm:p-4 bg-white/20 rounded-xl sm:rounded-2xl backdrop-blur-md shadow-inner flex-shrink-0">
+            <HardDrive className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-tight truncate">Shared Files</h2>
+            <p className="text-[10px] sm:text-xs text-white/80 font-bold uppercase tracking-widest mt-0.5 sm:mt-1 truncate">Cloud Storage</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-5 sm:p-8 space-y-8">
+        {/* Actions and Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className={`flex-1 bg-${primaryColor}-50 rounded-2xl p-4 border border-${primaryColor}-100/50 shadow-inner flex flex-col justify-center`}>
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Storage</p>
+            <p className={`text-2xl font-black ${textPrimary}`}>
+              {files.length} <span className="text-xs uppercase tracking-wider opacity-60">Files</span>
+            </p>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2">
             <input
               type="file"
               ref={fileInputRef}
@@ -133,17 +143,15 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className={`w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-white ${textPrimary} rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50`}
+              className={`w-full flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r ${gradientClass} text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-lg hover:opacity-90 active:scale-95 transition-all disabled:opacity-50`}
             >
               {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
-              <span>Upload</span>
+              <span>Upload File</span>
             </button>
           </div>
         </div>
-      </div>
 
-      <div className="p-5 sm:p-8 space-y-8">
-        {/* Search and Stats */}
+        {/* Search and Filter */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="relative flex-1 group">
             <Search className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:${textPrimary} transition-colors`} />

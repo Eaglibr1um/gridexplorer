@@ -590,42 +590,42 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 pb-20 sm:pb-8 safe-area-inset">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         {/* Header */}
-        <div className="pt-6 mb-6 sm:mb-8">
+        <div className="pt-4 sm:pt-6 mb-4 sm:mb-8">
           <button
             onClick={onBack}
-            className="group flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6 transition-all bg-white/50 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm hover:shadow-md active:scale-95"
+            className="group flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-4 sm:mb-6 transition-all bg-white/50 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-sm hover:shadow-md active:scale-95 text-sm sm:text-base"
           >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-1 transition-transform" />
             <span className="font-bold">Back</span>
           </button>
           
-          <div className="bg-white/40 backdrop-blur-md p-6 sm:p-8 rounded-3xl shadow-xl border border-white/20">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-              <div className={`p-4 bg-gradient-to-br ${gradientClass} rounded-2xl shadow-lg flex-shrink-0 self-start sm:self-auto`}>
-                <BookOpen className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+          <div className="bg-white/40 backdrop-blur-md p-4 sm:p-8 rounded-[2rem] sm:rounded-3xl shadow-xl border border-white/20">
+            <div className="flex flex-row items-center gap-3 sm:gap-6">
+              <div className={`p-3 sm:p-4 bg-gradient-to-br ${gradientClass} rounded-xl sm:rounded-2xl shadow-lg flex-shrink-0`}>
+                <BookOpen className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-3xl font-black text-gray-900 tracking-tight">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
+                  <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight truncate">
                     Vault
                   </h1>
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-gradient-to-r ${gradientClass} text-white shadow-sm`}>
+                  <span className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg sm:rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-gradient-to-r ${gradientClass} text-white shadow-sm flex-shrink-0`}>
                     Points
                   </span>
                 </div>
-                <p className="text-gray-600 font-medium">{tutee.name}'s Knowledge Base</p>
+                <p className="text-gray-600 text-xs sm:text-lg font-medium truncate">{tutee.name}'s Knowledge Base</p>
               </div>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 mt-8">
-              <div className={`bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-white/50 shadow-sm`}>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Sessions</p>
-                <p className="text-3xl font-black text-gray-800 tracking-tighter">{uniqueSessionDates.size}</p>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-4 sm:mt-8">
+              <div className={`bg-white/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/50 shadow-sm`}>
+                <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5 sm:mb-1">Sessions</p>
+                <p className="text-xl sm:text-3xl font-black text-gray-800 tracking-tighter">{uniqueSessionDates.size}</p>
               </div>
-              <div className={`bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-white/50 shadow-sm`}>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Points</p>
-                <p className="text-3xl font-black text-gray-800 tracking-tighter">{totalLearningPoints}</p>
+              <div className={`bg-white/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/50 shadow-sm`}>
+                <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5 sm:mb-1">Points</p>
+                <p className="text-xl sm:text-3xl font-black text-gray-800 tracking-tighter">{totalLearningPoints}</p>
               </div>
             </div>
           </div>
@@ -648,20 +648,20 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
         </div>
 
         {/* Add/Edit Form */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-[2.5rem] shadow-xl p-6 sm:p-10 mb-8 border border-white/40 animate-fade-in-up">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">
+        <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] sm:rounded-[2.5rem] shadow-xl p-5 sm:p-10 mb-8 border border-white/40 animate-fade-in-up">
+          <div className="flex flex-row items-center justify-between mb-6 sm:mb-8">
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-2xl font-black text-gray-800 tracking-tight leading-tight truncate">
                 {editingPoint ? 'Refine Points' : 'Record Progress'}
               </h2>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+              <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest mt-0.5 sm:mt-1 truncate">
                 {editingPoint ? 'Update your existing session' : 'Log what you learned today'}
               </p>
             </div>
             {editingPoint && (
               <button
                 onClick={handleAddNew}
-                className="px-4 py-2 bg-gray-100 text-gray-500 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-100 text-gray-500 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95 flex-shrink-0"
               >
                 Cancel
               </button>

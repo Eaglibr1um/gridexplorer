@@ -595,17 +595,20 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
 
         {/* Recent Activity */}
         {availableQuizzes.some(q => getTotalAttempts(q.type) > 0) && (
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-6 sm:p-8 border border-white/40 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 bg-${tutee.colorScheme.primary}-100 rounded-xl`}>
-                  <BarChart3 className={`w-6 h-6 text-${tutee.colorScheme.primary}-600`} />
+          <div className="bg-white/60 backdrop-blur-sm rounded-[2rem] sm:rounded-3xl shadow-xl border border-white/40 overflow-hidden animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+            <div className={`p-4 sm:p-6 bg-gradient-to-r ${tutee.colorScheme.gradient} text-white shadow-lg`}>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2.5 sm:p-3 bg-white/20 rounded-xl sm:rounded-2xl backdrop-blur-md shadow-inner flex-shrink-0">
+                  <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
-                <h3 className="text-2xl font-black text-gray-800">Recent Activity</h3>
+                <div className="min-w-0">
+                  <h3 className="text-xl sm:text-2xl font-black tracking-tight truncate">Recent Activity</h3>
+                  <p className="text-[10px] sm:text-xs text-white/80 font-bold uppercase tracking-widest mt-0.5 sm:mt-1 truncate">Your Progress History</p>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-8">
+            <div className="p-5 sm:p-8 space-y-8">
               {availableQuizzes.map((quiz) => {
                 if (getTotalAttempts(quiz.type) === 0) return null;
                 

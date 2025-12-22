@@ -555,11 +555,11 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
     }
     return (
       <div className={`min-h-screen bg-gradient-to-br from-${primaryColor}-100 to-${secondaryColor}-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset`}>
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-5 sm:p-6 md:p-8 max-w-2xl w-full mx-2">
+        <div className="bg-white rounded-[2rem] sm:rounded-2xl shadow-xl sm:shadow-2xl p-5 sm:p-6 md:p-8 max-w-2xl w-full mx-2">
           <div className="text-center mb-6 sm:mb-8">
-            <Users className={`w-12 h-12 sm:w-16 sm:h-16 ${textPrimary} mx-auto mb-3 sm:mb-4`} />
-            <h1 className={`text-2xl sm:text-3xl md:text-4xl font-bold text-${primaryColor}-700 mb-2 px-2`}>Science Spelling Quiz</h1>
-            <p className="text-sm sm:text-base text-gray-600 px-2">Choose your student to start!</p>
+            <Users className={`w-10 h-10 sm:w-16 sm:h-16 ${textPrimary} mx-auto mb-2 sm:mb-4`} />
+            <h1 className={`text-xl sm:text-3xl md:text-4xl font-bold text-${primaryColor}-700 mb-1 sm:mb-2 px-2`}>Science Spelling Quiz</h1>
+            <p className="text-xs sm:text-base text-gray-600 px-2 font-medium">Choose your student to start!</p>
           </div>
 
           <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
@@ -664,13 +664,13 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-${primaryColor}-50 to-${secondaryColor}-50 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset`}>
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-5 sm:p-6 md:p-8 max-w-2xl w-full mx-2">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-            <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
+      <div className="bg-white rounded-[2rem] sm:rounded-2xl shadow-xl sm:shadow-2xl p-4 sm:p-6 md:p-8 max-w-2xl w-full mx-2">
+        <div className="flex flex-row justify-between items-center gap-3 mb-4 sm:mb-6">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               {/* Circular Timer - Left Side */}
               {timerActive && !(showFeedback && (feedbackMsg.includes('Correct') || attempts >= 3)) && (
-                <div className="relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex-shrink-0">
-                  <svg className="transform -rotate-90 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16" viewBox="0 0 64 64">
+                <div className="relative w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 flex-shrink-0">
+                  <svg className="transform -rotate-90 w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16" viewBox="0 0 64 64">
                     <circle
                       cx="32"
                       cy="32"
@@ -698,7 +698,7 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className={`text-sm sm:text-base md:text-lg font-bold ${
+                    <span className={`text-xs sm:text-base md:text-lg font-bold ${
                       timeLeft > 20 ? 'text-green-600' :
                       timeLeft > 10 ? 'text-yellow-600' :
                       'text-red-600'
@@ -708,16 +708,16 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-2 min-w-0">
-                <Sparkles className={`w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 ${textPrimary}`} />
-                <h1 className={`text-lg sm:text-xl md:text-2xl font-bold truncate ${textPrimary}`}>
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <Sparkles className={`w-4 h-4 sm:w-6 sm:h-6 flex-shrink-0 ${textPrimary}`} />
+                <h1 className={`text-base sm:text-xl md:text-2xl font-bold truncate ${textPrimary}`}>
                   {selectedStudent === 'rayne' ? 'Rayne' : selectedStudent === 'jeffrey' ? 'Jeffrey' : selectedStudent}'s Quiz
                 </h1>
               </div>
             </div>
-            <div className="text-right flex-shrink-0 w-full sm:w-auto">
-              <p className="text-xs sm:text-sm text-gray-600">Question {currentQ + 1}/{questions.length}</p>
-              <p className={`text-base sm:text-lg font-bold ${textPrimary}`}>
+            <div className="text-right flex-shrink-0">
+              <p className="text-[10px] sm:text-sm text-gray-600 font-bold uppercase tracking-wider">Q {currentQ + 1}/{questions.length}</p>
+              <p className={`text-sm sm:text-lg font-black ${textPrimary}`}>
                 Score: {score}
               </p>
             </div>

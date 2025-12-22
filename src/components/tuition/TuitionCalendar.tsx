@@ -433,30 +433,32 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
       <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-4 sm:p-6 lg:p-10 border border-white/50 overflow-hidden">
         {/* Greeting & Status Banner */}
         {!isAdmin && tutee && (
-          <div className={`mb-8 p-6 rounded-3xl border-2 bg-gradient-to-br ${tutee.colorScheme.gradient} shadow-xl animate-fade-in-up transition-all duration-500 transform hover:scale-[1.01]`} style={{
-            borderColor: 'rgba(255, 255, 255, 0.3)',
-          }}>
+          <div className={`mb-6 sm:mb-8 p-4 sm:p-6 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-[2rem] sm:rounded-3xl shadow-lg relative overflow-hidden animate-fade-in`}>
+            {/* Background Decoration */}
+            <div className="absolute -right-4 -top-4 w-24 h-24 sm:w-32 sm:h-32 bg-white/10 rounded-full blur-2xl" />
+            <div className="absolute -left-4 -bottom-4 w-20 h-20 sm:w-24 sm:h-24 bg-black/10 rounded-full blur-xl" />
+            
             {tuitionInfo?.type === 'in_progress' ? (
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-white/30 backdrop-blur-md rounded-2xl shadow-inner animate-pulse">
-                  <Clock className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-3 sm:gap-4 relative z-10">
+                <div className="p-2.5 sm:p-3 bg-white/30 backdrop-blur-md rounded-xl sm:rounded-2xl shadow-inner flex-shrink-0 animate-pulse">
+                  <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <div>
-                  <p className="font-black text-xl text-white tracking-tight">
-                    Session in Progress!
+                <div className="min-w-0">
+                  <p className="font-black text-base sm:text-xl text-white tracking-tight leading-tight truncate">
+                    Session in Progress! 🚀
                   </p>
-                  <p className="text-sm font-bold text-white/90 uppercase tracking-widest mt-0.5">
+                  <p className="text-[10px] sm:text-sm font-bold text-white/90 uppercase tracking-widest mt-0.5 sm:mt-1 truncate">
                     {tuitionInfo.slot.startTime} - {tuitionInfo.slot.endTime}
                   </p>
                 </div>
               </div>
             ) : tuitionInfo?.type === 'upcoming' ? (
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-white/30 backdrop-blur-md rounded-2xl shadow-inner">
-                  <CalendarIcon className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-3 sm:gap-4 relative z-10">
+                <div className="p-2.5 sm:p-3 bg-white/30 backdrop-blur-md rounded-xl sm:rounded-2xl shadow-inner flex-shrink-0">
+                  <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <div>
-                  <p className="font-black text-lg sm:text-xl text-white tracking-tight leading-tight">
+                <div className="min-w-0">
+                  <p className="font-black text-base sm:text-xl text-white tracking-tight leading-tight truncate">
                     {tuitionInfo.days > 0 ? (
                       <>{tuitionInfo.days} {tuitionInfo.days === 1 ? 'Day' : 'Days'} to go!</>
                     ) : tuitionInfo.hours > 0 ? (
@@ -465,21 +467,21 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                       <>{tuitionInfo.minutes} {tuitionInfo.minutes === 1 ? 'Minute' : 'Minutes'} to go!</>
                     )}
                   </p>
-                  <p className="text-xs sm:text-sm font-bold text-white/90 uppercase tracking-widest mt-1">
+                  <p className="text-[10px] sm:text-sm font-bold text-white/90 uppercase tracking-widest mt-0.5 sm:mt-1 truncate">
                     {format(parseISO(tuitionInfo.slot.date), 'EEE, MMM d')} • {tuitionInfo.slot.startTime}
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-white/30 backdrop-blur-md rounded-2xl shadow-inner">
-                  <CalendarIcon className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-3 sm:gap-4 relative z-10">
+                <div className="p-2.5 sm:p-3 bg-white/30 backdrop-blur-md rounded-xl sm:rounded-2xl shadow-inner flex-shrink-0">
+                  <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <div>
-                  <p className="font-black text-xl text-white tracking-tight">
+                <div className="min-w-0">
+                  <p className="font-black text-base sm:text-xl text-white tracking-tight leading-tight truncate">
                     Hey {tutee.name}!
                   </p>
-                  <p className="text-sm font-bold text-white/80 uppercase tracking-widest mt-0.5">
+                  <p className="text-[10px] sm:text-sm font-bold text-white/80 uppercase tracking-widest mt-0.5 sm:mt-1 truncate">
                     No upcoming sessions
                   </p>
                 </div>
@@ -488,22 +490,22 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-8">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-indigo-50 rounded-2xl shadow-inner">
-              <CalendarIcon className="w-6 h-6 text-indigo-600" />
+        <div className="flex flex-row items-center justify-between gap-4 mb-6 sm:mb-8">
+          <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+            <div className="p-2.5 sm:p-3 bg-indigo-50 rounded-xl sm:rounded-2xl shadow-inner flex-shrink-0">
+              <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
             </div>
-            <div>
-              <h2 className="text-2xl font-black text-gray-800 leading-tight">Tuition Calendar</h2>
-              <p className="text-sm font-bold text-gray-400 uppercase tracking-wider">Plan your sessions</p>
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-2xl font-black text-gray-800 leading-tight truncate">Tuition Calendar</h2>
+              <p className="text-[10px] sm:text-sm font-bold text-gray-400 uppercase tracking-wider truncate">Plan your sessions</p>
             </div>
           </div>
           {isAdmin && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl active:scale-95 w-full sm:w-auto justify-center group"
+              className="flex items-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-6 sm:py-3 bg-indigo-600 text-white font-bold rounded-xl sm:rounded-2xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl active:scale-95 text-xs sm:text-base flex-shrink-0 group"
             >
-              <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-90 transition-transform" />
               <span>Add Slot</span>
             </button>
           )}
