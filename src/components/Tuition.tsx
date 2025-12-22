@@ -7,7 +7,7 @@ import {
   Gamepad2, Code, Globe, Coffee, Smile
 } from 'lucide-react';
 import { getTutees, verifyPin } from '../config/tutees';
-import { verifyAdminPin, ADMIN_CONFIG } from '../config/admin';
+import { ADMIN_CONFIG } from '../config/admin';
 import { Tutee } from '../types/tuition';
 import PinProtection from './tuition/PinProtection';
 import AdminPinProtection from './tuition/AdminPinProtection';
@@ -24,9 +24,11 @@ import SpellingQuizConfig from './tuition/admin/SpellingQuizConfig';
 import GPTChatAdmin from './tuition/admin/GPTChatAdmin';
 import GlobalFileManager from './tuition/admin/GlobalFileManager';
 import NotificationAdmin from './tuition/admin/NotificationAdmin';
+import MessagingAdmin from './tuition/admin/MessagingAdmin';
 import { notificationService } from '../services/notificationService';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { Bell, BellOff, Loader2 } from 'lucide-react';
+import { supabase } from '../config/supabase';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   BookOpen,
@@ -188,24 +190,36 @@ const Tuition = () => {
 
   // Listen for admin PIN entered event
   useEffect(() => {
-    const handleAdminPinEntered = (e: CustomEvent<{ pin: string }>) => {
-      const isValid = verifyAdminPin(e.detail.pin);
-      
-      // Dispatch result back to AdminPinProtection component
-      const resultEvent = new CustomEvent('adminPinResult', { 
-        detail: { verified: isValid } 
-      });
-      window.dispatchEvent(resultEvent);
+    const handleAdminPinEntered = async (e: CustomEvent<{ pin: string }>) => {
+      try {
+        const { data, error } = await supabase.functions.invoke('verify-admin', {
+          body: { pin: e.detail.pin }
+        });
 
-      if (isValid) {
-        setIsAdmin(true);
-        setShowAdminPinModal(false);
+        const isValid = !error && data?.verified;
+        
+        // Dispatch result back to AdminPinProtection component
+        const resultEvent = new CustomEvent('adminPinResult', { 
+          detail: { verified: isValid } 
+        });
+        window.dispatchEvent(resultEvent);
+
+        if (isValid) {
+          setIsAdmin(true);
+          setShowAdminPinModal(false);
+        }
+      } catch (err) {
+        console.error('Failed to verify admin PIN:', err);
+        const resultEvent = new CustomEvent('adminPinResult', { 
+          detail: { verified: false } 
+        });
+        window.dispatchEvent(resultEvent);
       }
     };
 
-    window.addEventListener('adminPinEntered' as any, handleAdminPinEntered as EventListener);
+    window.addEventListener('adminPinEntered' as any, handleAdminPinEntered as any);
     return () => {
-      window.removeEventListener('adminPinEntered' as any, handleAdminPinEntered as EventListener);
+      window.removeEventListener('adminPinEntered' as any, handleAdminPinEntered as any);
     };
   }, []);
 
@@ -441,6 +455,7 @@ const Tuition = () => {
               />
               <ComponentManager tutees={tutees} />
               <GlobalFileManager tutees={tutees} />
+              <MessagingAdmin tutees={tutees} />
               <NotificationAdmin />
               <SpellingQuizConfig tutees={tutees} />
               <GPTChatAdmin />

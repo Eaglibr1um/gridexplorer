@@ -4,7 +4,12 @@
 
 ### 1. **Admin PIN Protection** 🔒
 - Created `AdminPinProtection` component for 8-digit PIN entry
-- Admin PIN: **93889604**
+### 🛡️ Admin Security (Backend Verified)
+The admin portal is protected by a secure backend handshake. The PIN is never stored in the frontend code, making it invisible to "Inspect Element".
+
+- Admin PIN: **938822** (6 digits)
+- Verification: Secure Edge Function (`verify-admin`)
+- Storage: Supabase Private Table (`admin_settings`)
 - Features:
   - 8-digit PIN input with auto-focus
   - Paste support
@@ -35,7 +40,7 @@ When in admin mode, the calendar shows:
 1. Visit `/tuition` route
 2. Scroll to the bottom info section
 3. Click the **"Admin Access"** button (purple button with shield icon)
-4. Enter the 8-digit PIN: **93889604**
+4. Enter the 6-digit PIN: **938822**
 5. Click "Verify"
 
 ### Managing Dates (Admin Mode)
@@ -91,15 +96,9 @@ Once in admin mode:
 
 ## Admin PIN
 
-**Current PIN:** `93889604` (8 digits)
+**Current PIN:** `938822` (6 digits)
 
-To change the PIN, edit `src/config/admin.ts`:
-```typescript
-export const ADMIN_CONFIG = {
-  pin: '93889604', // Change this
-  pinLength: 8,
-};
-```
+To change the PIN, update it in the Supabase `admin_settings` table. This change takes effect instantly without needing a code redeploy.
 
 ## Testing
 
@@ -111,7 +110,7 @@ export const ADMIN_CONFIG = {
 ## Next Steps
 
 The admin interface is fully functional! You can now:
-1. Enter admin mode with PIN `93889604`
+1. Enter admin mode with PIN `938822`
 2. Add, edit, and delete time slots
 3. Manage your calendar easily
 

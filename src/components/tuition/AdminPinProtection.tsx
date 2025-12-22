@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Lock, AlertCircle, Shield } from 'lucide-react';
+import { Lock, AlertCircle, Shield, Loader2 } from 'lucide-react';
 
 interface AdminPinProtectionProps {
   onPinVerified: () => void;
@@ -12,13 +12,14 @@ interface AdminPinProtectionProps {
 const AdminPinProtection = ({ 
   onPinVerified, 
   onCancel,
-  pinLength = 8,
+  pinLength = 6,
   maxAttempts = 3 
 }: AdminPinProtectionProps) => {
   const [pin, setPin] = useState<string[]>(Array(pinLength).fill(''));
   const [error, setError] = useState<string>('');
   const [attempts, setAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -77,6 +78,9 @@ const AdminPinProtection = ({
       return;
     }
 
+    setIsVerifying(true);
+    setError('');
+
     // Dispatch event for parent to verify
     const event = new CustomEvent('adminPinEntered', { detail: { pin: pinToVerify } });
     window.dispatchEvent(event);
@@ -85,6 +89,7 @@ const AdminPinProtection = ({
   // Listen for PIN verification result
   useEffect(() => {
     const handlePinResult = (e: CustomEvent) => {
+      setIsVerifying(false);
       if (e.detail.verified) {
         onPinVerified();
       } else {
@@ -148,7 +153,15 @@ const AdminPinProtection = ({
           </div>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-8 relative">
+          {isVerifying && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-2xl">
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
+                <span className="text-[10px] font-black text-purple-600 uppercase tracking-widest">Verifying...</span>
+              </div>
+            </div>
+          )}
           <div className="flex gap-2 justify-center flex-wrap">
             {pin.map((digit, index) => (
               <input
@@ -167,7 +180,7 @@ const AdminPinProtection = ({
                   borderColor: error ? '#fee2e2' : undefined,
                   color: error ? '#ef4444' : '#111827'
                 }}
-                disabled={isLocked}
+                disabled={isLocked || isVerifying}
               />
             ))}
           </div>

@@ -11,6 +11,7 @@ import PinChange from './PinChange';
 import LearningPoints from './components/LearningPoints';
 import WorksheetTracker from './components/WorksheetTracker';
 import SharedFiles from './components/SharedFiles';
+import ChatModule from './components/ChatModule';
 import LearningPointsPage from './LearningPointsPage';
 import FeedbackButton from './FeedbackButton';
 import MyFeedback from './MyFeedback';
@@ -418,6 +419,13 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
 
         {/* Dashboard Modules */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          {/* Messaging Module */}
+          {!loadingComponents && (
+            <div className="md:col-span-2">
+              <ChatModule tutee={tutee} role="tutee" />
+            </div>
+          )}
+
           {loadingComponents ? (
             <>
               <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-5 sm:p-6 md:p-8 space-y-4">
