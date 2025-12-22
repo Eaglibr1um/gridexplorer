@@ -78,6 +78,7 @@ export const notificationService = {
           endpoint: subscription.endpoint,
           subscription: subscription.toJSON(),
           user_agent: navigator.userAgent,
+          is_enabled: true, // Always re-enable if user explicitly subscribes again
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'tutee_id,endpoint'
@@ -130,12 +131,13 @@ export const notificationService = {
     const subscription = await registration.pushManager.getSubscription();
     if (!subscription) return false;
 
-    // Check if this specific tutee has this endpoint registered in Supabase
+    // Check if this specific tutee has this endpoint registered and enabled in Supabase
     const { data, error } = await supabase
       .from('push_subscriptions')
       .select('id')
       .eq('tutee_id', tuteeId)
       .eq('endpoint', subscription.endpoint)
+      .eq('is_enabled', true)
       .maybeSingle();
 
     if (error) {

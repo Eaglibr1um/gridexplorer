@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, BookOpen, GraduationCap, BarChart3, Clock, Trophy, Play, Bell, BellOff, Info, Share, Loader2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, GraduationCap, BarChart3, Clock, Trophy, Play, Bell, BellOff, Info, Share, Loader2, User, Star, Heart, Zap, Target, Award, Lightbulb, Brain, Rocket, Sparkles, BookMarked, School, PenTool, Calculator, FlaskConical, Atom, Music, Palette, Camera, Gamepad2, Code, Globe, Coffee, Smile, Shield } from 'lucide-react';
+
+const iconMap: Record<string, any> = {
+  BookOpen, GraduationCap, User, Star, Heart, Zap, Target,
+  Award, Trophy, Lightbulb, Brain, Rocket, Sparkles, BookMarked,
+  School, PenTool, Calculator, FlaskConical, Atom, Music, Palette,
+  Camera, Gamepad2, Code, Globe, Coffee, Smile, Shield
+};
 import { Tutee, QuizRecord } from '../../types/tuition';
 import ScienceSpellingQuiz from '../ScienceSpellingQuiz';
 import IBChemistryQuiz from '../IBChemistryQuiz';
@@ -300,31 +307,39 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 pb-20 sm:pb-8 safe-area-inset">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
         {/* Header - Mobile Friendly */}
-        <div className="pt-6 mb-6 sm:mb-8">
+        <div className="pt-4 sm:pt-6 mb-4 sm:mb-8">
           <button
             onClick={onBack}
-            className="group flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6 transition-all bg-white/50 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm hover:shadow-md active:scale-95"
+            className={`group flex items-center gap-2 text-${tutee.colorScheme.primary}-600 hover:text-${tutee.colorScheme.primary}-800 mb-4 sm:mb-6 transition-all bg-white/50 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-sm hover:shadow-md active:scale-95 text-sm sm:text-base`}
           >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-1 transition-transform" />
             <span className="font-bold">Back</span>
           </button>
           
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white/40 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/20">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2 flex-wrap">
-                <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">
-                  {tutee.id === 'primary-school' ? tutee.name : tutee.name}
-                </h1>
-                <span 
-                  className={`px-4 py-1.5 rounded-2xl text-xs sm:text-sm font-black bg-gradient-to-r ${tutee.colorScheme.gradient} text-white shadow-lg uppercase tracking-wider`}
-                >
-                  Dashboard
-                </span>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 bg-white/40 backdrop-blur-md p-4 sm:p-6 rounded-[2rem] sm:rounded-3xl shadow-xl border border-white/20">
+            <div className="flex flex-row items-center gap-3 sm:gap-4 flex-1">
+              <div className={`p-3 sm:p-4 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-xl sm:rounded-2xl shadow-lg flex-shrink-0`}>
+                {(() => {
+                  const Icon = iconMap[tutee.icon] || User;
+                  return <Icon className="w-6 h-6 sm:w-10 sm:h-10 text-white" />;
+                })()}
               </div>
-              <p className="text-gray-600 text-base sm:text-lg max-w-xl">{tutee.description}</p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-0.5 sm:mb-1 flex-wrap">
+                  <h1 className="text-xl sm:text-4xl font-extrabold text-gray-900 leading-tight truncate">
+                    {tutee.name}
+                  </h1>
+                  <span 
+                    className={`px-2 py-0.5 sm:px-4 sm:py-1.5 rounded-lg sm:rounded-2xl text-[10px] sm:text-sm font-black bg-gradient-to-r ${tutee.colorScheme.gradient} text-white shadow-md uppercase tracking-wider`}
+                  >
+                    Dashboard
+                  </span>
+                </div>
+                <p className="text-gray-600 text-xs sm:text-lg truncate sm:whitespace-normal max-w-xl">{tutee.description}</p>
+              </div>
             </div>
             
-            <div className="flex items-center gap-2 flex-wrap sm:justify-end">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:justify-end border-t sm:border-t-0 border-black/5 pt-3 sm:pt-0">
               {notificationService.isSupported() && (
                 <button
                   onClick={handleNotificationToggle}
@@ -337,33 +352,32 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
                     clearTimeout((e.currentTarget as any)._longPressTimer);
                   }}
                   disabled={isCheckingSubscription || isTestingNotification}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all font-bold relative overflow-hidden ${
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all font-bold relative overflow-hidden text-xs sm:text-sm ${
                     isSubscribed 
                       ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                      : 'bg-white/50 text-indigo-600 hover:bg-white/80'
-                  } ${isTestingNotification ? 'pr-10' : ''}`}
+                      : `bg-white/50 text-${tutee.colorScheme.primary}-600 hover:bg-white/80`
+                  } ${isTestingNotification ? 'pr-8' : ''}`}
                   title={isSubscribed ? 'Right-click to test / Click to disable' : 'Enable Notifications'}
                 >
-                  {/* Background Pulse during testing */}
                   {isTestingNotification && (
                     <div className="absolute inset-0 bg-green-200/50 animate-pulse" />
                   )}
                   
-                  <div className="relative flex items-center gap-2">
+                  <div className="relative flex items-center gap-1.5">
                     {isTestingNotification ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span className="hidden sm:inline">Sending Test...</span>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span className="hidden sm:inline">Sending...</span>
                       </>
                     ) : isSubscribed ? (
                       <>
-                        <Bell className="w-5 h-5 fill-current" />
-                        <span className="hidden sm:inline">Notifications On</span>
+                        <Bell className="w-3.5 h-3.5 fill-current" />
+                        <span className="hidden sm:inline">On</span>
                       </>
                     ) : (
                       <>
-                        <BellOff className="w-5 h-5" />
-                        <span className="hidden sm:inline">Enable Notifications</span>
+                        <BellOff className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Off</span>
                       </>
                     )}
                   </div>
@@ -473,6 +487,7 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
                   <WorksheetTracker 
                     tuteeId={tutee.id} 
                     studentNames={studentNames} 
+                    colorScheme={tutee.colorScheme}
                   />
                 </div>
               );
@@ -497,33 +512,54 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
             const Icon = quiz.icon;
             const bestScore = getBestScore(quiz.type);
             const totalAttempts = getTotalAttempts(quiz.type);
-            const gradientClass = quiz.type === 'spelling' 
-              ? 'from-pink-500 to-purple-600' 
-              : 'from-green-500 to-teal-600';
-            const bgClass = quiz.type === 'spelling'
-              ? 'bg-purple-50'
-              : 'bg-teal-50';
-            const textClass = quiz.type === 'spelling'
-              ? 'text-purple-600'
-              : 'text-teal-600';
+            
+            // Use tutee's color scheme
+            const primaryColor = tutee.colorScheme.primary;
+            const gradientClass = tutee.colorScheme.gradient;
+            
+            const getBgClass = () => {
+              if (primaryColor === 'pink' || primaryColor === 'purple') return 'bg-purple-50';
+              if (primaryColor === 'green' || primaryColor === 'teal') return 'bg-teal-50';
+              if (primaryColor === 'blue' || primaryColor === 'cyan') return 'bg-cyan-50';
+              if (primaryColor === 'indigo') return 'bg-indigo-50';
+              if (primaryColor === 'orange' || primaryColor === 'red') return 'bg-orange-50';
+              if (primaryColor === 'yellow' || primaryColor === 'amber') return 'bg-yellow-50';
+              return 'bg-purple-50';
+            };
+            
+            const getTextClass = () => {
+              if (primaryColor === 'pink' || primaryColor === 'purple') return 'text-purple-600';
+              if (primaryColor === 'green' || primaryColor === 'teal') return 'text-teal-600';
+              if (primaryColor === 'blue' || primaryColor === 'cyan') return 'text-cyan-600';
+              if (primaryColor === 'indigo') return 'text-indigo-600';
+              if (primaryColor === 'orange' || primaryColor === 'red') return 'text-orange-600';
+              if (primaryColor === 'yellow' || primaryColor === 'amber') return 'text-yellow-600';
+              return 'text-purple-600';
+            };
+
+            const bgClass = getBgClass();
+            const textClass = getTextClass();
 
             return (
               <div 
                 key={quiz.type} 
-                className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 group border border-white/40 overflow-hidden flex flex-col animate-fade-in-up touch-manipulation"
+                className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 group border border-white/40 overflow-hidden flex flex-col animate-fade-in-up touch-manipulation"
                 style={{ animationDelay: `${index * 150}ms` }}
               >
-                <div className="p-6 sm:p-8 flex-1">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className={`p-4 bg-gradient-to-br ${gradientClass} rounded-2xl shadow-lg transform group-hover:rotate-6 transition-transform duration-300`}>
+                {/* Header with Gradient */}
+                <div className={`p-6 sm:p-8 bg-gradient-to-r ${gradientClass} text-white shadow-lg`}>
+                  <div className="flex items-center gap-4">
+                    <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-md shadow-inner">
                       <Icon className="w-8 h-8 text-white" />
                     </div>
                     <div className="min-w-0">
-                      <h2 className="text-2xl font-black text-gray-800 leading-tight">{quiz.name}</h2>
-                      <p className="text-gray-500 font-medium">Practice & Master</p>
+                      <h2 className="text-2xl font-black tracking-tight leading-tight">{quiz.name}</h2>
+                      <p className="text-xs text-white/80 font-bold uppercase tracking-widest mt-1">Practice & Master</p>
                     </div>
                   </div>
+                </div>
 
+                <div className="p-6 sm:p-8 flex-1">
                   <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">
                     <div className={`${bgClass} rounded-2xl p-4 border border-white/50 shadow-inner`}>
                       <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Best Score</p>
@@ -562,8 +598,8 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-6 sm:p-8 border border-white/40 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-xl">
-                  <BarChart3 className="w-6 h-6 text-indigo-600" />
+                <div className={`p-2 bg-${tutee.colorScheme.primary}-100 rounded-xl`}>
+                  <BarChart3 className={`w-6 h-6 text-${tutee.colorScheme.primary}-600`} />
                 </div>
                 <h3 className="text-2xl font-black text-gray-800">Recent Activity</h3>
               </div>
@@ -573,8 +609,31 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
               {availableQuizzes.map((quiz) => {
                 if (getTotalAttempts(quiz.type) === 0) return null;
                 
-                const bgClass = quiz.type === 'spelling' ? 'bg-purple-50' : 'bg-teal-50';
-                const textClass = quiz.type === 'spelling' ? 'text-purple-600' : 'text-teal-600';
+                // Use tutee's color scheme
+                const primaryColor = tutee.colorScheme.primary;
+                
+                const getBgClass = () => {
+                  if (primaryColor === 'pink' || primaryColor === 'purple') return 'bg-purple-50';
+                  if (primaryColor === 'green' || primaryColor === 'teal') return 'bg-teal-50';
+                  if (primaryColor === 'blue' || primaryColor === 'cyan') return 'bg-cyan-50';
+                  if (primaryColor === 'indigo') return 'bg-indigo-50';
+                  if (primaryColor === 'orange' || primaryColor === 'red') return 'bg-orange-50';
+                  if (primaryColor === 'yellow' || primaryColor === 'amber') return 'bg-yellow-50';
+                  return 'bg-purple-50';
+                };
+                
+                const getTextClass = () => {
+                  if (primaryColor === 'pink' || primaryColor === 'purple') return 'text-purple-600';
+                  if (primaryColor === 'green' || primaryColor === 'teal') return 'text-teal-600';
+                  if (primaryColor === 'blue' || primaryColor === 'cyan') return 'text-cyan-600';
+                  if (primaryColor === 'indigo') return 'text-indigo-600';
+                  if (primaryColor === 'orange' || primaryColor === 'red') return 'text-orange-600';
+                  if (primaryColor === 'yellow' || primaryColor === 'amber') return 'text-yellow-600';
+                  return 'text-purple-600';
+                };
+
+                const bgClass = getBgClass();
+                const textClass = getTextClass();
                 const Icon = quiz.type === 'spelling' ? Clock : Trophy;
 
                 return (

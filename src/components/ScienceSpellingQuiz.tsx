@@ -527,17 +527,25 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
     }
   };
 
+  const primaryColor = tutee.colorScheme.primary;
+  const secondaryColor = tutee.colorScheme.secondary;
+  const bgPrimary = `bg-${primaryColor}-600`;
+  const textPrimary = `text-${primaryColor}-600`;
+  const borderPrimary = `border-${primaryColor}-300`;
+  const focusBorderPrimary = `focus:border-${primaryColor}-500`;
+  const hoverBgPrimary = `hover:bg-${primaryColor}-700`;
+
   if (!selectedStudent || questions.length === 0) {
     if (selectedStudent && questions.length === 0) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset">
+        <div className={`min-h-screen bg-gradient-to-br from-${primaryColor}-100 to-${secondaryColor}-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset`}>
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-5 sm:p-6 md:p-8 max-w-md w-full text-center mx-2">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${textPrimary.replace('text-', 'border-')} mx-auto mb-4`}></div>
             <p className="text-gray-600">Preparing your quiz...</p>
             <p className="text-xs text-gray-400 mt-2">If this takes too long, ensure words are added in the config.</p>
             <button 
               onClick={() => setSelectedStudent(null)}
-              className="mt-4 text-purple-600 font-bold text-sm"
+              className={`${textPrimary} font-bold text-sm`}
             >
               Go Back
             </button>
@@ -546,11 +554,11 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
       );
     }
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset">
+      <div className={`min-h-screen bg-gradient-to-br from-${primaryColor}-100 to-${secondaryColor}-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset`}>
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-5 sm:p-6 md:p-8 max-w-2xl w-full mx-2">
           <div className="text-center mb-6 sm:mb-8">
-            <Users className="w-12 h-12 sm:w-16 sm:h-16 text-purple-600 mx-auto mb-3 sm:mb-4" />
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-purple-700 mb-2 px-2">Science Spelling Quiz</h1>
+            <Users className={`w-12 h-12 sm:w-16 sm:h-16 ${textPrimary} mx-auto mb-3 sm:mb-4`} />
+            <h1 className={`text-2xl sm:text-3xl md:text-4xl font-bold text-${primaryColor}-700 mb-2 px-2`}>Science Spelling Quiz</h1>
             <p className="text-sm sm:text-base text-gray-600 px-2">Choose your student to start!</p>
           </div>
 
@@ -586,7 +594,7 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
             <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border-2 border-yellow-300">
               <div className="flex items-center gap-2 mb-4 sm:mb-6">
                 <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 flex-shrink-0" />
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-purple-700">🏆 Recent Performance</h3>
+                <h3 className={`text-lg sm:text-xl md:text-2xl font-bold text-${primaryColor}-700`}>🏆 Recent Performance</h3>
               </div>
               
               <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
@@ -626,25 +634,25 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
     const percentage = Math.round((score / questions.length) * 100);
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset">
+      <div className={`min-h-screen bg-gradient-to-br from-${primaryColor}-100 to-${secondaryColor}-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset`}>
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-5 sm:p-6 md:p-8 max-w-md w-full text-center mx-2">
           <Award className="w-16 h-16 sm:w-20 sm:h-20 text-yellow-500 mx-auto mb-3 sm:mb-4" />
-          <h2 className="text-2xl sm:text-3xl font-bold mb-2 px-2" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }}>
-            {selectedStudent === 'rayne' ? 'Rayne' : 'Jeffrey'}'s Result
+          <h2 className={`text-2xl sm:text-3xl font-bold mb-2 px-2 text-${primaryColor}-600`}>
+            {selectedStudent === 'rayne' ? 'Rayne' : selectedStudent === 'jeffrey' ? 'Jeffrey' : selectedStudent}'s Result
           </h2>
           <p className="text-5xl sm:text-6xl font-bold text-gray-700 mb-2">{score}/{questions.length}</p>
-          <p className="text-3xl sm:text-4xl font-bold mb-4 sm:mb-6" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }}>
+          <p className={`text-3xl sm:text-4xl font-bold mb-4 sm:mb-6 text-${primaryColor}-600`}>
             {percentage}%
           </p>
           <div className="mb-4 sm:mb-6 px-2">
             {percentage === 100 && <p className="text-lg sm:text-xl text-green-600">🌟 Perfect Score! You're a spelling superstar!</p>}
             {percentage >= 80 && percentage < 100 && <p className="text-lg sm:text-xl text-blue-600">🎉 Excellent work! Keep it up!</p>}
-            {percentage >= 60 && percentage < 80 && <p className="text-lg sm:text-xl text-purple-600">👍 Good job! Practice makes perfect!</p>}
+            {percentage >= 60 && percentage < 80 && <p className={`text-lg sm:text-xl text-${primaryColor}-600`}>👍 Good job! Practice makes perfect!</p>}
             {percentage < 60 && <p className="text-lg sm:text-xl text-orange-600">💪 Keep practicing! You're improving!</p>}
           </div>
           <button
             onClick={restart}
-            className="bg-purple-600 text-white px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-purple-700 active:scale-95 transition-all flex items-center gap-2 mx-auto min-h-[44px] touch-manipulation"
+            className={`${bgPrimary} text-white px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:${hoverBgPrimary.replace('hover:bg-', 'hover:bg-')} active:scale-95 transition-all flex items-center gap-2 mx-auto min-h-[44px] touch-manipulation`}
           >
             <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
             Back to Menu
@@ -655,10 +663,9 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-3 sm:p-4 md:p-8 safe-area-inset">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-4 sm:p-6 md:p-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+    <div className={`min-h-screen bg-gradient-to-br from-${primaryColor}-50 to-${secondaryColor}-50 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset`}>
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-5 sm:p-6 md:p-8 max-w-2xl w-full mx-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
               {/* Circular Timer - Left Side */}
               {timerActive && !(showFeedback && (feedbackMsg.includes('Correct') || attempts >= 3)) && (
@@ -702,15 +709,15 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
                 </div>
               )}
               <div className="flex items-center gap-2 min-w-0">
-                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }} />
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold truncate" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }}>
-                  {selectedStudent === 'rayne' ? 'Rayne' : 'Jeffrey'}'s Quiz
+                <Sparkles className={`w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 ${textPrimary}`} />
+                <h1 className={`text-lg sm:text-xl md:text-2xl font-bold truncate ${textPrimary}`}>
+                  {selectedStudent === 'rayne' ? 'Rayne' : selectedStudent === 'jeffrey' ? 'Jeffrey' : selectedStudent}'s Quiz
                 </h1>
               </div>
             </div>
             <div className="text-right flex-shrink-0 w-full sm:w-auto">
               <p className="text-xs sm:text-sm text-gray-600">Question {currentQ + 1}/{questions.length}</p>
-              <p className="text-base sm:text-lg font-bold" style={{ color: selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6' }}>
+              <p className={`text-base sm:text-lg font-bold ${textPrimary}`}>
                 Score: {score}
               </p>
             </div>
@@ -722,15 +729,13 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
                 className="h-3 rounded-full transition-all duration-300"
                 style={{ 
                   width: `${((currentQ + 1) / questions.length) * 100}%`,
-                  background: selectedStudent === 'rayne' 
-                    ? 'linear-gradient(to right, #ec4899, #a855f7)' 
-                    : 'linear-gradient(to right, #3b82f6, #6366f1)'
+                  background: `linear-gradient(to right, ${tutee.colorScheme.primary === 'pink' ? '#ec4899' : tutee.colorScheme.primary === 'green' ? '#10b981' : tutee.colorScheme.primary === 'blue' ? '#3b82f6' : '#6366f1'}, ${tutee.colorScheme.secondary === 'purple' ? '#a855f7' : tutee.colorScheme.secondary === 'teal' ? '#14b8a6' : tutee.colorScheme.secondary === 'indigo' ? '#4f46e5' : '#8b5cf6'})`
                 }}
               ></div>
             </div>
           </div>
 
-          <div className="bg-purple-50 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className={`bg-${primaryColor}-50 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-4 sm:mb-6`}>
             <p className="text-base sm:text-lg md:text-xl text-gray-800 leading-relaxed">
               {questions[currentQ].sentence}
             </p>
@@ -743,8 +748,8 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
                 onClick={() => setInputMode('keyboard')}
                 className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                   inputMode === 'keyboard'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? `${bgPrimary} text-white`
+                    : `bg-gray-100 text-gray-700 hover:bg-gray-200`
                 } min-h-[44px] touch-manipulation`}
               >
                 <div className="flex items-center justify-center gap-2">
@@ -759,8 +764,8 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
                 }}
                 className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                   inputMode === 'handwriting'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? `${bgPrimary} text-white`
+                    : `bg-gray-100 text-gray-700 hover:bg-gray-200`
                 } min-h-[44px] touch-manipulation`}
               >
                 <div className="flex items-center justify-center gap-2">
@@ -778,7 +783,7 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
                 onChange={(e) => setUserAnswer(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && userAnswer && !showFeedback && checkAnswer()}
                 placeholder="Type your answer here..."
-                className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-lg text-gray-900 !text-gray-900 bg-white !bg-white border-2 border-purple-300 rounded-lg focus:outline-none focus:border-purple-500 min-h-[44px] touch-manipulation dark:!text-gray-900 dark:!bg-white placeholder:text-gray-500 dark:placeholder:text-gray-500"
+                className={`w-full px-4 py-3.5 sm:py-3 text-base sm:text-lg text-gray-900 !text-gray-900 bg-white !bg-white border-2 ${borderPrimary} rounded-lg ${focusBorderPrimary} outline-none min-h-[44px] touch-manipulation dark:!text-gray-900 dark:!bg-white placeholder:text-gray-500 dark:placeholder:text-gray-500`}
                 autoFocus
                 disabled={showFeedback && (feedbackMsg.includes('Correct') || attempts >= 3)}
                 autoComplete="off"
@@ -792,7 +797,7 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
             {/* Handwriting Canvas Mode */}
             {inputMode === 'handwriting' && (
               <div className="space-y-2">
-                <div className="bg-white border-2 border-purple-300 rounded-lg p-2 relative">
+                <div className={`bg-white border-2 ${borderPrimary} rounded-lg p-2 relative`}>
                   <canvas
                     ref={canvasRef}
                     width={600}
@@ -834,7 +839,7 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
                   onChange={(e) => setUserAnswer(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && userAnswer && !showFeedback && checkAnswer()}
                   placeholder="The Magic Wand will type your drawing here..."
-                  className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-lg text-gray-900 !text-gray-900 bg-white !bg-white border-2 border-purple-300 rounded-lg focus:outline-none focus:border-purple-500 min-h-[44px] touch-manipulation dark:!text-gray-900 dark:!bg-white placeholder:text-gray-500 dark:placeholder:text-gray-500"
+                  className={`w-full px-4 py-3.5 sm:py-3 text-base sm:text-lg text-gray-900 !text-gray-900 bg-white !bg-white border-2 ${borderPrimary} rounded-lg ${focusBorderPrimary} outline-none min-h-[44px] touch-manipulation dark:!text-gray-900 dark:!bg-white placeholder:text-gray-500 dark:placeholder:text-gray-500`}
                   disabled={showFeedback && (feedbackMsg.includes('Correct') || attempts >= 3)}
                   autoComplete="off"
                   autoCorrect="off"
@@ -864,10 +869,7 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
                 <button
                   onClick={checkAnswer}
                   disabled={!userAnswer}
-                  className="flex-1 text-white px-4 sm:px-6 py-3.5 sm:py-3 rounded-lg text-base sm:text-lg font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed active:scale-95 transition-all min-h-[44px] touch-manipulation"
-                  style={{ 
-                    backgroundColor: userAnswer ? (selectedStudent === 'rayne' ? '#ec4899' : '#3b82f6') : undefined
-                  }}
+                  className={`flex-1 text-white px-4 sm:px-6 py-3.5 sm:py-3 rounded-lg text-base sm:text-lg font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed active:scale-95 transition-all min-h-[44px] touch-manipulation ${bgPrimary} hover:${hoverBgPrimary.replace('hover:bg-', 'hover:bg-')}`}
                 >
                   Check Answer
                 </button>
@@ -898,8 +900,7 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
 };
 
 export default ScienceSpellingQuiz;

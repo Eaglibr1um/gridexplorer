@@ -7,7 +7,7 @@ import {
   Shield, BookOpen, GraduationCap, Star, Heart, Zap, Target,
   Award, Trophy, Lightbulb, Brain, Rocket, Sparkles, BookMarked,
   School, PenTool, Calculator, FlaskConical, Atom, Music, Palette,
-  Camera, Gamepad2, Code, Coffee, Smile
+  Camera, Gamepad2, Code, Coffee, Smile, ToggleLeft, ToggleRight
 } from 'lucide-react';
 
 const iconMap: Record<string, any> = {
@@ -25,6 +25,7 @@ interface Subscription {
   tutee_id: string;
   label: string | null;
   user_agent: string | null;
+  is_enabled: boolean;
   created_at: string;
   tutee_name?: string;
   tutee_color?: string;
@@ -211,6 +212,21 @@ const NotificationAdmin = () => {
     }
   };
 
+  const toggleEnable = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .update({ is_enabled: !currentStatus })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setSubscriptions(prev => prev.map(s => s.id === id ? { ...s, is_enabled: !currentStatus } : s));
+    } catch (err) {
+      console.error('Error toggling device status:', err);
+    }
+  };
+
   const getDeviceIcon = (userAgent: string | null) => {
     if (!userAgent) return <Globe className="w-5 h-5" />;
     const ua = userAgent.toLowerCase();
@@ -351,18 +367,24 @@ const NotificationAdmin = () => {
               ) : subscriptions.map(sub => {
                 const TuteeIcon = iconMap[sub.tutee_icon || 'User'] || User;
                 const isTesting = testingDeviceId === sub.id;
+                const isEnabled = sub.is_enabled !== false; // Default to true if undefined
                 return (
-                  <div key={sub.id} className={`bg-white border ${isTesting ? 'border-indigo-300 ring-2 ring-indigo-100' : 'border-gray-100'} rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group relative overflow-hidden`}>
+                  <div key={sub.id} className={`bg-white border ${isTesting ? 'border-indigo-300 ring-2 ring-indigo-100' : isEnabled ? 'border-gray-100' : 'border-gray-200 bg-gray-50/50'} rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group relative overflow-hidden`}>
+                    {!isEnabled && (
+                      <div className="absolute top-0 right-0 px-2 py-0.5 bg-gray-200 text-gray-500 text-[8px] font-black uppercase tracking-tighter rounded-bl-lg">
+                        Disabled
+                      </div>
+                    )}
                     {isTesting && (
                       <div className="absolute inset-0 bg-indigo-50/30 animate-pulse" />
                     )}
                     <div className="flex items-start justify-between gap-4 relative">
-                      <div className={`p-3 rounded-xl transition-colors ${isTesting ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-50 text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-500'}`}>
+                      <div className={`p-3 rounded-xl transition-colors ${!isEnabled ? 'bg-gray-200 text-gray-400' : isTesting ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-50 text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-500'}`}>
                         {getDeviceIcon(sub.user_agent)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-gradient-to-r ${sub.tutee_color} text-white shadow-sm`}>
+                          <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-gradient-to-r ${sub.tutee_color} ${!isEnabled ? 'grayscale opacity-50' : ''} text-white shadow-sm`}>
                             <TuteeIcon className="w-2.5 h-2.5" />
                             <span className="text-[10px] font-black uppercase tracking-widest">
                               {sub.tutee_name}
@@ -388,7 +410,7 @@ const NotificationAdmin = () => {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <h4 className="text-base font-bold text-gray-800 truncate">
+                            <h4 className={`text-base font-bold truncate ${!isEnabled ? 'text-gray-400' : 'text-gray-800'}`}>
                               {sub.label || 'Unnamed Device'}
                             </h4>
                             <button onClick={() => startEditing(sub)} className="p-1 text-gray-300 hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all">
@@ -400,19 +422,12 @@ const NotificationAdmin = () => {
                           {sub.user_agent || 'Unknown browser'}
                         </p>
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <button
-                          onClick={() => setIsDeletingId(sub.id)}
-                          disabled={isTesting}
-                          className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all disabled:opacity-30"
-                          title="Remove Device"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                      <div className="flex items-center gap-0.5 sm:gap-1 self-start sm:self-center">
                         <button
                           onClick={() => handleTestNotification(sub.id)}
-                          disabled={isTesting || loading}
-                          className={`p-2 rounded-xl transition-all ${
+                          disabled={isTesting || loading || !isEnabled}
+                          className={`p-1.5 sm:p-2 rounded-xl transition-all ${
+                            !isEnabled ? 'hidden' :
                             isTesting 
                               ? 'bg-indigo-100 text-indigo-600' 
                               : 'text-gray-300 hover:text-indigo-500 hover:bg-indigo-50'
@@ -420,10 +435,25 @@ const NotificationAdmin = () => {
                           title="Test this device"
                         >
                           {isTesting ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                           ) : (
-                            <Send className="w-5 h-5" />
+                            <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                           )}
+                        </button>
+                        <button
+                          onClick={() => toggleEnable(sub.id, isEnabled)}
+                          className={`p-1.5 sm:p-2 rounded-xl transition-all ${isEnabled ? 'text-indigo-600 hover:bg-indigo-50' : 'text-gray-400 hover:bg-gray-200'}`}
+                          title={isEnabled ? "Disable Device" : "Enable Device"}
+                        >
+                          {isEnabled ? <ToggleRight className="w-5 h-5 sm:w-6 sm:h-6" /> : <ToggleLeft className="w-5 h-5 sm:w-6 sm:h-6" />}
+                        </button>
+                        <button
+                          onClick={() => setIsDeletingId(sub.id)}
+                          disabled={isTesting}
+                          className="p-1.5 sm:p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all disabled:opacity-30"
+                          title="Remove Device"
+                        >
+                          <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
                       </div>
                     </div>

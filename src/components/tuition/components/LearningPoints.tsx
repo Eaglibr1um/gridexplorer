@@ -167,7 +167,20 @@ const LearningPoints = ({ tutee }: LearningPointsProps) => {
 
   return (
     <>
-      <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 group border border-white/40 overflow-hidden flex flex-col animate-fade-in-up touch-manipulation relative h-full">
+      <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 group border border-white/40 overflow-hidden flex flex-col animate-fade-in-up touch-manipulation relative h-full">
+        {/* Header with Gradient */}
+        <div className={`p-6 sm:p-8 bg-gradient-to-r ${gradientClass} text-white shadow-lg`}>
+          <div className="flex items-center gap-4">
+            <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-md shadow-inner">
+              <BookOpen className="w-8 h-8 text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-2xl font-black tracking-tight leading-tight">Learning Points</h2>
+              <p className="text-xs text-white/80 font-bold uppercase tracking-widest mt-1">Spaced Repetition</p>
+            </div>
+          </div>
+        </div>
+
         {/* Review Badge */}
         {sessionsDueForReview > 0 && (
           <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full px-3 py-1 flex items-center gap-1.5 shadow-lg animate-pulse z-10">
@@ -177,16 +190,6 @@ const LearningPoints = ({ tutee }: LearningPointsProps) => {
         )}
         
         <div className="p-6 sm:p-8 flex-1">
-          <div className="flex items-center gap-4 mb-6">
-            <div className={`p-4 bg-gradient-to-br ${gradientClass} rounded-2xl shadow-lg transform group-hover:rotate-6 transition-transform duration-300`}>
-              <BookOpen className="w-8 h-8 text-white" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-2xl font-black text-gray-800 leading-tight">Learning Points</h2>
-              <p className="text-gray-500 font-medium">Spaced Repetition</p>
-            </div>
-          </div>
-
           {/* Review Alert Banner */}
           {sessionsDueForReview > 0 && (
             <div className="mb-6 flex flex-col gap-2">

@@ -108,6 +108,13 @@ const IBChemistryQuiz = ({ tutee, onBack }: IBChemistryQuizProps) => {
     }
   };
 
+  const primaryColor = tutee.colorScheme.primary;
+  const secondaryColor = tutee.colorScheme.secondary;
+  const bgPrimary = `bg-${primaryColor}-600`;
+  const textPrimary = `text-${primaryColor}-600`;
+  const borderPrimary = `border-${primaryColor}-300`;
+  const hoverBgPrimary = `hover:bg-${primaryColor}-700`;
+
   useEffect(() => {
     if (completed) {
       const percentage = Math.round((score / questions.length) * 100);
@@ -116,7 +123,11 @@ const IBChemistryQuiz = ({ tutee, onBack }: IBChemistryQuizProps) => {
           particleCount: 150,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ['#0d9488', '#0891b2', '#2dd4bf', '#fbbf24']
+          colors: [
+            primaryColor === 'pink' ? '#ec4899' : primaryColor === 'green' ? '#10b981' : '#3b82f6',
+            secondaryColor === 'purple' ? '#a855f7' : secondaryColor === 'teal' ? '#14b8a6' : '#6366f1',
+            '#fbbf24'
+          ]
         });
 
         if (percentage === 100) {
@@ -126,7 +137,11 @@ const IBChemistryQuiz = ({ tutee, onBack }: IBChemistryQuizProps) => {
               angle: 60,
               spread: 55,
               origin: { x: 0 },
-              colors: ['#0d9488', '#0891b2', '#2dd4bf', '#fbbf24']
+              colors: [
+                primaryColor === 'pink' ? '#ec4899' : primaryColor === 'green' ? '#10b981' : '#3b82f6',
+                secondaryColor === 'purple' ? '#a855f7' : secondaryColor === 'teal' ? '#14b8a6' : '#6366f1',
+                '#fbbf24'
+              ]
             });
           }, 250);
           setTimeout(() => {
@@ -135,13 +150,17 @@ const IBChemistryQuiz = ({ tutee, onBack }: IBChemistryQuizProps) => {
               angle: 120,
               spread: 55,
               origin: { x: 1 },
-              colors: ['#0d9488', '#0891b2', '#2dd4bf', '#fbbf24']
+              colors: [
+                primaryColor === 'pink' ? '#ec4899' : primaryColor === 'green' ? '#10b981' : '#3b82f6',
+                secondaryColor === 'purple' ? '#a855f7' : secondaryColor === 'teal' ? '#14b8a6' : '#6366f1',
+                '#fbbf24'
+              ]
             });
           }, 400);
         }
       }
     }
-  }, [completed, score, questions.length]);
+  }, [completed, score, questions.length, primaryColor, secondaryColor]);
 
   if (completed) {
     const percentage = Math.round((score / questions.length) * 100);
@@ -178,30 +197,30 @@ const IBChemistryQuiz = ({ tutee, onBack }: IBChemistryQuizProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 to-teal-100 p-3 sm:p-4 md:p-8 safe-area-inset">
+    <div className={`min-h-screen bg-gradient-to-br from-${primaryColor}-100 to-${secondaryColor}-100 p-3 sm:p-4 md:p-8 safe-area-inset`}>
       <div className="max-w-3xl mx-auto">
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-4 sm:p-6 md:p-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div className="flex items-center gap-2 min-w-0">
-              <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600 flex-shrink-0" />
-              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-teal-700 truncate">IB Chemistry Quiz</h1>
+              <BookOpen className={`w-5 h-5 sm:w-6 sm:h-6 ${textPrimary} flex-shrink-0`} />
+              <h1 className={`text-lg sm:text-xl md:text-2xl font-bold text-${primaryColor}-700 truncate`}>IB Chemistry Quiz</h1>
             </div>
             <div className="text-right flex-shrink-0 w-full sm:w-auto">
               <p className="text-xs sm:text-sm text-gray-600">Question {currentQ + 1}/{questions.length}</p>
-              <p className="text-base sm:text-lg font-bold text-teal-600">Score: {score}</p>
+              <p className={`text-base sm:text-lg font-bold ${textPrimary}`}>Score: {score}</p>
             </div>
           </div>
 
           <div className="mb-6">
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div 
-                className="h-3 rounded-full transition-all duration-300 bg-gradient-to-r from-green-400 to-teal-500"
+                className={`h-3 rounded-full transition-all duration-300 bg-gradient-to-r from-${primaryColor}-400 to-${secondaryColor}-500`}
                 style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
               ></div>
             </div>
           </div>
 
-          <div className="bg-teal-50 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className={`bg-${primaryColor}-50 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-4 sm:mb-6`}>
             <p className="text-base sm:text-lg md:text-xl text-gray-800 font-semibold">
               {questions[currentQ].question}
             </p>
@@ -221,8 +240,8 @@ const IBChemistryQuiz = ({ tutee, onBack }: IBChemistryQuizProps) => {
                       ? 'bg-red-100 border-red-500 text-red-800'
                       : 'bg-gray-50 border-gray-300 text-gray-600'
                     : selectedAnswer === index
-                    ? 'bg-teal-100 border-teal-500 text-teal-800'
-                    : 'bg-white border-gray-300 text-gray-700 active:border-teal-300 active:bg-teal-50'
+                    ? `bg-${primaryColor}-100 border-${primaryColor}-500 text-${primaryColor}-800`
+                    : `bg-white border-gray-300 text-gray-700 active:border-${primaryColor}-300 active:bg-${primaryColor}-50`
                 } ${showResult ? '' : 'active:scale-[0.98]'}`}
               >
                 <span className="text-sm sm:text-base">{option}</span>
@@ -256,7 +275,7 @@ const IBChemistryQuiz = ({ tutee, onBack }: IBChemistryQuizProps) => {
           {showResult && (
             <button
               onClick={nextQuestion}
-              className="w-full bg-teal-600 text-white px-4 sm:px-6 py-3.5 sm:py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-teal-700 active:scale-95 transition-all min-h-[44px] touch-manipulation"
+              className={`w-full ${bgPrimary} text-white px-4 sm:px-6 py-3.5 sm:py-3 rounded-lg text-base sm:text-lg font-semibold hover:${hoverBgPrimary.replace('hover:bg-', 'hover:bg-')} active:scale-95 transition-all min-h-[44px] touch-manipulation`}
             >
               {currentQ < questions.length - 1 ? 'Next Question →' : 'See Results'}
             </button>

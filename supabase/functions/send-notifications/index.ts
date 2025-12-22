@@ -74,13 +74,15 @@ Deno.serve(async (req) => {
       
       // Targeting Logic
       if (subscriptionId) {
-        // Target ONE specific device
+        // Target ONE specific device (even if disabled, since it's a direct test)
         query = query.eq('id', subscriptionId);
       } else if (tuteeId) {
-        // Target ALL devices for ONE student
-        query = query.eq('tutee_id', tuteeId);
+        // Target ALL ENABLED devices for ONE student
+        query = query.eq('tutee_id', tuteeId).eq('is_enabled', true);
+      } else {
+        // Broadcast to ALL ENABLED devices
+        query = query.eq('is_enabled', true);
       }
-      // If neither subscriptionId nor tuteeId is provided, it targets EVERYONE (Broadcast)
 
       const { data: subscriptions, error: subsError } = await query;
       if (subsError) throw subsError;
@@ -147,7 +149,7 @@ Deno.serve(async (req) => {
     for (const review of reviews) {
       const nextReviewDate = getNextReviewDate(review.review_count, review.last_reviewed);
       if (nextReviewDate <= now) {
-        const { data: subs } = await supabase.from('push_subscriptions').select('*').eq('tutee_id', review.tutee_id);
+        const { data: subs } = await supabase.from('push_subscriptions').select('*').eq('tutee_id', review.tutee_id).eq('is_enabled', true);
         if (!subs) continue;
 
         const tuteeName = nameMap[review.tutee_id] || 'Student';

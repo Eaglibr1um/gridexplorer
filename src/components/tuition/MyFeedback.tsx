@@ -206,11 +206,18 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
     });
   };
 
+  const primaryColor = tutee.colorScheme.primary;
+  const gradientClass = tutee.colorScheme.gradient;
+  const textPrimary = `text-${primaryColor}-600`;
+  const bgPrimary = `bg-${primaryColor}-600`;
+  const borderPrimary = `border-${primaryColor}-100`;
+  const shadowPrimary = `shadow-${primaryColor}-100`;
+
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto mb-2"></div>
+          <div className={`animate-spin rounded-full h-6 w-6 border-b-2 border-${primaryColor}-600 mx-auto mb-2`}></div>
           <p className="text-sm text-gray-600">Loading feedback...</p>
         </div>
       </div>
@@ -224,7 +231,7 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
         className="w-full flex items-center justify-between group"
       >
         <div className="flex items-center gap-4">
-          <div className={`p-4 bg-gradient-to-br ${tutee.colorScheme.gradient} rounded-2xl shadow-lg transform group-hover:rotate-6 transition-transform`}>
+          <div className={`p-4 bg-gradient-to-br ${gradientClass} rounded-2xl shadow-lg transform group-hover:rotate-6 transition-transform`}>
             <MessageSquare className="w-6 h-6 text-white" />
           </div>
           <div className="text-left">
@@ -237,7 +244,7 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
           </div>
         </div>
         {feedback.length > 0 && (
-          <div className="p-3 bg-gray-50 rounded-2xl text-gray-400 group-hover:text-indigo-600 transition-colors shadow-inner border border-gray-100">
+          <div className={`p-3 bg-gray-50 rounded-2xl text-gray-400 ${textPrimary.replace('text-', 'group-hover:text-')} transition-colors shadow-inner border border-gray-100`}>
             {isExpanded ? (
               <ChevronUp className="w-5 h-5" />
             ) : (
@@ -272,7 +279,7 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                 return (
                   <div
                     key={item.id}
-                    className="group bg-white/80 border border-gray-100 rounded-3xl p-5 sm:p-6 hover:shadow-xl hover:border-indigo-100 transition-all duration-300 touch-manipulation"
+                    className={`group bg-white/80 border border-gray-100 rounded-3xl p-5 sm:p-6 hover:shadow-xl hover:border-${primaryColor}-100 transition-all duration-300 touch-manipulation`}
                   >
                     {isEditing ? (
                       <div className="space-y-6">
@@ -293,13 +300,13 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                                   onClick={() => setEditType(ft.value)}
                                   className={`p-3 rounded-2xl border-2 transition-all text-left ${
                                     isSelected
-                                      ? 'border-indigo-500 bg-indigo-50 shadow-inner'
+                                      ? `border-${primaryColor}-500 bg-${primaryColor}-50 shadow-inner`
                                       : 'border-gray-50 bg-gray-50/50 hover:border-indigo-100'
                                   }`}
                                 >
                                   <div className="flex items-center gap-2">
-                                    <Icon className={`w-4 h-4 ${isSelected ? 'text-indigo-600' : 'text-gray-400'}`} />
-                                    <span className={`text-xs font-black uppercase tracking-widest ${isSelected ? 'text-indigo-700' : 'text-gray-400'}`}>
+                                    <Icon className={`w-4 h-4 ${isSelected ? textPrimary : 'text-gray-400'}`} />
+                                    <span className={`text-xs font-black uppercase tracking-widest ${isSelected ? `text-${primaryColor}-700` : 'text-gray-400'}`}>
                                       {ft.label}
                                     </span>
                                   </div>
@@ -335,7 +342,7 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                             value={editTitle}
                             onChange={(e) => setEditTitle(e.target.value)}
                             placeholder="What's on your mind?"
-                            className="w-full px-6 py-4 bg-gray-50/50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-800 shadow-inner"
+                            className={`w-full px-6 py-4 bg-gray-50/50 border-2 border-transparent focus:border-${primaryColor}-100 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-800 shadow-inner`}
                             disabled={isSaving}
                           />
                         </div>
@@ -347,7 +354,7 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                             onChange={(e) => setEditDescription(e.target.value)}
                             rows={4}
                             placeholder="Explain further..."
-                            className="w-full px-6 py-4 bg-gray-50/50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-2xl outline-none transition-all font-medium text-gray-800 shadow-inner resize-none"
+                            className={`w-full px-6 py-4 bg-gray-50/50 border-2 border-transparent focus:border-${primaryColor}-100 focus:bg-white rounded-2xl outline-none transition-all font-medium text-gray-800 shadow-inner resize-none`}
                             disabled={isSaving}
                           />
                         </div>
@@ -363,7 +370,7 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                           <button
                             onClick={() => handleSave(item.id)}
                             disabled={isSaving || !editTitle.trim() || !editDescription.trim()}
-                            className={`flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r ${tutee.colorScheme.gradient} text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:shadow-xl active:scale-[0.98] transition-all disabled:opacity-50`}
+                            className={`flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r ${gradientClass} text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:shadow-xl active:scale-[0.98] transition-all disabled:opacity-50`}
                           >
                             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                             <span>Secure Edit</span>
@@ -393,7 +400,7 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                           <div className="flex gap-2 self-end sm:self-auto opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => handleEdit(item)}
-                              className="p-3 bg-gray-50 text-indigo-600 rounded-xl hover:bg-indigo-50 active:scale-90 transition-all border border-transparent hover:border-indigo-100"
+                              className={`p-3 bg-gray-50 ${textPrimary} rounded-xl hover:bg-indigo-50 active:scale-90 transition-all border border-transparent hover:${borderPrimary}`}
                               title="Edit feedback"
                             >
                               <Edit2 className="w-4 h-4" />
@@ -413,13 +420,13 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                         </div>
                         
                         {item.adminNotes && (
-                          <div className="mb-6 p-5 bg-indigo-50/50 border-2 border-indigo-50 rounded-2xl relative overflow-hidden group/response">
+                          <div className={`mb-6 p-5 bg-${primaryColor}-50/50 border-2 border-${primaryColor}-50 rounded-2xl relative overflow-hidden group/response`}>
                             <div className="flex items-center gap-2 mb-3">
-                              <Shield className="w-4 h-4 text-indigo-600" />
-                              <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Tutor Response</p>
+                              <Shield className={`w-4 h-4 ${textPrimary}`} />
+                              <p className={`text-[10px] font-black ${textPrimary} uppercase tracking-widest`}>Tutor Response</p>
                             </div>
-                            <p className="text-sm font-bold text-indigo-900 leading-relaxed">{item.adminNotes}</p>
-                            <div className="absolute top-0 right-0 w-1 h-full bg-indigo-200" />
+                            <p className={`text-sm font-bold text-${primaryColor}-900 leading-relaxed`}>{item.adminNotes}</p>
+                            <div className={`absolute top-0 right-0 w-1 h-full bg-${primaryColor}-200`} />
                           </div>
                         )}
                         
@@ -431,7 +438,7 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                           {item.updatedAt !== item.createdAt && (
                             <>
                               <span className="w-1 h-1 bg-gray-200 rounded-full" />
-                              <div className="flex items-center gap-1.5 text-indigo-300">
+                              <div className={`flex items-center gap-1.5 text-${primaryColor}-300`}>
                                 <Clock className="w-3 h-3" />
                                 <span>Edited: {formatDate(item.updatedAt)}</span>
                               </div>

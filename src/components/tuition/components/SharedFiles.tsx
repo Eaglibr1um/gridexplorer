@@ -101,7 +101,12 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
     f.uploadedBy.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const primaryColor = tutee.colorScheme.primary;
   const gradientClass = tutee.colorScheme.gradient;
+  const textPrimary = `text-${primaryColor}-600`;
+  const bgPrimary = `bg-${primaryColor}-600`;
+  const borderPrimary = `border-${primaryColor}-100`;
+  const shadowPrimary = `shadow-${primaryColor}-100`;
 
   return (
     <div className="bg-white/60 backdrop-blur-sm rounded-[2.5rem] shadow-xl overflow-hidden border border-white/40 animate-fade-in-up">
@@ -128,7 +133,7 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-white text-indigo-600 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+              className={`w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-white ${textPrimary} rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50`}
             >
               {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
               <span>Upload</span>
@@ -141,16 +146,16 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
         {/* Search and Stats */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="relative flex-1 group">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+            <Search className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:${textPrimary} transition-colors`} />
             <input
               type="text"
               placeholder="Search documents..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-14 pr-6 py-4 bg-gray-50/50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-800 shadow-inner"
+              className={`w-full pl-14 pr-6 py-4 bg-gray-50/50 border-2 border-transparent focus:border-${primaryColor}-100 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-800 shadow-inner`}
             />
           </div>
-          <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-indigo-50 text-indigo-600 rounded-full text-xs font-black uppercase tracking-widest border border-indigo-100 shadow-sm self-start md:self-auto">
+          <div className={`inline-flex items-center gap-3 px-5 py-2.5 bg-${primaryColor}-50 ${textPrimary} rounded-full text-xs font-black uppercase tracking-widest border border-${primaryColor}-100 shadow-sm self-start md:self-auto`}>
             <FileText className="w-4 h-4" />
             <span>{files.length} Resources</span>
           </div>
@@ -165,7 +170,7 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
 
         {loading && files.length === 0 ? (
           <div className="py-24 flex flex-col items-center justify-center gap-4">
-            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className={`w-12 h-12 border-4 ${textPrimary.replace('text-', 'border-')} border-t-transparent rounded-full animate-spin`}></div>
             <p className="text-gray-400 font-black uppercase tracking-widest text-xs">Syncing Cloud...</p>
           </div>
         ) : filteredFiles.length === 0 ? (
@@ -183,10 +188,10 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
             {filteredFiles.map((file) => (
               <div 
                 key={file.id}
-                className="group relative bg-white border border-gray-100 rounded-[2rem] p-6 hover:shadow-2xl hover:border-indigo-200 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation"
+                className={`group relative bg-white border border-gray-100 rounded-[2rem] p-6 hover:shadow-2xl hover:border-${primaryColor}-200 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation`}
               >
                 <div className="flex items-start justify-between mb-5">
-                  <div className="p-4 bg-gray-50 rounded-2xl group-hover:bg-indigo-50 group-hover:scale-110 transition-all duration-300 shadow-inner">
+                  <div className={`p-4 bg-gray-50 rounded-2xl group-hover:bg-${primaryColor}-50 group-hover:scale-110 transition-all duration-300 shadow-inner`}>
                     {getFileIcon(file.fileType)}
                   </div>
                   <div className="flex gap-2">
@@ -195,7 +200,7 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
                       download={file.fileName}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-3 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 bg-white rounded-xl shadow-sm border border-gray-50 active:scale-90 transition-all"
+                      className={`p-3 text-gray-400 ${textPrimary.replace('text-', 'hover:text-')} ${bgPrimary.replace('bg-', 'hover:bg-')}-50 bg-white rounded-xl shadow-sm border border-gray-50 active:scale-90 transition-all`}
                       title="Download"
                     >
                       <Download className="w-5 h-5" />
@@ -227,7 +232,7 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
                 <div className="mt-6 pt-5 border-t border-gray-50 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {file.uploadedBy === 'Admin' ? (
-                      <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-600 text-white rounded-full shadow-md shadow-indigo-100">
+                      <div className={`flex items-center gap-1.5 px-3 py-1 ${bgPrimary} text-white rounded-full shadow-md ${shadowPrimary}`}>
                         <Shield className="w-3 h-3" />
                         <span className="text-[9px] font-black uppercase tracking-widest">Tutor</span>
                       </div>

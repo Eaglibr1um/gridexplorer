@@ -95,9 +95,9 @@ const PinChange = ({ tutee, onUpdate }: PinChangeProps) => {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-5 py-3 bg-white/80 backdrop-blur-sm border border-white/50 rounded-2xl hover:bg-white transition-all shadow-sm hover:shadow-md active:scale-95 text-sm font-black text-gray-600 uppercase tracking-widest"
+        className="flex items-center gap-1.5 px-3 py-2 sm:px-5 sm:py-3 bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl sm:rounded-2xl hover:bg-white transition-all shadow-sm hover:shadow-md active:scale-95 text-[10px] sm:text-sm font-black text-gray-600 uppercase tracking-widest"
       >
-        <Lock className="w-4 h-4" />
+        <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         <span>PIN</span>
       </button>
 
