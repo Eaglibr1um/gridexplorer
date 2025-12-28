@@ -651,31 +651,31 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
                   {sessions.map((session) => (
                     <div
                       key={session.id}
-                      className="group bg-white rounded-xl p-4 flex items-center justify-between border border-gray-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200"
+                      className="group bg-white rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between border border-gray-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 gap-4"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gray-50 rounded-lg flex flex-col items-center justify-center text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">
+                        <div className="flex-shrink-0 w-12 h-12 bg-gray-50 rounded-lg flex flex-col items-center justify-center text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">
                           <span className="text-[10px] font-bold uppercase">{format(parseISO(session.sessionDate), 'MMM')}</span>
                           <span className="text-lg font-bold leading-none">{format(parseISO(session.sessionDate), 'd')}</span>
                         </div>
-                        <div>
-                          <p className="font-bold text-gray-800">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-gray-800 truncate">
                             {format(parseISO(session.sessionDate), 'EEEE, d MMMM')}
                           </p>
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <span className="flex items-center gap-1">
+                          <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                            <span className="flex items-center gap-1 whitespace-nowrap">
                               <Calendar className="w-3 h-3" />
                               {session.startTime} - {session.endTime}
                             </span>
-                            <span className="text-gray-300">•</span>
+                            <span className="text-gray-300 hidden sm:inline">•</span>
                             <span className="font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded text-xs">
                               {session.durationHours.toFixed(1)}h
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 sm:gap-4">
-                        <p className="text-sm sm:text-lg font-bold text-gray-900">${session.amount.toFixed(2)}</p>
+                      <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 border-t sm:border-t-0 pt-3 sm:pt-0">
+                        <p className="text-lg font-bold text-gray-900">${session.amount.toFixed(2)}</p>
                         <div className="flex gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => {
@@ -709,12 +709,12 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
             {/* Generated Message */}
             {currentMonthRecord?.generatedMessage && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-gray-50 px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                <div className="bg-gray-50 px-4 sm:px-5 py-3 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Invoice Message Preview</h4>
+                    <h4 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">Invoice Message Preview</h4>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2 justify-end">
                     <button
                       onClick={handleRegenerateMessage}
                       className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all"
@@ -724,32 +724,32 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
                     </button>
                     <button
                       onClick={handleCopyMessage}
-                      className={`flex items-center gap-2 px-4 py-1.5 text-sm font-bold rounded-lg transition-all transform active:scale-95 ${
+                      className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all transform active:scale-95 ${
                         copied 
                           ? 'bg-green-500 text-white shadow-green-200' 
                           : 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700'
-                      } shadow-lg`}
+                      } shadow-lg whitespace-nowrap`}
                     >
                       {copied ? (
                         <>
-                          <Check className="w-4 h-4" />
-                          Copied!
+                          <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <span>Copied!</span>
                         </>
                       ) : (
                         <>
-                          <Copy className="w-4 h-4" />
-                          Copy Message
+                          <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <span>Copy Message</span>
                         </>
                       )}
                     </button>
                   </div>
                 </div>
-                <div className="p-6 relative">
-                  <div className="bg-gray-50 rounded-xl p-5 font-mono text-sm whitespace-pre-wrap border border-gray-100 text-gray-800 leading-relaxed min-h-[150px]">
+                <div className="p-4 sm:p-6 relative">
+                  <div className="bg-gray-50 rounded-xl p-4 sm:p-5 font-mono text-xs sm:text-sm whitespace-pre-wrap border border-gray-100 text-gray-800 leading-relaxed min-h-[120px] sm:min-h-[150px]">
                     {currentMonthRecord.generatedMessage.replace(/{tutee_name}/g, selectedTutee.name)}
                   </div>
-                  <div className="absolute top-8 right-8 text-gray-200 pointer-events-none">
-                    <FileText className="w-12 h-12 opacity-10" />
+                  <div className="absolute top-6 right-6 sm:top-8 sm:right-8 text-gray-200 pointer-events-none">
+                    <FileText className="w-10 h-10 sm:w-12 sm:h-12 opacity-10" />
                   </div>
                 </div>
               </div>

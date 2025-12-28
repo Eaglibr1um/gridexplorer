@@ -300,47 +300,51 @@ const GlobalFileManager = ({ tutees }: GlobalFileManagerProps) => {
             <div className="md:hidden space-y-4">
               {filteredFiles.map((file) => (
                 <div key={file.id} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm active:bg-gray-50 transition-colors">
-                  <div className="flex items-start gap-3 mb-4">
+                  <div className="flex items-start gap-3 mb-3">
                     <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600 shrink-0">
                       <FileText className="w-5 h-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-gray-800 break-words">{file.fileName}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{formatFileSize(file.fileSize)}</span>
-                        <span className="w-1 h-1 bg-gray-200 rounded-full" />
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{format(new Date(file.createdAt), 'MMM d')}</span>
+                      <p className="text-[11px] sm:text-sm font-bold text-gray-800 break-all leading-tight">
+                        {file.fileName}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">{formatFileSize(file.fileSize)}</span>
+                        <span className="w-1 h-1 bg-gray-200 rounded-full hidden xs:inline" />
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">{format(new Date(file.createdAt), 'MMM d, yyyy')}</span>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5 shrink-0">
                       <a
                         href={getFileUrl(file.filePath)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-2 text-indigo-600 bg-indigo-50 rounded-lg active:scale-95 transition-all"
+                        title="Download"
                       >
-                        <Download className="w-4 h-4" />
+                        <Download className="w-3.5 h-3.5" />
                       </a>
                       <button
                         onClick={() => setDeleteConfirm({ isOpen: true, file })}
                         className="p-2 text-red-600 bg-red-50 rounded-lg active:scale-95 transition-all"
+                        title="Delete"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-gray-50">
                     <div className="flex items-center gap-2">
-                      <div className={`w-6 h-6 bg-gradient-to-br ${getTuteeColor(file.tuteeId)} rounded-md flex items-center justify-center text-white text-[10px]`}>
+                      <div className={`w-5 h-5 bg-gradient-to-br ${getTuteeColor(file.tuteeId)} rounded flex items-center justify-center text-white text-[9px]`}>
                         {getTuteeIcon(file.tuteeId)}
                       </div>
-                      <span className="text-[10px] font-black text-gray-700 uppercase tracking-wider">{file.tuteeName}</span>
+                      <span className="text-[9px] font-black text-gray-700 uppercase tracking-wider">{file.tuteeName}</span>
                     </div>
-                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${
+                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider ${
                       file.uploadedBy === 'Admin' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
                     }`}>
-                      {file.uploadedBy === 'Admin' ? <Shield className="w-2.5 h-2.5" /> : <User className="w-2.5 h-2.5" />}
+                      {file.uploadedBy === 'Admin' ? <Shield className="w-2 h-2" /> : <User className="w-2 h-2" />}
                       {file.uploadedBy}
                     </div>
                   </div>
