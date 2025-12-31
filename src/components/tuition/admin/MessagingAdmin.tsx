@@ -31,6 +31,13 @@ const MessagingAdmin = ({ tutees }: MessagingAdminProps) => {
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [lastMessages, setLastMessages] = useState<Record<string, Message>>({});
   const [loading, setLoading] = useState(true);
+  const [isDesktop, setIsMobile] = useState(window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth >= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const formatLastMessageDate = (date: Date) => {
     const timeStr = format(date, 'h:mmaaa');
@@ -123,7 +130,7 @@ const MessagingAdmin = ({ tutees }: MessagingAdminProps) => {
   const selectedTutee = tutees.find(t => t.id === selectedTuteeId);
 
   return (
-    <div className="bg-white rounded-3xl shadow-xl border border-indigo-100 overflow-hidden animate-fade-in">
+    <div className="bg-white rounded-3xl border border-indigo-100 overflow-hidden animate-fade-in">
       {/* Header */}
       <div className="p-6 sm:p-8 border-b border-indigo-50">
         <div className="flex items-center gap-4">
@@ -137,10 +144,10 @@ const MessagingAdmin = ({ tutees }: MessagingAdminProps) => {
         </div>
       </div>
 
-      <div className="p-6 sm:p-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className="p-2 sm:p-8">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 lg:h-[700px]">
           {/* Sidebar: Student List */}
-          <div className="w-full lg:w-80 flex flex-col gap-4">
+          <div className="w-full lg:w-80 flex flex-col gap-4 lg:h-full">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -152,7 +159,7 @@ const MessagingAdmin = ({ tutees }: MessagingAdminProps) => {
               />
             </div>
 
-            <div className="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar lg:min-h-0 min-h-[300px] max-h-[500px] lg:max-h-none">
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
@@ -170,7 +177,9 @@ const MessagingAdmin = ({ tutees }: MessagingAdminProps) => {
                   return (
                     <button
                       key={t.id}
-                      onClick={() => {
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
                         setSelectedTuteeId(t.id);
                         if (unread > 0) {
                           setUnreadCounts(prev => ({ ...prev, [t.id]: 0 }));
@@ -178,7 +187,7 @@ const MessagingAdmin = ({ tutees }: MessagingAdminProps) => {
                       }}
                       className={`flex items-center gap-4 p-4 rounded-2xl transition-all text-left relative group ${
                         isSelected 
-                          ? 'bg-indigo-600 text-white shadow-lg' 
+                          ? 'bg-indigo-600 text-white' 
                           : 'bg-white hover:bg-indigo-50 border border-gray-100'
                       }`}
                     >
@@ -208,15 +217,22 @@ const MessagingAdmin = ({ tutees }: MessagingAdminProps) => {
                           )}
                         </div>
                         {lastMsg ? (
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-start gap-1.5 mt-0.5">
                             {lastMsg.sender_id === 'admin' && (
-                              lastMsg.is_read 
-                                ? <CheckCheck className={`w-3 h-3 ${isSelected ? 'text-white/60' : 'text-indigo-400'}`} /> 
-                                : <Check className={`w-3 h-3 ${isSelected ? 'text-white/60' : 'text-gray-300'}`} />
+                              <div className="mt-0.5 shrink-0">
+                                {lastMsg.is_read 
+                                  ? <CheckCheck className={`w-3.5 h-3.5 ${isSelected ? 'text-white/60' : 'text-indigo-400'}`} /> 
+                                  : <Check className={`w-3.5 h-3.5 ${isSelected ? 'text-white/60' : 'text-gray-300'}`} />}
+                              </div>
                             )}
-                            <p className={`text-xs font-medium truncate ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                            <p className={`text-xs font-medium leading-relaxed line-clamp-2 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
                               {lastMsg.sender_id === 'admin' ? 'You: ' : ''}
-                              {lastMsg.content}
+                              {(() => {
+                                if (lastMsg.content.includes('PROGRESS REPORT') || lastMsg.content.includes('Academic Highlights')) {
+                                  return '📊 AI Progress Report: ' + lastMsg.content.replace(/\*+/g, '').replace(/#+/g, '').substring(0, 100);
+                                }
+                                return lastMsg.content;
+                              })()}
                             </p>
                           </div>
                         ) : (
@@ -238,9 +254,18 @@ const MessagingAdmin = ({ tutees }: MessagingAdminProps) => {
           </div>
 
           {/* Main Chat Area */}
-          <div className="flex-1 min-h-[500px] bg-gray-50 rounded-[2.5rem] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-center p-8">
+          <div className={`flex-1 lg:h-full min-h-[500px] rounded-[2.5rem] overflow-hidden transition-all ${
+            selectedTuteeId && selectedTutee 
+              ? 'bg-white border border-indigo-50' 
+              : 'bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-center p-8'
+          }`}>
             {selectedTuteeId && selectedTutee ? (
-              <ChatModule tutee={selectedTutee} role="admin" />
+              <ChatModule 
+                tutee={selectedTutee} 
+                role="admin" 
+                isInline={isDesktop} 
+                onClose={() => setSelectedTuteeId(null)}
+              />
             ) : (
               <div className="space-y-4">
                 <div className="w-20 h-20 bg-white rounded-3xl shadow-lg flex items-center justify-center mx-auto text-indigo-200">

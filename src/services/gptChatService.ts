@@ -49,13 +49,13 @@ export const saveChatEntry = async (
 /**
  * Fetch chat history for all tutees (for admin)
  */
-export const fetchAllChatHistory = async (): Promise<(ChatHistoryEntry & { tutee_name: string })[]> => {
+export const fetchAllChatHistory = async (): Promise<(ChatHistoryEntry & { tutee_name: string; tutee_icon: string; tutee_color: string })[]> => {
   try {
     const { data, error } = await supabase
       .from('gpt_chat_history')
       .select(`
         *,
-        tutee:tutees(name)
+        tutee:tutees(name, icon, color_gradient)
       `)
       .order('created_at', { ascending: false });
 
@@ -69,6 +69,8 @@ export const fetchAllChatHistory = async (): Promise<(ChatHistoryEntry & { tutee
       prompt: item.prompt,
       createdAt: item.created_at,
       tutee_name: item.tutee?.name || 'Unknown',
+      tutee_icon: item.tutee?.icon || 'User',
+      tutee_color: item.tutee?.color_gradient || 'from-gray-400 to-gray-500',
     }));
   } catch (error) {
     console.error('Error fetching chat history:', error);

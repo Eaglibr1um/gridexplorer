@@ -11,6 +11,7 @@ import {
 } from '../../../services/componentService';
 import { format, parseISO } from 'date-fns';
 import ConfirmationModal from '../../ui/ConfirmationModal';
+import { getColorClasses, getStatClasses } from '../../../utils/colorUtils';
 
 interface LearningPointsModalProps {
   isOpen: boolean;
@@ -19,11 +20,10 @@ interface LearningPointsModalProps {
 }
 
 const LearningPointsModal = ({ isOpen, onClose, tutee }: LearningPointsModalProps) => {
-  const primaryColor = tutee.colorScheme.primary;
-  const bgPrimary = `bg-${primaryColor}-600`;
-  const textPrimary = `text-${primaryColor}-600`;
-  const bgLight = `bg-${primaryColor}-50`;
-  const borderFocus = `focus:border-${primaryColor}-500`;
+  // Use safe color classes from utility
+  const colorClasses = getColorClasses(tutee.colorScheme.primary);
+  const statClasses = getStatClasses(tutee.colorScheme.primary);
+  const gradientClass = tutee.colorScheme.gradient;
 
   const [points, setPoints] = useState<LearningPointType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,7 +159,7 @@ const LearningPointsModal = ({ isOpen, onClose, tutee }: LearningPointsModalProp
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleAdd}
-                  className={`flex items-center gap-2 px-5 py-3 ${bgPrimary} text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg hover:opacity-90 transition-all active:scale-95`}
+                  className={`flex items-center gap-2 px-5 py-3 min-h-[44px] bg-gradient-to-r ${gradientClass} text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg hover:opacity-90 transition-all active:scale-95 touch-manipulation`}
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add Points</span>
@@ -175,7 +175,7 @@ const LearningPointsModal = ({ isOpen, onClose, tutee }: LearningPointsModalProp
 
             {loading ? (
               <div className="text-center py-20">
-                <div className={`w-12 h-12 border-4 ${textPrimary.replace('text-', 'border-')} border-t-transparent rounded-full animate-spin mx-auto mb-4`} />
+                <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
                 <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading points...</p>
               </div>
             ) : error ? (
@@ -189,7 +189,7 @@ const LearningPointsModal = ({ isOpen, onClose, tutee }: LearningPointsModalProp
                 <p className="text-gray-400 font-bold text-lg mb-6">No learning points yet</p>
                 <button
                   onClick={handleAdd}
-                  className={`${textPrimary} font-black uppercase tracking-widest text-sm hover:underline underline-offset-8 transition-all`}
+                  className={`${statClasses.text} min-h-[44px] font-black uppercase tracking-widest text-sm hover:underline underline-offset-8 transition-all touch-manipulation`}
                 >
                   Add your first entry ✨
                 </button>
@@ -205,8 +205,8 @@ const LearningPointsModal = ({ isOpen, onClose, tutee }: LearningPointsModalProp
                     <div className="flex items-start justify-between gap-6">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-3">
-                          <div className={`p-2 ${bgLight} rounded-lg`}>
-                            <Calendar className={`w-4 h-4 ${textPrimary}`} />
+                          <div className={`p-2 ${statClasses.bg} rounded-lg`}>
+                            <Calendar className={`w-4 h-4 ${statClasses.text}`} />
                           </div>
                           <span className="font-black text-gray-800 text-sm uppercase tracking-tight">
                             {format(parseISO(point.sessionDate), 'EEEE, d MMMM yyyy')}
@@ -230,7 +230,7 @@ const LearningPointsModal = ({ isOpen, onClose, tutee }: LearningPointsModalProp
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => handleEdit(point)}
-                          className={`p-3 ${textPrimary} hover:${bgLight} rounded-2xl transition-all active:scale-90`}
+                          className={`p-3 min-h-[44px] min-w-[44px] ${statClasses.text} ${colorClasses.hoverBg} rounded-2xl transition-all active:scale-90 touch-manipulation`}
                           aria-label="Edit"
                         >
                           <Edit2 className="w-5 h-5" />
@@ -282,7 +282,7 @@ const LearningPointsModal = ({ isOpen, onClose, tutee }: LearningPointsModalProp
                   type="date"
                   value={formData.sessionDate}
                   onChange={(e) => setFormData({ ...formData, sessionDate: e.target.value })}
-                  className={`w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white ${borderFocus} transition-all font-bold text-gray-800 shadow-inner`}
+                  className={`w-full px-6 py-4 min-h-[48px] bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white ${colorClasses.focusBorder} transition-all font-bold text-gray-800 shadow-inner touch-target`}
                 />
               </div>
 
@@ -294,7 +294,7 @@ const LearningPointsModal = ({ isOpen, onClose, tutee }: LearningPointsModalProp
                   value={formData.points}
                   onChange={(e) => setFormData({ ...formData, points: e.target.value })}
                   rows={6}
-                  className={`w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white ${borderFocus} transition-all font-medium text-gray-800 shadow-inner resize-none`}
+                  className={`w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white ${colorClasses.focusBorder} transition-all font-medium text-gray-800 shadow-inner resize-none`}
                   placeholder="Enter your learning points from this session..."
                 />
               </div>
@@ -315,11 +315,11 @@ const LearningPointsModal = ({ isOpen, onClose, tutee }: LearningPointsModalProp
                       }
                     }}
                     placeholder="Type and press Enter"
-                    className={`flex-1 px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white ${borderFocus} transition-all font-bold text-gray-800 shadow-inner`}
+                    className={`flex-1 px-6 py-4 min-h-[48px] bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white ${colorClasses.focusBorder} transition-all font-bold text-gray-800 shadow-inner touch-target`}
                   />
                   <button
                     onClick={addTag}
-                    className={`px-6 py-4 ${bgLight} ${textPrimary} rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-opacity-80 transition-all active:scale-95`}
+                    className={`px-6 py-4 min-h-[44px] ${statClasses.bg} ${statClasses.text} rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-opacity-80 transition-all active:scale-95 touch-manipulation`}
                   >
                     Add
                   </button>

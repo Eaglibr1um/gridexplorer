@@ -513,12 +513,15 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
     return sum + session.bulletPoints.length;
   }, 0);
 
-  const saveReviewData = async (sessionDate: string, reviewInfo: { lastReviewed: string; reviewCount: number }) => {
+  const saveReviewData = async (sessionDate: string, reviewInfo: { lastReviewed: string; reviewCount: number; reviewHistory?: any[] }) => {
     try {
       // Update local state immediately
       const newData = {
         ...reviewData,
-        [sessionDate]: reviewInfo,
+        [sessionDate]: {
+          lastReviewed: reviewInfo.lastReviewed,
+          reviewCount: reviewInfo.reviewCount,
+        },
       };
       setReviewData(newData);
       
@@ -528,6 +531,7 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
         sessionDate,
         lastReviewed: reviewInfo.lastReviewed,
         reviewCount: reviewInfo.reviewCount,
+        reviewHistory: reviewInfo.reviewHistory,
       });
       
       // Also save to localStorage as backup
@@ -576,12 +580,13 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
     };
   };
 
-  const markAsReviewed = async (sessionDate: string) => {
+  const markAsReviewed = async (sessionDate: string, history?: any[]) => {
     const sessionKey = sessionDate;
     const current = reviewData[sessionKey];
     const reviewInfo = {
       lastReviewed: new Date().toISOString(),
       reviewCount: current ? current.reviewCount + 1 : 1,
+      reviewHistory: history,
     };
     await saveReviewData(sessionKey, reviewInfo);
   };
@@ -1030,8 +1035,8 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
       <LearningPointReviewGPTModal
         isOpen={reviewModal.isOpen}
         onClose={() => setReviewModal(prev => ({ ...prev, isOpen: false }))}
-        onSuccess={async () => {
-          await markAsReviewed(reviewModal.sessionDate);
+        onSuccess={async (history) => {
+          await markAsReviewed(reviewModal.sessionDate, history);
           setReviewModal(prev => ({ ...prev, isOpen: false }));
         }}
         tutee={tutee}

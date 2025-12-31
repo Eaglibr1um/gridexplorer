@@ -20,7 +20,7 @@ const AnimatedCard = ({
   return (
     <div
       className={`
-        bg-white rounded-xl shadow-lg p-6
+        bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6
         ${hover ? 'card-hover' : ''}
         ${delayClass}
         ${onClick ? 'cursor-pointer' : ''}

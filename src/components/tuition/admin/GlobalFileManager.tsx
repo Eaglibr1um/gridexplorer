@@ -156,16 +156,16 @@ const GlobalFileManager = ({ tutees }: GlobalFileManagerProps) => {
 
   return (
     <>
-      <AnimatedCard className="overflow-visible">
-        <div className="p-6 md:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
+      <AnimatedCard className="overflow-visible !p-0">
+        <div className="p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-indigo-100 rounded-xl text-indigo-600 shadow-sm">
-              <HardDrive className="w-6 h-6" />
+            <div className="p-2.5 sm:p-3 bg-indigo-100 rounded-xl text-indigo-600 shadow-sm flex-shrink-0">
+              <HardDrive className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">Global File Manager</h2>
-              <p className="text-sm text-gray-500">Monitor and manage all files shared across groups</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Global File Manager</h2>
+              <p className="text-xs sm:text-sm text-gray-500">Monitor and manage all files shared across groups</p>
             </div>
           </div>
           
@@ -186,23 +186,23 @@ const GlobalFileManager = ({ tutees }: GlobalFileManagerProps) => {
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="md:col-span-2 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="sm:col-span-2 relative">
+            <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search files, senders, or groups..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium"
+              className="w-full pl-10 sm:pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-sm sm:text-base"
             />
           </div>
           <div className="relative">
-            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Filter className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
             <select
               value={selectedTuteeId}
               onChange={(e) => setSelectedTuteeId(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-gray-700 appearance-none"
+              className="w-full pl-10 sm:pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-gray-700 appearance-none text-sm sm:text-base"
             >
               <option value="all">All Groups</option>
               {tutees.map(t => (
@@ -297,55 +297,57 @@ const GlobalFileManager = ({ tutees }: GlobalFileManagerProps) => {
             </div>
 
             {/* Mobile Card List */}
-            <div className="md:hidden space-y-4">
+            <div className="md:hidden space-y-3">
               {filteredFiles.map((file) => (
-                <div key={file.id} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm active:bg-gray-50 transition-colors">
+                <div key={file.id} className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 p-3 sm:p-4 shadow-sm active:bg-gray-50 transition-colors w-full">
+                  {/* File name - full width, word wrap enabled */}
                   <div className="flex items-start gap-3 mb-3">
-                    <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600 shrink-0">
-                      <FileText className="w-5 h-5" />
+                    <div className="p-2 bg-indigo-50 rounded-lg sm:rounded-xl text-indigo-600 flex-shrink-0">
+                      <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[11px] sm:text-sm font-bold text-gray-800 break-all leading-tight">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-bold text-gray-800 break-words leading-snug">
                         {file.fileName}
                       </p>
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
-                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">{formatFileSize(file.fileSize)}</span>
-                        <span className="w-1 h-1 bg-gray-200 rounded-full hidden xs:inline" />
-                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">{format(new Date(file.createdAt), 'MMM d, yyyy')}</span>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{formatFileSize(file.fileSize)}</span>
+                        <span className="text-gray-300">•</span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{format(new Date(file.createdAt), 'MMM d, yyyy')}</span>
                       </div>
                     </div>
-                    <div className="flex gap-1.5 shrink-0">
+                  </div>
+                  
+                  {/* Bottom row: tutee info + actions */}
+                  <div className="flex items-center justify-between gap-2 pt-3 border-t border-gray-100">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <div className={`w-6 h-6 bg-gradient-to-br ${getTuteeColor(file.tuteeId)} rounded-lg flex items-center justify-center text-white flex-shrink-0`}>
+                        {getTuteeIcon(file.tuteeId)}
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-700 uppercase tracking-wide truncate">{file.tuteeName}</span>
+                      <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide flex-shrink-0 ${
+                        file.uploadedBy === 'Admin' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
+                      }`}>
+                        {file.uploadedBy === 'Admin' ? <Shield className="w-2.5 h-2.5" /> : <User className="w-2.5 h-2.5" />}
+                        {file.uploadedBy}
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5 flex-shrink-0">
                       <a
                         href={getFileUrl(file.filePath)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 text-indigo-600 bg-indigo-50 rounded-lg active:scale-95 transition-all"
+                        className="p-2.5 text-indigo-600 bg-indigo-50 rounded-lg active:scale-95 transition-all touch-manipulation min-h-[40px] min-w-[40px] flex items-center justify-center"
                         title="Download"
                       >
-                        <Download className="w-3.5 h-3.5" />
+                        <Download className="w-4 h-4" />
                       </a>
                       <button
                         onClick={() => setDeleteConfirm({ isOpen: true, file })}
-                        className="p-2 text-red-600 bg-red-50 rounded-lg active:scale-95 transition-all"
+                        className="p-2.5 text-red-600 bg-red-50 rounded-lg active:scale-95 transition-all touch-manipulation min-h-[40px] min-w-[40px] flex items-center justify-center"
                         title="Delete"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-gray-50">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-5 h-5 bg-gradient-to-br ${getTuteeColor(file.tuteeId)} rounded flex items-center justify-center text-white text-[9px]`}>
-                        {getTuteeIcon(file.tuteeId)}
-                      </div>
-                      <span className="text-[9px] font-black text-gray-700 uppercase tracking-wider">{file.tuteeName}</span>
-                    </div>
-                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider ${
-                      file.uploadedBy === 'Admin' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
-                    }`}>
-                      {file.uploadedBy === 'Admin' ? <Shield className="w-2 h-2" /> : <User className="w-2 h-2" />}
-                      {file.uploadedBy}
                     </div>
                   </div>
                 </div>

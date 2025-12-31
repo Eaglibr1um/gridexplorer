@@ -9,6 +9,7 @@ import {
 import { fetchFeedback, updateFeedback, deleteFeedback, Feedback, UpdateFeedbackInput } from '../../services/feedbackService';
 import { Tutee } from '../../types/tuition';
 import ConfirmationModal from '../ui/ConfirmationModal';
+import { getColorClasses, getStatClasses } from '../../utils/colorUtils';
 
 interface MyFeedbackProps {
   tutee: Tutee;
@@ -62,6 +63,11 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
   // Delete confirmation
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Use safe color classes from utility
+  const gradientClass = tutee.colorScheme.gradient;
+  const colorClasses = getColorClasses(tutee.colorScheme.primary);
+  const statClasses = getStatClasses(tutee.colorScheme.primary);
 
   useEffect(() => {
     loadFeedback();
@@ -206,18 +212,11 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
     });
   };
 
-  const primaryColor = tutee.colorScheme.primary;
-  const gradientClass = tutee.colorScheme.gradient;
-  const textPrimary = `text-${primaryColor}-600`;
-  const bgPrimary = `bg-${primaryColor}-600`;
-  const borderPrimary = `border-${primaryColor}-100`;
-  const shadowPrimary = `shadow-${primaryColor}-100`;
-
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="text-center py-8">
-          <div className={`animate-spin rounded-full h-6 w-6 border-b-2 border-${primaryColor}-600 mx-auto mb-2`}></div>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto mb-2"></div>
           <p className="text-sm text-gray-600">Loading feedback...</p>
         </div>
       </div>
@@ -279,7 +278,7 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                 return (
                   <div
                     key={item.id}
-                    className={`group bg-white/80 border border-gray-100 rounded-3xl p-5 sm:p-6 hover:shadow-xl hover:border-${primaryColor}-100 transition-all duration-300 touch-manipulation`}
+                    className="group bg-white/80 border border-gray-100 rounded-3xl p-5 sm:p-6 hover:shadow-xl hover:border-indigo-100 transition-all duration-300 touch-manipulation"
                   >
                     {isEditing ? (
                       <div className="space-y-6">
@@ -298,15 +297,15 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                                 <button
                                   key={ft.value}
                                   onClick={() => setEditType(ft.value)}
-                                  className={`p-3 rounded-2xl border-2 transition-all text-left ${
+                                  className={`p-3 rounded-2xl border-2 transition-all text-left min-h-[44px] touch-manipulation ${
                                     isSelected
-                                      ? `border-${primaryColor}-500 bg-${primaryColor}-50 shadow-inner`
+                                      ? `${colorClasses.border} ${statClasses.bg} shadow-inner`
                                       : 'border-gray-50 bg-gray-50/50 hover:border-indigo-100'
                                   }`}
                                 >
                                   <div className="flex items-center gap-2">
-                                    <Icon className={`w-4 h-4 ${isSelected ? textPrimary : 'text-gray-400'}`} />
-                                    <span className={`text-xs font-black uppercase tracking-widest ${isSelected ? `text-${primaryColor}-700` : 'text-gray-400'}`}>
+                                    <Icon className={`w-4 h-4 ${isSelected ? statClasses.text : 'text-gray-400'}`} />
+                                    <span className={`text-xs font-black uppercase tracking-widest ${isSelected ? colorClasses.textDark : 'text-gray-400'}`}>
                                       {ft.label}
                                     </span>
                                   </div>
@@ -342,7 +341,7 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                             value={editTitle}
                             onChange={(e) => setEditTitle(e.target.value)}
                             placeholder="What's on your mind?"
-                            className={`w-full px-6 py-4 bg-gray-50/50 border-2 border-transparent focus:border-${primaryColor}-100 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-800 shadow-inner`}
+                            className={`w-full px-6 py-4 bg-gray-50/50 border-2 border-transparent ${colorClasses.border} focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-800 shadow-inner touch-target`}
                             disabled={isSaving}
                           />
                         </div>
@@ -354,7 +353,7 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                             onChange={(e) => setEditDescription(e.target.value)}
                             rows={4}
                             placeholder="Explain further..."
-                            className={`w-full px-6 py-4 bg-gray-50/50 border-2 border-transparent focus:border-${primaryColor}-100 focus:bg-white rounded-2xl outline-none transition-all font-medium text-gray-800 shadow-inner resize-none`}
+                            className={`w-full px-6 py-4 bg-gray-50/50 border-2 border-transparent ${colorClasses.border} focus:bg-white rounded-2xl outline-none transition-all font-medium text-gray-800 shadow-inner resize-none`}
                             disabled={isSaving}
                           />
                         </div>
@@ -400,14 +399,14 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                           <div className="flex gap-2 self-end sm:self-auto opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => handleEdit(item)}
-                              className={`p-3 bg-gray-50 ${textPrimary} rounded-xl hover:bg-indigo-50 active:scale-90 transition-all border border-transparent hover:${borderPrimary}`}
+                              className={`min-h-[44px] min-w-[44px] flex items-center justify-center bg-gray-50 ${statClasses.text} rounded-xl ${colorClasses.hoverBg} active:scale-90 transition-all border border-transparent touch-manipulation`}
                               title="Edit feedback"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => setDeleteConfirmId(item.id)}
-                              className="p-3 bg-gray-50 text-red-400 rounded-xl hover:bg-red-50 active:scale-90 transition-all border border-transparent hover:border-red-100"
+                              className="min-h-[44px] min-w-[44px] flex items-center justify-center bg-gray-50 text-red-400 rounded-xl hover:bg-red-50 active:scale-90 transition-all border border-transparent hover:border-red-100 touch-manipulation"
                               title="Delete feedback"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -420,13 +419,13 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                         </div>
                         
                         {item.adminNotes && (
-                          <div className={`mb-6 p-5 bg-${primaryColor}-50/50 border-2 border-${primaryColor}-50 rounded-2xl relative overflow-hidden group/response`}>
+                          <div className={`mb-6 p-5 ${statClasses.bg} border-2 ${colorClasses.border} rounded-2xl relative overflow-hidden group/response`}>
                             <div className="flex items-center gap-2 mb-3">
-                              <Shield className={`w-4 h-4 ${textPrimary}`} />
-                              <p className={`text-[10px] font-black ${textPrimary} uppercase tracking-widest`}>Tutor Response</p>
+                              <Shield className={`w-4 h-4 ${statClasses.text}`} />
+                              <p className={`text-[10px] font-black ${statClasses.text} uppercase tracking-widest`}>Tutor Response</p>
                             </div>
-                            <p className={`text-sm font-bold text-${primaryColor}-900 leading-relaxed`}>{item.adminNotes}</p>
-                            <div className={`absolute top-0 right-0 w-1 h-full bg-${primaryColor}-200`} />
+                            <p className={`text-sm font-bold ${colorClasses.textDark} leading-relaxed`}>{item.adminNotes}</p>
+                            <div className={`absolute top-0 right-0 w-1 h-full ${colorClasses.bgSolid} opacity-30`} />
                           </div>
                         )}
                         
@@ -438,7 +437,7 @@ const MyFeedback = ({ tutee }: MyFeedbackProps) => {
                           {item.updatedAt !== item.createdAt && (
                             <>
                               <span className="w-1 h-1 bg-gray-200 rounded-full" />
-                              <div className={`flex items-center gap-1.5 text-${primaryColor}-300`}>
+                              <div className="flex items-center gap-1.5 text-indigo-300">
                                 <Clock className="w-3 h-3" />
                                 <span>Edited: {formatDate(item.updatedAt)}</span>
                               </div>

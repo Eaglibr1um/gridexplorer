@@ -7,7 +7,7 @@ import { generateReviewQuestions, verifyReviewAnswers, VerificationResult } from
 interface LearningPointReviewGPTModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (history: Array<{ question: string; answer: string; feedback: string }>) => void;
   tutee: Tutee;
   sessionDate: string;
   learningPoints: string[];
@@ -245,7 +245,14 @@ const LearningPointReviewGPTModal = ({
                 </button>
               ) : (
                 <button
-                  onClick={onSuccess}
+                  onClick={() => {
+                    const history = questions.map((q, i) => ({
+                      question: q,
+                      answer: answers[i],
+                      feedback: verification?.feedback[i] || ''
+                    }));
+                    onSuccess(history);
+                  }}
                   className={`w-full py-4 rounded-2xl font-black text-white shadow-xl transition-all flex items-center justify-center gap-3 active:scale-[0.98] bg-gradient-to-r ${gradientClass} hover:shadow-2xl`}
                 >
                   <CheckCircle2 className="w-5 h-5" />

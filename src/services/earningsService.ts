@@ -247,12 +247,15 @@ export const upsertEarningsRecord = async (
     const totalHours = sessions.reduce((sum, s) => sum + s.durationHours, 0);
     const totalAmount = sessions.reduce((sum, s) => sum + s.amount, 0);
 
-    // Get settings for message generation
-    const settings = await fetchEarningsSettings(tuteeId);
+    // Get settings and tutee name for message generation
+    const [settings, { data: tuteeData }] = await Promise.all([
+      fetchEarningsSettings(tuteeId),
+      supabase.from('tutees').select('name').eq('id', tuteeId).single()
+    ]);
     
     // Generate message
     const generatedMessage = settings
-      ? generateEarningsMessage(settings, sessions, year, month)
+      ? generateEarningsMessage(settings, sessions, year, month, tuteeData?.name)
       : undefined;
 
     const { data, error } = await supabase

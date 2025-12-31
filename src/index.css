@@ -6,30 +6,27 @@
   html {
     font-family: 'Inter', system-ui, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
-    overflow-y: auto;
-    overflow-x: hidden;
+    background-color: #f9fafb;
+    -webkit-text-size-adjust: 100%;
+    margin: 0;
+    padding: 0;
   }
   
   body {
-    @apply bg-gray-50 text-gray-900 transition-colors duration-200;
+    @apply bg-gray-50 text-gray-900;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-y: auto;
-    overflow-x: hidden;
     margin: 0;
     padding: 0;
     min-height: 100vh;
-    width: 100vw;
+    min-height: 100dvh;
+    width: 100%;
   }
-  
-  .dark body {
-    @apply bg-dark-primary text-dark-primary;
-  }
-  
+
   #root {
     min-height: 100vh;
-    width: 100vw;
-    overflow-y: auto;
+    min-height: 100dvh;
+    width: 100%;
     overflow-x: hidden;
   }
 }
@@ -140,7 +137,8 @@
 
 /* Minimalist scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -148,20 +146,20 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #404040;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #525252;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Custom animations for success effects */
@@ -334,12 +332,33 @@
 
 /* Better mobile scrolling */
 @media (max-width: 640px) {
+  html {
+    overflow-x: hidden;
+    scrollbar-gutter: auto;
+  }
+  
   body {
     -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+    scrollbar-gutter: auto;
   }
   
   #root {
     -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+  }
+
+  /* Hide scrollbar completely on mobile - uses overlay scrollbars */
+  ::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+    background: transparent;
+    display: none;
+  }
+  
+  * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
   }
 
   /* Prevent auto-zoom on iOS */
@@ -435,5 +454,181 @@
 
 .has-requests {
   color: #d97706 !important;
+}
+
+/* ============================================
+   Mobile-First UI/UX Improvements
+   ============================================ */
+
+/* Minimum touch target size (44x44px per Apple HIG / 48x48dp per Material Design) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.touch-target-lg {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+/* Standardized mobile-friendly button */
+.btn-mobile {
+  @apply min-h-[44px] px-4 py-3 rounded-xl font-bold transition-all active:scale-95;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Standardized icon button for mobile */
+.icon-btn-mobile {
+  @apply min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-all active:scale-90;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* iOS Safari scroll fix for modals/drawers */
+.scroll-fix-ios {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Prevent pull-to-refresh on modal content */
+.no-overscroll {
+  overscroll-behavior: none;
+}
+
+/* Custom scrollbar for chat/list containers (mobile-friendly) */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.1) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.1);
+  border-radius: 100px;
+}
+
+/* Improved focus states for accessibility */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500;
+}
+
+/* Error shake animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Slow spin animation for review icons */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+/* Standardized spacing for content sections */
+@layer utilities {
+  /* ============================================
+     Industry Standard Spacing System
+     Mobile: 16px (1rem) - Apple HIG / Material Design
+     Tablet: 24px (1.5rem)
+     Desktop: 32px (2rem)
+     ============================================ */
+  
+  /* Container edge padding */
+  .container-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Mobile-first responsive padding (alias) */
+  .section-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Card padding (consistent across components) */
+  .card-padding {
+    @apply p-4 sm:p-6;
+  }
+
+  /* Inner card padding (for nested cards) */
+  .inner-card-padding {
+    @apply p-3 sm:p-4;
+  }
+
+  /* Module header padding */
+  .module-header {
+    @apply p-4 sm:p-6;
+  }
+
+  /* Consistent gap between grid items */
+  .grid-gap {
+    @apply gap-3 sm:gap-4 lg:gap-6;
+  }
+
+  /* Admin tutee selector grid */
+  .tutee-grid {
+    @apply grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3;
+  }
+
+  /* Bottom safe area padding for fixed elements */
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  /* Full safe area padding */
+  .p-safe {
+    padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  }
+
+  /* Responsive text sizes for headings */
+  .heading-lg {
+    @apply text-xl sm:text-2xl lg:text-3xl font-bold;
+  }
+
+  .heading-md {
+    @apply text-lg sm:text-xl font-bold;
+  }
+
+  .heading-sm {
+    @apply text-base sm:text-lg font-semibold;
+  }
+
+  /* Responsive icon container */
+  .icon-container {
+    @apply p-2 sm:p-3 rounded-lg sm:rounded-xl;
+  }
+
+  .icon-container-sm {
+    @apply p-1.5 sm:p-2 rounded-lg;
+  }
+}
+
+/* Modal improvements for mobile */
+@media (max-width: 640px) {
+  .modal-mobile-full {
+    border-radius: 1.5rem 1.5rem 0 0 !important;
+    max-height: calc(100vh - env(safe-area-inset-top) - 1rem) !important;
+    margin-top: auto !important;
+  }
+  
+  .modal-mobile-center {
+    margin: 1rem !important;
+    max-height: calc(100vh - 2rem) !important;
+  }
 }
  

@@ -450,8 +450,9 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
   };
 
   const handleCopyMessage = () => {
-    if (currentMonthRecord?.generatedMessage) {
-      navigator.clipboard.writeText(currentMonthRecord.generatedMessage);
+    if (currentMonthRecord?.generatedMessage && selectedTutee) {
+      const finalMessage = currentMonthRecord.generatedMessage.replace(/{tutee_name}/g, selectedTutee.name);
+      navigator.clipboard.writeText(finalMessage);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -482,15 +483,15 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg">
-            <DollarSign className="w-6 h-6 text-white" />
+          <div className="p-2.5 sm:p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex-shrink-0">
+            <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Tuition Earnings</h2>
-            <p className="text-sm text-gray-600">Manage earnings and generate invoices</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Tuition Earnings</h2>
+            <p className="text-xs sm:text-sm text-gray-600">Manage earnings and generate invoices</p>
           </div>
         </div>
         {selectedTuteeId && (
@@ -530,7 +531,7 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
           )}
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
           {filteredTutees.map((tutee) => {
             const IconComp = getIcon(tutee.icon);
             const isActive = selectedTuteeId === tutee.id;
@@ -539,23 +540,23 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
               <button
                 key={tutee.id}
                 onClick={() => handleTuteeSelect(tutee.id)}
-                className={`group relative flex flex-col items-center p-4 rounded-2xl transition-all duration-300 ${
+                className={`group relative flex flex-col items-center p-2 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-300 min-h-[64px] sm:min-h-[80px] touch-manipulation ${
                   isActive 
                     ? `bg-gradient-to-br ${tutee.colorScheme.gradient} text-white shadow-lg scale-105 z-10` 
                     : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border-2 border-transparent hover:border-indigo-100'
                 }`}
               >
-                <div className={`mb-3 p-3 rounded-xl transition-colors duration-300 ${
+                <div className={`mb-1.5 sm:mb-3 p-2 sm:p-3 rounded-lg sm:rounded-xl transition-colors duration-300 ${
                   isActive ? 'bg-white/20' : 'bg-white shadow-sm group-hover:shadow-md'
                 }`}>
-                  <IconComp className={`w-6 h-6 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-indigo-500'}`} />
+                  <IconComp className={`w-4 h-4 sm:w-6 sm:h-6 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-indigo-500'}`} />
                 </div>
-                <span className={`text-xs font-bold text-center line-clamp-1 ${isActive ? 'text-white' : 'text-gray-600'}`}>
+                <span className={`text-[10px] sm:text-xs font-bold text-center line-clamp-1 leading-tight ${isActive ? 'text-white' : 'text-gray-600'}`}>
                   {tutee.name}
                 </span>
                 {isActive && (
-                  <div className="absolute -top-1 -right-1 bg-white text-indigo-600 rounded-full p-1 shadow-md animate-in zoom-in-50 duration-300">
-                    <Check className="w-3 h-3 stroke-[4]" />
+                  <div className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-white text-indigo-600 rounded-full p-0.5 sm:p-1 shadow-md animate-in zoom-in-50 duration-300">
+                    <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[4]" />
                   </div>
                 )}
               </button>

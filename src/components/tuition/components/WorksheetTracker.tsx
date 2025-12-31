@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti';
 import { WorksheetEntry, fetchWorksheets, createWorksheet, updateWorksheet, deleteWorksheet } from '../../../services/worksheetService';
 import { format, parseISO } from 'date-fns';
 import AnimatedCard from '../../ui/AnimatedCard';
+import { getColorClasses, getStatClasses } from '../../../utils/colorUtils';
 
 interface WorksheetTrackerProps {
   tuteeId: string;
@@ -27,13 +28,10 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
 
   const primaryColor = colorScheme?.primary || 'indigo';
   const gradientClass = colorScheme?.gradient || 'from-indigo-600 to-purple-600';
-  const bgPrimary = `bg-${primaryColor}-600`;
-  const textPrimary = `text-${primaryColor}-600`;
-  const borderPrimary = `border-${primaryColor}-500`;
-  const shadowPrimary = `shadow-${primaryColor}-100`;
-  const hoverBgPrimary = `hover:bg-${primaryColor}-700`;
-  const focusBorderPrimary = `focus:border-${primaryColor}-500`;
-  const accentPrimary = `accent-${primaryColor}-600`;
+  
+  // Use safe color classes from utility
+  const colorClasses = getColorClasses(primaryColor);
+  const statClasses = getStatClasses(primaryColor);
 
   const [form, setForm] = useState<{
     worksheetName: string;
@@ -182,15 +180,15 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
 
       <div className="p-5 sm:p-8">
         <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">
-          <div className={`bg-${primaryColor}-50 rounded-2xl p-4 border border-${primaryColor}-100/50 shadow-inner`}>
+          <div className={`${statClasses.bg} rounded-2xl p-4 border border-white/50 shadow-inner`}>
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total</p>
-            <p className={`text-2xl font-black ${textPrimary}`}>
+            <p className={`text-2xl font-black ${statClasses.text}`}>
               {totalWorksheets}
             </p>
           </div>
-          <div className={`bg-${primaryColor}-50 rounded-2xl p-4 border border-${primaryColor}-100/50 shadow-inner`}>
+          <div className={`${statClasses.bg} rounded-2xl p-4 border border-white/50 shadow-inner`}>
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Completed</p>
-            <p className={`text-2xl font-black ${textPrimary}`}>
+            <p className={`text-2xl font-black ${statClasses.text}`}>
               {completedWorksheets}
             </p>
           </div>
@@ -224,7 +222,7 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
         )}
 
         {showAddForm && (
-          <form onSubmit={handleSubmit} className={`mb-10 p-5 sm:p-8 bg-white border-2 border-${primaryColor}-50 rounded-3xl shadow-xl shadow-${primaryColor}-50/50 animate-in fade-in zoom-in-95 duration-300`}>
+          <form onSubmit={handleSubmit} className={`mb-10 p-5 sm:p-8 bg-white border-2 ${colorClasses.border} rounded-3xl shadow-xl animate-in fade-in zoom-in-95 duration-300`}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
               <div className="space-y-6">
                 <div>
@@ -233,7 +231,7 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
                     type="text"
                     value={form.worksheetName}
                     onChange={(e) => setForm({ ...form, worksheetName: e.target.value })}
-                    className={`w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-gray-50 ${focusBorderPrimary} focus:bg-white outline-none transition-all text-lg font-bold text-gray-800`}
+                    className={`w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-gray-50 ${colorClasses.focusBorder} focus:bg-white outline-none transition-all text-lg font-bold text-gray-800 touch-target`}
                     placeholder="E.g. Algebra Basics"
                     required
                   />
@@ -247,10 +245,10 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
                         key={name}
                         type="button"
                         onClick={() => setForm({ ...form, studentName: name })}
-                        className={`flex-1 min-w-[100px] px-4 py-3 rounded-xl font-black uppercase tracking-widest transition-all border-2 text-xs ${
+                        className={`flex-1 min-w-[100px] min-h-[44px] px-4 py-3 rounded-xl font-black uppercase tracking-widest transition-all border-2 text-xs touch-manipulation ${
                           form.studentName === name
-                            ? `${bgPrimary} border-${primaryColor}-600 text-white shadow-md ${shadowPrimary}`
-                            : `bg-white border-gray-100 text-gray-400 hover:border-${primaryColor}-200 ${textPrimary.replace('text-', 'hover:text-')}`
+                            ? `${colorClasses.bgSolid} border-transparent text-white shadow-md`
+                            : `bg-white border-gray-100 text-gray-400 ${colorClasses.hoverBg}`
                         }`}
                       >
                         {name}
@@ -305,7 +303,7 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
                           status: val === 100 ? 'Completed' : val > 0 ? 'In Progress' : 'Upcoming'
                         });
                       }}
-                      className={`w-full h-2.5 bg-gray-100 rounded-lg appearance-none cursor-pointer ${accentPrimary}`}
+                      className={`w-full h-2.5 bg-gray-100 rounded-lg appearance-none cursor-pointer ${colorClasses.accent}`}
                     />
                     <div className="flex justify-between text-[10px] font-black text-gray-300 uppercase tracking-widest">
                       <span>Start</span>
@@ -322,7 +320,7 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
                       type="date"
                       value={form.completedDate}
                       onChange={(e) => setForm({ ...form, completedDate: e.target.value })}
-                      className={`w-full pl-14 pr-5 py-4 rounded-2xl bg-gray-50 border-2 border-gray-50 ${focusBorderPrimary} focus:bg-white outline-none transition-all font-bold text-gray-800`}
+                      className={`w-full pl-14 pr-5 py-4 rounded-2xl bg-gray-50 border-2 border-gray-50 ${colorClasses.focusBorder} focus:bg-white outline-none transition-all font-bold text-gray-800 touch-target`}
                       required
                     />
                   </div>
@@ -333,7 +331,7 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
                   <textarea
                     value={form.notes}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                    className={`w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-gray-50 ${focusBorderPrimary} focus:bg-white outline-none transition-all font-medium text-gray-800 resize-none`}
+                    className={`w-full px-5 py-4 rounded-2xl bg-gray-50 border-2 border-gray-50 ${colorClasses.focusBorder} focus:bg-white outline-none transition-all font-medium text-gray-800 resize-none`}
                     placeholder="What needs to be done?"
                     rows={3}
                   />
@@ -354,7 +352,7 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
               </button>
               <button
                 type="submit"
-                className={`order-1 sm:order-2 px-12 py-4 rounded-2xl text-base font-black uppercase tracking-widest text-white ${bgPrimary} ${hoverBgPrimary} shadow-xl ${shadowPrimary} transition-all transform active:scale-95`}
+                className={`order-1 sm:order-2 px-12 py-4 rounded-2xl text-base font-black uppercase tracking-widest text-white bg-gradient-to-r ${gradientClass} shadow-xl transition-all transform active:scale-95 min-h-[48px] touch-manipulation`}
               >
                 {editingEntry ? 'Update' : 'Save'} Worksheet
               </button>
@@ -363,19 +361,19 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
         )}
 
         <div className="relative mb-8 group">
-          <Search className={`absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-300 group-focus-within:${textPrimary} transition-colors`} />
+          <Search className={`absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-300 group-focus-within:text-indigo-600 transition-colors`} />
           <input
             type="text"
             placeholder="Search worksheets..."
             value={searchTerm}
             onChange={(e) => setSearchSearchTerm(e.target.value)}
-            className={`w-full pl-14 pr-6 py-5 bg-gray-50/50 hover:bg-gray-50 border-2 border-transparent focus:border-${primaryColor}-100 focus:bg-white rounded-3xl outline-none transition-all text-lg font-bold shadow-inner`}
+            className={`w-full pl-14 pr-6 py-5 bg-gray-50/50 hover:bg-gray-50 border-2 border-transparent ${colorClasses.border} focus:bg-white rounded-3xl outline-none transition-all text-lg font-bold shadow-inner touch-target`}
           />
         </div>
 
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-4">
-            <div className={`w-12 h-12 border-4 ${textPrimary.replace('text-', 'border-')} border-t-transparent rounded-full animate-spin`}></div>
+            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
             <p className="font-bold text-gray-400 uppercase tracking-widest text-xs">Syncing data...</p>
           </div>
         ) : filteredWorksheets.length === 0 ? (
@@ -393,7 +391,7 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
             {filteredWorksheets.map((entry) => (
               <div 
                 key={entry.id} 
-                className={`group bg-white/80 p-5 sm:p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-${primaryColor}-100 transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] touch-manipulation`}
+                className="group bg-white/80 p-5 sm:p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] touch-manipulation"
               >
                 <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center">
                   <div className="flex-1 min-w-0 w-full">
@@ -409,7 +407,7 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${
                         entry.studentName.toLowerCase() === 'rayne' ? 'bg-pink-50 border-pink-100 text-pink-600' : 
                         entry.studentName.toLowerCase() === 'jeffrey' ? 'bg-blue-50 border-blue-100 text-blue-600' : 
-                        `${bgPrimary.replace('bg-', 'bg-')}-50 border-${primaryColor}-100 ${textPrimary}`
+                        `${statClasses.bg} ${colorClasses.border} ${statClasses.text}`
                       }`}>
                         {entry.studentName}
                       </span>
@@ -425,13 +423,13 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
                   <div className="w-full lg:w-64 space-y-2 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
                     <div className="flex justify-between text-[10px] font-black text-gray-400 uppercase tracking-widest">
                       <span>Progress</span>
-                      <span className={textPrimary}>{entry.completionPercentage}%</span>
+                      <span className={statClasses.text}>{entry.completionPercentage}%</span>
                     </div>
                     <div className="w-full h-3 bg-white rounded-full overflow-hidden border border-gray-100 shadow-inner">
                       <div 
                         className={`h-full transition-all duration-1000 rounded-full ${
                           entry.completionPercentage === 100 ? 'bg-gradient-to-r from-green-400 to-green-600 shadow-green-100' :
-                          entry.completionPercentage > 50 ? `bg-gradient-to-r ${gradientClass} ${shadowPrimary}` : 
+                          entry.completionPercentage > 50 ? `bg-gradient-to-r ${gradientClass}` : 
                           'bg-gradient-to-r from-blue-400 to-blue-500 shadow-blue-100'
                         }`}
                         style={{ width: `${entry.completionPercentage}%` }}
@@ -442,14 +440,14 @@ const WorksheetTracker: React.FC<WorksheetTrackerProps> = ({ tuteeId, studentNam
                   <div className="flex gap-2 w-full lg:w-auto justify-end pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-50">
                     <button
                       onClick={() => handleEdit(entry)}
-                      className={`flex-1 lg:flex-none p-4 lg:p-3 text-gray-400 ${textPrimary.replace('text-', 'hover:text-')} ${bgPrimary.replace('bg-', 'hover:bg-')}-50 rounded-2xl transition-all border border-transparent ${borderPrimary.replace('border-', 'hover:border-')}-100 flex justify-center items-center`}
+                      className={`flex-1 lg:flex-none min-h-[44px] min-w-[44px] p-4 lg:p-3 text-gray-400 hover:text-indigo-600 ${colorClasses.hoverBg} rounded-2xl transition-all border border-transparent hover:border-indigo-100 flex justify-center items-center touch-manipulation`}
                       title="Edit"
                     >
                       <Edit2 className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleDelete(entry.id)}
-                      className="flex-1 lg:flex-none p-4 lg:p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all border border-transparent hover:border-red-100 flex justify-center items-center"
+                      className="flex-1 lg:flex-none min-h-[44px] min-w-[44px] p-4 lg:p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all border border-transparent hover:border-red-100 flex justify-center items-center touch-manipulation"
                       title="Delete"
                     >
                       <Trash2 className="w-5 h-5" />

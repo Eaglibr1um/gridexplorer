@@ -26,7 +26,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 function AppContent() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50 dark:bg-dark-primary transition-colors duration-200">
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-primary">
         <main className="flex-1">
           <Routes>
             <Route path="/login" element={<Login />} />

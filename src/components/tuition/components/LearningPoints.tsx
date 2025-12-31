@@ -6,6 +6,7 @@ import { fetchLearningPoints, LearningPoint as LearningPointType } from '../../.
 import { fetchLearningPointReviews } from '../../../services/learningPointReviewService';
 import { notificationService } from '../../../services/notificationService';
 import Skeleton from '../../ui/Skeleton';
+import { getStatClasses } from '../../../utils/colorUtils';
 
 interface LearningPointsProps {
   tutee: Tutee;
@@ -79,6 +80,9 @@ const LearningPoints = ({ tutee }: LearningPointsProps) => {
   const uniqueSessionDates = new Set(points.map(p => p.sessionDate));
   const totalSessions = uniqueSessionDates.size;
   const gradientClass = tutee.colorScheme.gradient;
+  
+  // Use safe color classes from utility
+  const statClasses = getStatClasses(tutee.colorScheme.primary);
 
   // Spaced repetition intervals (in days): 1, 3, 7, 14, 30, 60, 90
   const getNextReviewDate = (reviewCount: number, lastReviewed: string): Date => {
@@ -119,31 +123,9 @@ const LearningPoints = ({ tutee }: LearningPointsProps) => {
     setSearchParams({ learningPoints: 'true' });
   };
   
-  // Use lighter background colors like quiz cards based on tutee's color scheme
-  const getBgClass = () => {
-    const primary = tutee.colorScheme.primary;
-    if (primary === 'pink' || primary === 'purple') return 'bg-purple-50';
-    if (primary === 'green' || primary === 'teal') return 'bg-teal-50';
-    if (primary === 'blue' || primary === 'cyan') return 'bg-cyan-50';
-    if (primary === 'indigo') return 'bg-indigo-50';
-    if (primary === 'orange' || primary === 'red') return 'bg-orange-50';
-    if (primary === 'yellow' || primary === 'amber') return 'bg-yellow-50';
-    return 'bg-purple-50';
-  };
-  
-  const getTextClass = () => {
-    const primary = tutee.colorScheme.primary;
-    if (primary === 'pink' || primary === 'purple') return 'text-purple-600';
-    if (primary === 'green' || primary === 'teal') return 'text-teal-600';
-    if (primary === 'blue' || primary === 'cyan') return 'text-cyan-600';
-    if (primary === 'indigo') return 'text-indigo-600';
-    if (primary === 'orange' || primary === 'red') return 'text-orange-600';
-    if (primary === 'yellow' || primary === 'amber') return 'text-yellow-600';
-    return 'text-purple-600';
-  };
-  
-  const bgClass = getBgClass();
-  const textClass = getTextClass();
+  // Use color classes from utility for consistency
+  const bgClass = statClasses.bg;
+  const textClass = statClasses.text;
 
   // Card view (compact, like quiz cards)
   if (loading) {

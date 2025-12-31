@@ -189,21 +189,21 @@ const ComponentManager = ({ tutees, onUpdate }: ComponentManagerProps) => {
   }));
 
   return (
-    <AnimatedCard className="overflow-hidden">
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-8">
+    <AnimatedCard className="overflow-hidden !p-0">
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-indigo-100 rounded-xl text-indigo-600">
-              <Layout className="w-6 h-6" />
+            <div className="p-2.5 sm:p-3 bg-indigo-100 rounded-xl text-indigo-600 flex-shrink-0">
+              <Layout className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">Module Manager</h2>
-              <p className="text-sm text-gray-500">Assign reusable modules to tuition groups</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Module Manager</h2>
+              <p className="text-xs sm:text-sm text-gray-500">Assign reusable modules to tuition groups</p>
             </div>
           </div>
         </div>
 
-        <div className="mb-8 p-6 bg-gray-50 rounded-2xl border border-gray-100">
+        <div className="mb-6 sm:mb-8 p-4 sm:p-6 bg-gray-50 rounded-xl sm:rounded-2xl border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <label className="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
               <User className="w-4 h-4 text-indigo-500" />
@@ -223,7 +223,7 @@ const ComponentManager = ({ tutees, onUpdate }: ComponentManagerProps) => {
             )}
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
             {filteredTutees.map((tutee) => {
               const IconComp = getIcon(tutee.icon);
               const isActive = selectedTuteeId === tutee.id;
@@ -232,23 +232,23 @@ const ComponentManager = ({ tutees, onUpdate }: ComponentManagerProps) => {
                 <button
                   key={tutee.id}
                   onClick={() => setSelectedTuteeId(tutee.id)}
-                  className={`group relative flex flex-col items-center p-3 rounded-2xl transition-all duration-300 ${
+                  className={`group relative flex flex-col items-center p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 min-h-[60px] sm:min-h-[72px] touch-manipulation ${
                     isActive 
                       ? `bg-gradient-to-br ${tutee.colorScheme.gradient} text-white shadow-lg scale-105 z-10` 
                       : 'bg-white text-gray-500 hover:bg-gray-100 border-2 border-transparent hover:border-indigo-100 shadow-sm'
                   }`}
                 >
-                  <div className={`mb-2 p-2 rounded-xl transition-colors duration-300 ${
+                  <div className={`mb-1.5 sm:mb-2 p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-colors duration-300 ${
                     isActive ? 'bg-white/20' : 'bg-gray-50 group-hover:bg-white'
                   }`}>
-                    <IconComp className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-indigo-500'}`} />
+                    <IconComp className={`w-4 h-4 sm:w-5 sm:h-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-indigo-500'}`} />
                   </div>
-                  <span className={`text-[10px] font-bold text-center line-clamp-1 ${isActive ? 'text-white' : 'text-gray-600'}`}>
+                  <span className={`text-[9px] sm:text-[10px] font-bold text-center line-clamp-1 leading-tight ${isActive ? 'text-white' : 'text-gray-600'}`}>
                     {tutee.name}
                   </span>
                   {isActive && (
-                    <div className="absolute -top-1 -right-1 bg-white text-indigo-600 rounded-full p-1 shadow-md animate-in zoom-in-50 duration-300">
-                      <CheckCircle className="w-2.5 h-2.5 stroke-[4]" />
+                    <div className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-white text-indigo-600 rounded-full p-0.5 sm:p-1 shadow-md animate-in zoom-in-50 duration-300">
+                      <CheckCircle className="w-2 h-2 sm:w-2.5 sm:h-2.5 stroke-[4]" />
                     </div>
                   )}
                 </button>
@@ -301,28 +301,28 @@ const ComponentManager = ({ tutees, onUpdate }: ComponentManagerProps) => {
                   <p>No modules assigned to this group yet.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                   {assignedComponents.map((tuteeComp) => (
                     <div
                       key={tuteeComp.id}
-                      className="group p-4 bg-white border border-gray-100 rounded-2xl flex items-center justify-between hover:shadow-lg hover:border-indigo-100 transition-all"
+                      className="group p-3 sm:p-4 bg-white border border-gray-100 rounded-xl sm:rounded-2xl flex items-center justify-between hover:shadow-lg hover:border-indigo-100 transition-all"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:scale-110 transition-transform">
-                          <CheckCircle className="w-5 h-5" />
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                        <div className="p-1.5 sm:p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:scale-110 transition-transform flex-shrink-0">
+                          <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                         </div>
-                        <div>
-                          <span className="font-bold text-gray-800 block">
+                        <div className="min-w-0 flex-1">
+                          <span className="font-bold text-gray-800 block text-sm sm:text-base truncate">
                             {tuteeComp.component?.displayName || 'Unknown Module'}
                           </span>
                           {tuteeComp.component?.description && (
-                            <span className="text-xs text-gray-500">
+                            <span className="text-[10px] sm:text-xs text-gray-500 block truncate">
                           {tuteeComp.component.description}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => {
                         // Scroll to the respective admin section if it exists

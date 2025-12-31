@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Clock, CheckCircle, XCircle, Calendar, User, MessageSquare, RefreshCw } from 'lucide-react';
+import { 
+  Clock, CheckCircle, XCircle, Calendar, User, MessageSquare, RefreshCw,
+  BookOpen, GraduationCap, Star, Heart, Zap, Target, Award, Trophy, Lightbulb, 
+  Brain, Rocket, Sparkles, BookMarked, School, PenTool, Calculator, FlaskConical, 
+  Atom, Music, Palette, Camera, Gamepad2, Code, Globe, Coffee, Smile, Shield
+} from 'lucide-react';
 import { BookingRequest } from '../../types/tuition';
 import {
   fetchBookingRequests,
@@ -12,6 +17,14 @@ import { supabase } from '../../config/supabase';
 import { getTuteeByIdSync } from '../../config/tutees';
 import { format, parseISO } from 'date-fns';
 import ConfirmationModal from '../ui/ConfirmationModal';
+
+// Icon mapping for tutees
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  BookOpen, GraduationCap, User, Star, Heart, Zap, Target, Award, Trophy,
+  Lightbulb, Brain, Rocket, Sparkles, BookMarked, School, PenTool,
+  Calculator, FlaskConical, Atom, Music, Palette, Camera, Gamepad2,
+  Code, Globe, Coffee, Smile, Shield
+};
 
 const BookingRequestsAdmin = () => {
   const [requests, setRequests] = useState<BookingRequest[]>([]);
@@ -226,12 +239,15 @@ const BookingRequestsAdmin = () => {
                 >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                    <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
                       {tutee ? (
                         <span 
-                          className={`px-3 py-1 rounded-full text-sm font-medium text-white bg-gradient-to-r ${tutee.colorScheme.gradient} flex items-center gap-2`}
+                          className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-full text-xs sm:text-sm font-bold text-white bg-gradient-to-r ${tutee.colorScheme.gradient} flex items-center gap-1.5 sm:gap-2 shadow-sm`}
                         >
-                          <User className="w-4 h-4" />
+                          {(() => {
+                            const IconComp = iconMap[tutee.icon] || User;
+                            return <IconComp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />;
+                          })()}
                           {tutee.name}
                         </span>
                       ) : (

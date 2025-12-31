@@ -4,6 +4,7 @@ import { Tutee } from '../../../types/tuition';
 import { SharedFile, uploadFile, fetchSharedFiles, deleteSharedFile, getFileUrl } from '../../../services/fileService';
 import { format } from 'date-fns';
 import ConfirmationModal from '../../ui/ConfirmationModal';
+import { getColorClasses, getStatClasses } from '../../../utils/colorUtils';
 
 interface SharedFilesProps {
   tutee: Tutee;
@@ -21,6 +22,11 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
     file: null,
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Use safe color classes from utility
+  const gradientClass = tutee.colorScheme.gradient;
+  const colorClasses = getColorClasses(tutee.colorScheme.primary);
+  const statClasses = getStatClasses(tutee.colorScheme.primary);
 
   useEffect(() => {
     loadFiles();
@@ -101,13 +107,6 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
     f.uploadedBy.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const primaryColor = tutee.colorScheme.primary;
-  const gradientClass = tutee.colorScheme.gradient;
-  const textPrimary = `text-${primaryColor}-600`;
-  const bgPrimary = `bg-${primaryColor}-600`;
-  const borderPrimary = `border-${primaryColor}-100`;
-  const shadowPrimary = `shadow-${primaryColor}-100`;
-
   return (
     <div className="bg-white/60 backdrop-blur-sm rounded-[2rem] sm:rounded-[2.5rem] shadow-xl overflow-hidden border border-white/40 animate-fade-in-up">
       {/* Header */}
@@ -126,9 +125,9 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
       <div className="p-5 sm:p-8 space-y-8">
         {/* Actions and Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className={`flex-1 bg-${primaryColor}-50 rounded-2xl p-4 border border-${primaryColor}-100/50 shadow-inner flex flex-col justify-center`}>
+          <div className={`flex-1 ${statClasses.bg} rounded-2xl p-4 border border-white/50 shadow-inner flex flex-col justify-center`}>
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Storage</p>
-            <p className={`text-2xl font-black ${textPrimary}`}>
+            <p className={`text-2xl font-black ${statClasses.text}`}>
               {files.length} <span className="text-xs uppercase tracking-wider opacity-60">Files</span>
             </p>
           </div>
@@ -143,7 +142,7 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className={`w-full flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r ${gradientClass} text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-lg hover:opacity-90 active:scale-95 transition-all disabled:opacity-50`}
+              className={`w-full flex-1 flex items-center justify-center gap-3 px-8 min-h-[48px] py-4 bg-gradient-to-r ${gradientClass} text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-lg hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 touch-manipulation`}
             >
               {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
               <span>Upload File</span>
@@ -154,16 +153,16 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
         {/* Search and Filter */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="relative flex-1 group">
-            <Search className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:${textPrimary} transition-colors`} />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
             <input
               type="text"
               placeholder="Search documents..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-14 pr-6 py-4 bg-gray-50/50 border-2 border-transparent focus:border-${primaryColor}-100 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-800 shadow-inner`}
+              className={`w-full pl-14 pr-6 py-4 bg-gray-50/50 border-2 border-transparent ${colorClasses.border} focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-800 shadow-inner touch-target`}
             />
           </div>
-          <div className={`inline-flex items-center gap-3 px-5 py-2.5 bg-${primaryColor}-50 ${textPrimary} rounded-full text-xs font-black uppercase tracking-widest border border-${primaryColor}-100 shadow-sm self-start md:self-auto`}>
+          <div className={`inline-flex items-center gap-3 px-5 py-2.5 ${statClasses.bg} ${statClasses.text} rounded-full text-xs font-black uppercase tracking-widest border border-white/50 shadow-sm self-start md:self-auto`}>
             <FileText className="w-4 h-4" />
             <span>{files.length} Resources</span>
           </div>
@@ -178,7 +177,7 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
 
         {loading && files.length === 0 ? (
           <div className="py-24 flex flex-col items-center justify-center gap-4">
-            <div className={`w-12 h-12 border-4 ${textPrimary.replace('text-', 'border-')} border-t-transparent rounded-full animate-spin`}></div>
+            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
             <p className="text-gray-400 font-black uppercase tracking-widest text-xs">Syncing Cloud...</p>
           </div>
         ) : filteredFiles.length === 0 ? (
@@ -196,10 +195,10 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
             {filteredFiles.map((file) => (
               <div 
                 key={file.id}
-                className={`group relative bg-white border border-gray-100 rounded-[2rem] p-6 hover:shadow-2xl hover:border-${primaryColor}-200 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation`}
+                className="group relative bg-white border border-gray-100 rounded-[2rem] p-6 hover:shadow-2xl hover:border-indigo-200 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation"
               >
                 <div className="flex items-start justify-between mb-5">
-                  <div className={`p-4 bg-gray-50 rounded-2xl group-hover:bg-${primaryColor}-50 group-hover:scale-110 transition-all duration-300 shadow-inner`}>
+                  <div className={`p-4 bg-gray-50 rounded-2xl ${colorClasses.hoverBg} group-hover:scale-110 transition-all duration-300 shadow-inner`}>
                     {getFileIcon(file.fileType)}
                   </div>
                   <div className="flex gap-2">
@@ -208,14 +207,14 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
                       download={file.fileName}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`p-3 text-gray-400 ${textPrimary.replace('text-', 'hover:text-')} ${bgPrimary.replace('bg-', 'hover:bg-')}-50 bg-white rounded-xl shadow-sm border border-gray-50 active:scale-90 transition-all`}
+                      className={`min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-indigo-600 ${colorClasses.hoverBg} bg-white rounded-xl shadow-sm border border-gray-50 active:scale-90 transition-all touch-manipulation`}
                       title="Download"
                     >
                       <Download className="w-5 h-5" />
                     </a>
                     <button
                       onClick={() => setDeleteConfirm({ isOpen: true, file })}
-                      className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 bg-white rounded-xl shadow-sm border border-gray-50 active:scale-90 transition-all"
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 bg-white rounded-xl shadow-sm border border-gray-50 active:scale-90 transition-all touch-manipulation"
                       title="Delete"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -240,7 +239,7 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
                 <div className="mt-6 pt-5 border-t border-gray-50 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {file.uploadedBy === 'Admin' ? (
-                      <div className={`flex items-center gap-1.5 px-3 py-1 ${bgPrimary} text-white rounded-full shadow-md ${shadowPrimary}`}>
+                      <div className={`flex items-center gap-1.5 px-3 py-1 ${colorClasses.bgSolid} text-white rounded-full shadow-md`}>
                         <Shield className="w-3 h-3" />
                         <span className="text-[9px] font-black uppercase tracking-widest">Tutor</span>
                       </div>
@@ -256,7 +255,7 @@ const SharedFiles = ({ tutee, isAdmin = false }: SharedFilesProps) => {
                   </span>
                 </div>
 
-                <div className={`absolute top-0 right-0 w-1.5 h-full bg-gradient-to-b ${gradientClass} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                <div className={`absolute top-0 right-0 w-1.5 h-full bg-gradient-to-b ${gradientClass} opacity-0 group-hover:opacity-100 transition-opacity rounded-r-[2rem]`} />
               </div>
             ))}
           </div>

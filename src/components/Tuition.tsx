@@ -25,6 +25,9 @@ import GPTChatAdmin from './tuition/admin/GPTChatAdmin';
 import GlobalFileManager from './tuition/admin/GlobalFileManager';
 import NotificationAdmin from './tuition/admin/NotificationAdmin';
 import MessagingAdmin from './tuition/admin/MessagingAdmin';
+import AdminQuickLinks from './tuition/admin/AdminQuickLinks';
+import LearningPointsAdmin from './tuition/admin/LearningPointsAdmin';
+import ProgressReportAdmin from './tuition/admin/ProgressReportAdmin';
 import { notificationService } from '../services/notificationService';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { Bell, BellOff, Loader2 } from 'lucide-react';
@@ -293,10 +296,10 @@ const Tuition = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 safe-area-inset pb-20 sm:pb-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 pb-20 sm:pb-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
         {/* Header */}
-        <div className="text-center pt-8 mb-8 sm:mb-12">
+        <div className="text-center mb-8 sm:mb-12">
           <GraduationCap className="w-12 h-12 sm:w-20 sm:h-20 text-indigo-600 mx-auto mb-4 sm:mb-6 animate-bounce-slow" />
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-3 px-2">
             Tuition Portal
@@ -330,7 +333,7 @@ const Tuition = () => {
             return (
               <div
                 key={tutee.id}
-                className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-5 sm:p-8 hover:shadow-2xl transition-smooth card-hover animate-fade-in-up touch-manipulation"
+                className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-5 sm:p-8 transition-smooth card-hover animate-fade-in-up touch-manipulation"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {isAdmin && (
@@ -344,7 +347,7 @@ const Tuition = () => {
                   className="w-full text-left group flex flex-col h-full"
                 >
                   <div className="flex items-center gap-4 mb-4">
-                    <div className={`p-4 ${gradientClass} rounded-2xl shadow-lg flex-shrink-0 group-hover:scale-110 transition-transform-smooth group-active:scale-95`}>
+                    <div className={`p-4 ${gradientClass} rounded-2xl flex-shrink-0 group-hover:scale-110 transition-transform-smooth group-active:scale-95`}>
                       <IconComponent className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -383,16 +386,16 @@ const Tuition = () => {
         {/* Admin Section (only in admin mode) */}
         {isAdmin && (
           <div className="space-y-6 animate-fade-in">
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
-              <div className="flex items-center gap-4 text-center sm:text-left">
-                <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
-                  <Shield className="w-8 h-8" />
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl sm:rounded-2xl p-3 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 border border-white/10">
+              <div className="flex items-center gap-2.5 sm:gap-4 text-center sm:text-left w-full sm:w-auto justify-center sm:justify-start">
+                <div className="p-2 sm:p-3 bg-white/20 rounded-xl sm:rounded-2xl backdrop-blur-md flex-shrink-0">
+                  <Shield className="w-5 h-5 sm:w-8 sm:h-8" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-xl sm:text-2xl">Admin Mode Active</h3>
+                  <h3 className="font-bold text-base sm:text-xl lg:text-2xl">Admin Mode Active</h3>
                 </div>
               </div>
-              <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 {notificationService.isSupported() && (
                   <button
                     onClick={handleAdminNotificationToggle}
@@ -405,7 +408,7 @@ const Tuition = () => {
                       clearTimeout((e.currentTarget as any)._longPressTimer);
                     }}
                     disabled={isCheckingAdminSub || isTogglingAdminSub || isAdminTestingNotification}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-lg flex-1 sm:flex-none justify-center relative overflow-hidden ${
+                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg flex-1 sm:flex-none justify-center relative overflow-hidden min-h-[44px] touch-manipulation ${
                       isAdminSubscribed 
                         ? 'bg-green-100 text-green-700 hover:bg-green-200' 
                         : 'bg-white/20 text-white hover:bg-white/30 border border-white/30'
@@ -417,35 +420,35 @@ const Tuition = () => {
                       <div className="absolute inset-0 bg-green-200/50 animate-pulse" />
                     )}
 
-                    <div className="relative flex items-center gap-2">
+                    <div className="relative flex items-center gap-1.5 sm:gap-2">
                       {isTogglingAdminSub || isAdminTestingNotification ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                       ) : isAdminSubscribed ? (
-                        <Bell className="w-5 h-5 fill-current" />
+                        <Bell className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                       ) : (
-                        <BellOff className="w-5 h-5" />
+                        <BellOff className="w-4 h-4 sm:w-5 sm:h-5" />
                       )}
-                      <span>
+                      <span className="whitespace-nowrap">
                         {isAdminTestingNotification 
                           ? 'Testing...' 
                           : isAdminSubscribed 
-                            ? 'Admin Notifs On' 
-                            : 'Enable Admin Notifs'}
+                            ? 'Notifs On' 
+                            : 'Notifs Off'}
                       </span>
                     </div>
                   </button>
                 )}
                 <button
                   onClick={handleExitAdmin}
-                  className="flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 font-bold rounded-xl hover:bg-purple-50 transition-all shadow-lg press-effect flex-1 sm:flex-none justify-center"
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 sm:py-3 bg-white text-indigo-600 font-bold text-xs sm:text-sm rounded-xl hover:bg-purple-50 transition-all shadow-lg press-effect flex-1 sm:flex-none justify-center min-h-[44px] touch-manipulation whitespace-nowrap"
                 >
-                  <LogOut className="w-5 h-5" />
-                  <span>Exit Admin</span>
+                  <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Exit</span>
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 gap-4 sm:gap-6">
               <BookingRequestsAdmin />
               <FeedbackAdmin />
               <EarningsAdmin 
@@ -459,6 +462,9 @@ const Tuition = () => {
               <NotificationAdmin />
               <SpellingQuizConfig tutees={tutees} />
               <GPTChatAdmin />
+              <LearningPointsAdmin tutees={tutees} />
+              <ProgressReportAdmin tutees={tutees} />
+              <AdminQuickLinks />
             </div>
           </div>
         )}

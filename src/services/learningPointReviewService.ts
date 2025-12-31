@@ -12,6 +12,11 @@ export interface LearningPointReview {
   sessionDate: string; // ISO date string (YYYY-MM-DD)
   lastReviewed: string; // ISO datetime string
   reviewCount: number;
+  reviewHistory?: Array<{
+    question: string;
+    answer: string;
+    feedback: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -21,6 +26,11 @@ export interface CreateOrUpdateReviewInput {
   sessionDate: string;
   lastReviewed: string;
   reviewCount: number;
+  reviewHistory?: Array<{
+    question: string;
+    answer: string;
+    feedback: string;
+  }>;
 }
 
 /**
@@ -128,6 +138,34 @@ No other text.`;
 };
 
 /**
+ * Fetch all learning point reviews across all tutees
+ */
+export const fetchAllLearningPointReviews = async (): Promise<LearningPointReview[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('learning_point_reviews')
+      .select('*')
+      .order('last_reviewed', { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map((item) => ({
+      id: item.id,
+      tuteeId: item.tutee_id,
+      sessionDate: item.session_date,
+      lastReviewed: item.last_reviewed,
+      reviewCount: item.review_count,
+      reviewHistory: item.review_history,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at,
+    }));
+  } catch (error) {
+    console.error('Error fetching all learning point reviews:', error);
+    throw error;
+  }
+};
+
+/**
  * Fetch all reviews for a tutee
  */
 export const fetchLearningPointReviews = async (
@@ -148,6 +186,7 @@ export const fetchLearningPointReviews = async (
       sessionDate: item.session_date,
       lastReviewed: item.last_reviewed,
       reviewCount: item.review_count,
+      reviewHistory: item.review_history,
       createdAt: item.created_at,
       updatedAt: item.updated_at,
     }));
@@ -179,6 +218,7 @@ export const upsertLearningPointReview = async (
         .update({
           last_reviewed: input.lastReviewed,
           review_count: input.reviewCount,
+          review_history: input.reviewHistory,
           updated_at: new Date().toISOString(),
         })
         .eq('id', existing.id)
@@ -193,6 +233,7 @@ export const upsertLearningPointReview = async (
         sessionDate: data.session_date,
         lastReviewed: data.last_reviewed,
         reviewCount: data.review_count,
+        reviewHistory: data.review_history,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       };
@@ -205,6 +246,7 @@ export const upsertLearningPointReview = async (
           session_date: input.sessionDate,
           last_reviewed: input.lastReviewed,
           review_count: input.reviewCount,
+          review_history: input.reviewHistory,
         })
         .select()
         .single();
@@ -217,6 +259,7 @@ export const upsertLearningPointReview = async (
         sessionDate: data.session_date,
         lastReviewed: data.last_reviewed,
         reviewCount: data.review_count,
+        reviewHistory: data.review_history,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       };

@@ -27,6 +27,7 @@ import { fetchTuteeComponents, TuteeComponent } from '../../services/componentSe
 import { notificationService } from '../../services/notificationService';
 import { supabase } from '../../config/supabase';
 import Skeleton from '../ui/Skeleton';
+import { getStatClasses } from '../../utils/colorUtils';
 
 interface TuteeDashboardProps {
   tutee: Tutee;
@@ -513,32 +514,11 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
             const bestScore = getBestScore(quiz.type);
             const totalAttempts = getTotalAttempts(quiz.type);
             
-            // Use tutee's color scheme
-            const primaryColor = tutee.colorScheme.primary;
+            // Use tutee's color scheme with safe utility classes
             const gradientClass = tutee.colorScheme.gradient;
-            
-            const getBgClass = () => {
-              if (primaryColor === 'pink' || primaryColor === 'purple') return 'bg-purple-50';
-              if (primaryColor === 'green' || primaryColor === 'teal') return 'bg-teal-50';
-              if (primaryColor === 'blue' || primaryColor === 'cyan') return 'bg-cyan-50';
-              if (primaryColor === 'indigo') return 'bg-indigo-50';
-              if (primaryColor === 'orange' || primaryColor === 'red') return 'bg-orange-50';
-              if (primaryColor === 'yellow' || primaryColor === 'amber') return 'bg-yellow-50';
-              return 'bg-purple-50';
-            };
-            
-            const getTextClass = () => {
-              if (primaryColor === 'pink' || primaryColor === 'purple') return 'text-purple-600';
-              if (primaryColor === 'green' || primaryColor === 'teal') return 'text-teal-600';
-              if (primaryColor === 'blue' || primaryColor === 'cyan') return 'text-cyan-600';
-              if (primaryColor === 'indigo') return 'text-indigo-600';
-              if (primaryColor === 'orange' || primaryColor === 'red') return 'text-orange-600';
-              if (primaryColor === 'yellow' || primaryColor === 'amber') return 'text-yellow-600';
-              return 'text-purple-600';
-            };
-
-            const bgClass = getBgClass();
-            const textClass = getTextClass();
+            const statClasses = getStatClasses(tutee.colorScheme.primary);
+            const bgClass = statClasses.bg;
+            const textClass = statClasses.text;
 
             return (
               <div 
@@ -612,31 +592,10 @@ const TuteeDashboard = ({ tutee: initialTutee, onBack }: TuteeDashboardProps) =>
               {availableQuizzes.map((quiz) => {
                 if (getTotalAttempts(quiz.type) === 0) return null;
                 
-                // Use tutee's color scheme
-                const primaryColor = tutee.colorScheme.primary;
-                
-                const getBgClass = () => {
-                  if (primaryColor === 'pink' || primaryColor === 'purple') return 'bg-purple-50';
-                  if (primaryColor === 'green' || primaryColor === 'teal') return 'bg-teal-50';
-                  if (primaryColor === 'blue' || primaryColor === 'cyan') return 'bg-cyan-50';
-                  if (primaryColor === 'indigo') return 'bg-indigo-50';
-                  if (primaryColor === 'orange' || primaryColor === 'red') return 'bg-orange-50';
-                  if (primaryColor === 'yellow' || primaryColor === 'amber') return 'bg-yellow-50';
-                  return 'bg-purple-50';
-                };
-                
-                const getTextClass = () => {
-                  if (primaryColor === 'pink' || primaryColor === 'purple') return 'text-purple-600';
-                  if (primaryColor === 'green' || primaryColor === 'teal') return 'text-teal-600';
-                  if (primaryColor === 'blue' || primaryColor === 'cyan') return 'text-cyan-600';
-                  if (primaryColor === 'indigo') return 'text-indigo-600';
-                  if (primaryColor === 'orange' || primaryColor === 'red') return 'text-orange-600';
-                  if (primaryColor === 'yellow' || primaryColor === 'amber') return 'text-yellow-600';
-                  return 'text-purple-600';
-                };
-
-                const bgClass = getBgClass();
-                const textClass = getTextClass();
+                // Use color utilities for safe class generation
+                const activityStatClasses = getStatClasses(tutee.colorScheme.primary);
+                const bgClass = activityStatClasses.bg;
+                const textClass = activityStatClasses.text;
                 const Icon = quiz.type === 'spelling' ? Clock : Trophy;
 
                 return (
