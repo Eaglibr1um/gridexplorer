@@ -87,8 +87,8 @@ const WorkProgressTracker = () => {
   const [notes, setNotes] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState<string>('');
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [notificationTime, setNotificationTime] = useState('20:00'); // Default 8pm
-  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [bellLongPressTimer, setBellLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isSendingTestNotification, setIsSendingTestNotification] = useState(false);
   const [importingData, setImportingData] = useState(false);
   const [showImportButton, setShowImportButton] = useState(false);
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
@@ -118,11 +118,6 @@ const WorkProgressTracker = () => {
   // Load initial data
   useEffect(() => {
     loadData();
-    // Load notification time preference
-    const savedTime = localStorage.getItem('workProgressNotificationTime');
-    if (savedTime) {
-      setNotificationTime(savedTime);
-    }
   }, []);
 
   // Check notification subscription status separately to avoid re-renders
@@ -288,6 +283,68 @@ const WorkProgressTracker = () => {
     } catch (error) {
       console.error('Error toggling notifications:', error);
       alert('Failed to update notification settings. Please try again.');
+    }
+  };
+
+  const handleSendTestNotification = async () => {
+    if (!notificationsEnabled || isSendingTestNotification) return;
+
+    setIsSendingTestNotification(true);
+    try {
+      // Calculate current streak for the test message
+      const currentStreak = streak.current;
+      
+      // Send a test notification using the browser's Notification API
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const title = `Test Notification! ${currentStreak > 0 ? `🔥 ${currentStreak} day streak` : '🔥'}`;
+        const body = currentStreak > 0 
+          ? `Keep up the amazing ${currentStreak}-day streak! This is what your 8 PM reminder will look like.`
+          : "This is what your 8 PM reminder will look like! Start logging to build a streak!";
+        
+        new Notification(title, {
+          body,
+          icon: '/logo.png',
+          badge: '/logo.png',
+          tag: 'work-progress-test',
+          requireInteraction: false,
+        });
+      }
+      
+      // Visual feedback
+      setTimeout(() => {
+        setIsSendingTestNotification(false);
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to send test notification:', error);
+      setIsSendingTestNotification(false);
+    }
+  };
+
+  const handleBellPressStart = () => {
+    if (!notificationsEnabled) return;
+    
+    const timer = setTimeout(() => {
+      handleSendTestNotification();
+    }, 800); // Long press = 800ms
+    
+    setBellLongPressTimer(timer);
+  };
+
+  const handleBellPressEnd = () => {
+    if (bellLongPressTimer) {
+      clearTimeout(bellLongPressTimer);
+      setBellLongPressTimer(null);
+    }
+  };
+
+  const handleBellClick = () => {
+    if (bellLongPressTimer) {
+      // Was a long press, don't toggle
+      clearTimeout(bellLongPressTimer);
+      setBellLongPressTimer(null);
+    } else {
+      // Normal click, toggle
+      handleNotificationToggle();
     }
   };
 
@@ -908,17 +965,28 @@ const WorkProgressTracker = () => {
               </span>
             </button>
             <button
-              onClick={() => setShowNotificationSettings(true)}
-              className={`rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all active:scale-95 flex flex-col items-center justify-center gap-2 border-2 ${
+              onClick={handleBellClick}
+              onMouseDown={handleBellPressStart}
+              onMouseUp={handleBellPressEnd}
+              onMouseLeave={handleBellPressEnd}
+              onTouchStart={handleBellPressStart}
+              onTouchEnd={handleBellPressEnd}
+              className={`rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all active:scale-95 flex flex-col items-center justify-center gap-2 border-2 relative ${
                 notificationsEnabled
                   ? 'bg-green-50 border-green-300 hover:border-green-400'
                   : 'bg-white border-gray-200 hover:border-purple-300'
-              }`}
+              } ${isSendingTestNotification ? 'ring-4 ring-green-400 scale-105' : ''}`}
+              title={notificationsEnabled ? "Click to disable • Long press to test" : "Click to enable notifications"}
             >
+              {isSendingTestNotification && (
+                <div className="absolute inset-0 rounded-2xl bg-green-500 opacity-20 animate-pulse" />
+              )}
               {notificationsEnabled ? (
                 <>
-                  <Bell className="w-8 h-8 text-green-600" />
-                  <span className="text-xs font-semibold text-green-600">{notificationTime}</span>
+                  <Bell className={`w-8 h-8 text-green-600 ${isSendingTestNotification ? 'animate-bounce' : ''}`} />
+                  <span className="text-xs font-semibold text-green-600">
+                    {isSendingTestNotification ? 'Sending...' : '8:00 PM'}
+                  </span>
                 </>
               ) : (
                 <>
@@ -1261,59 +1329,6 @@ const WorkProgressTracker = () => {
         </div>
       </AnimatedModal>
 
-      {/* Notification Settings Modal */}
-      <AnimatedModal
-        isOpen={showNotificationSettings}
-        onClose={() => setShowNotificationSettings(false)}
-        title="Notification Settings"
-        size="md"
-      >
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Daily Reminder Time (SGT)
-            </label>
-            <input
-              type="time"
-              value={notificationTime}
-              onChange={(e) => {
-                setNotificationTime(e.target.value);
-                localStorage.setItem('workProgressNotificationTime', e.target.value);
-              }}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 text-lg text-center font-bold"
-            />
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              You'll receive a reminder at this time if you haven't logged today's progress
-            </p>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-            <div>
-              <div className="font-semibold text-gray-900">Enable Notifications</div>
-              <div className="text-sm text-gray-500">Get daily reminders</div>
-            </div>
-            <button
-              onClick={handleNotificationToggle}
-              className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                notificationsEnabled ? 'bg-green-500' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                  notificationsEnabled ? 'translate-x-7' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-
-          <button
-            onClick={() => setShowNotificationSettings(false)}
-            className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-black hover:shadow-lg transition-all"
-          >
-            Done
-          </button>
-        </div>
-      </AnimatedModal>
 
       {/* Settings Modal */}
       <AnimatedModal

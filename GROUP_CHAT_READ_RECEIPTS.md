@@ -387,3 +387,4 @@ const MessageBubble = ({ message, currentUserId, participants }) => {
 - Cache read receipts in frontend state to reduce queries
 
 
+
