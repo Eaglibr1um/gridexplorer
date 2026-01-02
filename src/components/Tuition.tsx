@@ -28,10 +28,13 @@ import MessagingAdmin from './tuition/admin/MessagingAdmin';
 import AdminQuickLinks from './tuition/admin/AdminQuickLinks';
 import LearningPointsAdmin from './tuition/admin/LearningPointsAdmin';
 import ProgressReportAdmin from './tuition/admin/ProgressReportAdmin';
+import LandingPageSettings from './tuition/admin/LandingPageSettings';
 import { notificationService } from '../services/notificationService';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { Bell, BellOff, Loader2 } from 'lucide-react';
 import { supabase } from '../config/supabase';
+import { getLandingPagePreference } from '../utils/landingPagePreference';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   BookOpen,
@@ -64,6 +67,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 const Tuition = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [selectedTutee, setSelectedTutee] = useState<Tutee | null>(null);
   const [showPinModal, setShowPinModal] = useState(false);
   const [pendingTutee, setPendingTutee] = useState<Tutee | null>(null);
@@ -76,6 +81,18 @@ const Tuition = () => {
   const [isCheckingAdminSub, setIsCheckingAdminSub] = useState(true);
   const [isTogglingAdminSub, setIsTogglingAdminSub] = useState(false);
   const [isAdminTestingNotification, setIsAdminTestingNotification] = useState(false);
+
+  // Auto-redirect based on landing page preference (bypass with ?stay=true)
+  useEffect(() => {
+    const shouldStay = searchParams.get('stay') === 'true';
+    if (shouldStay) return; // Don't redirect if ?stay=true
+    
+    const preference = getLandingPagePreference();
+    // Only redirect if preference is explicitly set AND it's not /tuition
+    if (preference !== null && preference !== '/tuition') {
+      navigate(preference, { replace: true });
+    }
+  }, [navigate, searchParams]);
 
   // Check admin subscription status
   useEffect(() => {
@@ -464,6 +481,7 @@ const Tuition = () => {
               <GPTChatAdmin />
               <LearningPointsAdmin tutees={tutees} />
               <ProgressReportAdmin tutees={tutees} />
+              <LandingPageSettings />
               <AdminQuickLinks />
             </div>
           </div>

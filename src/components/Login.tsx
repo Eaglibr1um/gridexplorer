@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { MapPin, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { getLandingPagePreference } from '../utils/landingPagePreference'
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('')
@@ -78,9 +79,10 @@ const Login: React.FC = () => {
       // Start redirect animation
       setShowRedirect(true)
       
-      // Navigate after animation
+      // Navigate after animation - check for custom landing page
       setTimeout(() => {
-        navigate('/explorer')
+        const landingPage = getLandingPagePreference()
+        navigate(landingPage || '/explorer') // Default to /explorer only after login
       }, 1000)
       
     } catch (error: any) {
@@ -99,9 +101,10 @@ const Login: React.FC = () => {
       // Start redirect animation
       setShowRedirect(true)
       
-      // Navigate after animation
+      // Navigate after animation - check for custom landing page
       setTimeout(() => {
-        navigate('/explorer')
+        const landingPage = getLandingPagePreference()
+        navigate(landingPage || '/explorer') // Default to /explorer only after login
       }, 1000)
       
     } catch (error: any) {

@@ -39,9 +39,9 @@ const QUICK_LINKS = [
     title: 'Work Progress',
     description: 'Track daily tasks & progress',
     icon: Activity,
-    href: '/work_progress_tracker.html',
+    href: '/work-progress',
     color: 'from-blue-500 to-indigo-600',
-    external: true
+    external: false
   },
   {
     title: 'Learning Points',
