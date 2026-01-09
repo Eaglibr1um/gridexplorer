@@ -12,6 +12,28 @@ export interface SharedFile {
   createdAt: string;
 }
 
+export interface SharedResource {
+  id: string;
+  tuteeId: string;
+  resourceType: 'file' | 'link';
+  
+  // File-specific (required when resourceType='file')
+  fileName?: string;
+  filePath?: string;
+  fileSize?: number;
+  fileType?: string;
+  
+  // Link-specific (required when resourceType='link')
+  url?: string;
+  title?: string;
+  description?: string;
+  thumbnailUrl?: string;
+  
+  // Common
+  uploadedBy: string;
+  createdAt: string;
+}
+
 const BUCKET_NAME = 'shared-files';
 
 /**
@@ -21,7 +43,7 @@ export const uploadFile = async (
   file: File,
   tuteeId: string,
   uploadedBy: string
-): Promise<SharedFile> => {
+): Promise<SharedResource> => {
   try {
     // 1. Upload to Storage
     const fileExt = file.name.split('.').pop();
@@ -68,10 +90,12 @@ export const uploadFile = async (
     return {
       id: data.id,
       tuteeId: data.tutee_id,
+      resourceType: 'file',
       fileName: data.file_name,
       filePath: data.file_path,
       fileSize: data.file_size,
       fileType: data.file_type,
+      title: data.file_name,
       uploadedBy: data.uploaded_by,
       createdAt: data.created_at,
     };
@@ -82,9 +106,9 @@ export const uploadFile = async (
 };
 
 /**
- * Fetch all shared files for a tutee
+ * Fetch all shared resources (files and links) for a tutee
  */
-export const fetchSharedFiles = async (tuteeId: string): Promise<SharedFile[]> => {
+export const fetchSharedFiles = async (tuteeId: string): Promise<SharedResource[]> => {
   try {
     const { data, error } = await supabase
       .from('shared_files')
@@ -97,40 +121,104 @@ export const fetchSharedFiles = async (tuteeId: string): Promise<SharedFile[]> =
     return (data || []).map((item) => ({
       id: item.id,
       tuteeId: item.tutee_id,
+      resourceType: item.resource_type || 'file', // Default to 'file' for backward compatibility
+      // File fields
       fileName: item.file_name,
       filePath: item.file_path,
       fileSize: item.file_size,
       fileType: item.file_type,
+      // Link fields
+      url: item.url,
+      title: item.title || item.file_name, // Use file_name as fallback title
+      description: item.description,
+      thumbnailUrl: item.thumbnail_url,
+      // Common
       uploadedBy: item.uploaded_by,
       createdAt: item.created_at,
     }));
   } catch (error) {
-    console.error('Error fetching shared files:', error);
+    console.error('Error fetching shared resources:', error);
     throw error;
   }
 };
 
 /**
- * Delete a shared file from database and storage
+ * Delete a shared resource (file or link) from database and storage
  */
-export const deleteSharedFile = async (file: SharedFile): Promise<void> => {
+export const deleteSharedFile = async (resource: SharedResource): Promise<void> => {
   try {
-    // 1. Remove from Storage
-    const { error: storageError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .remove([file.filePath]);
+    // 1. Remove from Storage (only for files)
+    if (resource.resourceType === 'file' && resource.filePath) {
+      const { error: storageError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .remove([resource.filePath]);
 
-    if (storageError) throw storageError;
+      if (storageError) throw storageError;
+    }
 
     // 2. Remove from Database
     const { error: dbError } = await supabase
       .from('shared_files')
       .delete()
-      .eq('id', file.id);
+      .eq('id', resource.id);
 
     if (dbError) throw dbError;
   } catch (error) {
-    console.error('Error deleting file:', error);
+    console.error('Error deleting resource:', error);
+    throw error;
+  }
+};
+
+/**
+ * Add a shared link
+ */
+export const addLink = async (
+  url: string,
+  title: string,
+  tuteeId: string,
+  uploadedBy: string,
+  description?: string
+): Promise<SharedResource> => {
+  try {
+    const { data, error } = await supabase
+      .from('shared_files')
+      .insert({
+        tutee_id: tuteeId,
+        resource_type: 'link',
+        url: url,
+        title: title,
+        description: description,
+        uploaded_by: uploadedBy,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Notify Admin of new link (only if added by a student)
+    if (uploadedBy !== 'Admin') {
+      notificationService.notify({
+        type: 'new_file',
+        tuteeId: 'admin',
+        title: 'New Link Shared! 🔗',
+        message: `${uploadedBy} shared a new link: "${title}"`,
+        url: '/tuition'
+      });
+    }
+
+    return {
+      id: data.id,
+      tuteeId: data.tutee_id,
+      resourceType: 'link',
+      url: data.url,
+      title: data.title,
+      description: data.description,
+      thumbnailUrl: data.thumbnail_url,
+      uploadedBy: data.uploaded_by,
+      createdAt: data.created_at,
+    };
+  } catch (error) {
+    console.error('Error adding link:', error);
     throw error;
   }
 };

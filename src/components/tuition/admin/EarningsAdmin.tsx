@@ -141,7 +141,46 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
   const loadAllGroupsEarnings = async () => {
     try {
       setLoading(true);
-      const records = await fetchAllEarningsRecordsByMonth(currentYear, currentMonth);
+      
+      // First, fetch existing records
+      let records = await fetchAllEarningsRecordsByMonth(currentYear, currentMonth);
+      const tuteeIdsWithRecords = new Set(records.map(r => r.tuteeId));
+      
+      // Generate records for tutees that have sessions but no record yet
+      const startDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
+      const endDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-31`;
+      
+      const missingRecords = await Promise.all(
+        tutees
+          .filter(tutee => !tuteeIdsWithRecords.has(tutee.id))
+          .map(async (tutee) => {
+            try {
+              // Fetch sessions for this tutee for current month
+              const sessions = await fetchTuitionSessions(tutee.id, startDate, endDate);
+              
+              // If there are sessions, create the record
+              if (sessions.length > 0) {
+                const record = await upsertEarningsRecord(
+                  tutee.id,
+                  currentYear,
+                  currentMonth,
+                  sessions
+                );
+                return record;
+              }
+              return null;
+            } catch (err) {
+              console.error(`Failed to generate record for ${tutee.name}:`, err);
+              return null;
+            }
+          })
+      );
+      
+      // Add newly created records to the list
+      const newRecords = missingRecords.filter((r): r is EarningsRecord => r !== null);
+      records = [...records, ...newRecords];
+      
+      // Calculate totals
       const totalAmount = records.reduce((sum, r) => sum + r.totalAmount, 0);
       const totalSessions = records.reduce((sum, r) => sum + r.totalSessions, 0);
       const totalHours = records.reduce((sum, r) => sum + r.totalHours, 0);
@@ -286,8 +325,10 @@ const EarningsAdmin = ({ tutees, initialTuteeId = null, onTuteeSelectChange }: E
   }, [settingsForm.messageTemplate, settingsForm.feePerHour, previewSessions, selectedTutee]);
 
   const handleTuteeSelect = (tuteeId: string | null) => {
-    setSelectedTuteeId(tuteeId);
-    onTuteeSelectChange?.(tuteeId);
+    // Toggle: if clicking the same tutee, unselect it
+    const newTuteeId = selectedTuteeId === tuteeId ? null : tuteeId;
+    setSelectedTuteeId(newTuteeId);
+    onTuteeSelectChange?.(newTuteeId);
   };
 
   const loadEarningsData = async () => {
