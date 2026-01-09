@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
   BookOpen, Plus, Edit2, Trash2, Sparkles, X, Loader2, Save, BarChart3, Search, User, GraduationCap, CheckCircle2, AlertCircle,
-  Star, Heart, Zap, Target, Award, Trophy, Lightbulb, Brain, Rocket, BookMarked, School, PenTool, Calculator, FlaskConical, Atom, Music, Palette, Camera, Gamepad2, Code, Globe, Coffee, Smile
+  Star, Heart, Zap, Target, Award, Trophy, Lightbulb, Brain, Rocket, BookMarked, School, PenTool, Calculator, FlaskConical, Atom, Music, Palette, Camera, Gamepad2, Code, Globe, Coffee, Smile, Check, RotateCcw, Download, FileText, FileJson, FileSpreadsheet, Printer
 } from 'lucide-react';
 
 // Icon mapping for tutees
@@ -36,6 +36,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 import { SpellingWord, generateSpellingQuestions, WordStatistics, getWordStatistics, SpellingQuestionRecord, saveGeneratedQuestions, confirmQuestions, deleteSpellingQuestion, fetchActiveQuestionsWithDetails, updateSpellingQuestion, generateWordHints } from '../../../services/spellingQuizService';
 import { fetchSpellingWords, createSpellingWord, updateSpellingWord, deleteSpellingWord } from '../../../services/spellingQuizService';
+import { fetchStudentsForTutee } from '../../../services/tuteeService';
+import { exportWordsAsCSV, exportWordsAsText, exportWordsAsJSON, exportPracticeSheet } from '../../../utils/exportUtils';
 import { Tutee } from '../../../types/tuition';
 import ConfirmationModal from '../../ui/ConfirmationModal';
 import AnimatedCard from '../../ui/AnimatedCard';
@@ -53,6 +55,7 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
   const [words, setWords] = useState<SpellingWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [loadedStudents, setLoadedStudents] = useState<{ value: string; label: string }[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [batchWordsInput, setBatchWordsInput] = useState('');
@@ -73,6 +76,8 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
   const [activeQuestions, setActiveQuestions] = useState<SpellingQuestionRecord[]>([]);
   const [editingQuestion, setEditingQuestion] = useState<SpellingQuestionRecord | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showCompletedWords, setShowCompletedWords] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   
   const [questionEditForm, setQuestionEditForm] = useState({
     sentence: '',
@@ -87,22 +92,41 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
 
   const selectedTutee = useMemo(() => tutees.find(t => t.id === selectedTuteeId), [tutees, selectedTuteeId]);
 
-  const studentOptions = useMemo(() => {
-    if (!selectedTutee) return [];
-    if (selectedTutee.id === 'primary-school') {
-      return [
-        { value: 'rayne', label: 'Rayne' },
-        { value: 'jeffrey', label: 'Jeffrey' },
-      ];
-    }
-    return [{ value: selectedTutee.name, label: selectedTutee.name }];
-  }, [selectedTutee]);
-
+  // Load students dynamically from database
   useEffect(() => {
-    if (studentOptions.length > 0 && !selectedStudent) {
-      setSelectedStudent(studentOptions[0].value);
-    } else if (studentOptions.length > 0 && !studentOptions.some(opt => opt.value === selectedStudent)) {
-      setSelectedStudent(studentOptions[0].value);
+    const loadStudents = async () => {
+      if (!selectedTuteeId) return;
+      
+      try {
+        const students = await fetchStudentsForTutee(selectedTuteeId);
+        const options = students.map(s => ({
+          value: s.studentName.toLowerCase(),
+          label: s.studentName.charAt(0).toUpperCase() + s.studentName.slice(1)
+        }));
+        setLoadedStudents(options);
+      } catch (err) {
+        console.error('Error loading students:', err);
+        setLoadedStudents([]);
+      }
+    };
+    
+    loadStudents();
+  }, [selectedTuteeId]);
+
+  const studentOptions = useMemo(() => {
+    return loadedStudents;
+  }, [loadedStudents]);
+
+  // Set selectedStudent when studentOptions changes
+  useEffect(() => {
+    if (studentOptions.length > 0) {
+      // If no student selected or current selection is invalid, select the first one
+      if (!selectedStudent || !studentOptions.some(opt => opt.value === selectedStudent)) {
+        setSelectedStudent(studentOptions[0].value);
+      }
+    } else {
+      // No students available, clear selection
+      setSelectedStudent('');
     }
   }, [studentOptions, selectedStudent]);
 
@@ -113,6 +137,21 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
       loadActiveQuestions();
     }
   }, [selectedTuteeId, selectedStudent]);
+
+  // Close export menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showExportMenu) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.export-menu-container')) {
+          setShowExportMenu(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showExportMenu]);
 
   const loadActiveQuestions = async () => {
     try {
@@ -139,7 +178,7 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
     try {
       setLoading(true);
       setError('');
-      const data = await fetchSpellingWords(selectedTuteeId, selectedStudent);
+      const data = await fetchSpellingWords(selectedTuteeId, selectedStudent, true); // Always fetch all words
       setWords(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load spelling words. Please try again.');
@@ -194,6 +233,21 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
       setNewWord({ word: '', hint: '' });
     } catch (err: any) {
       setError(err.message || 'Failed to update word. Please try again.');
+      console.error(err);
+    }
+  };
+
+  const handleToggleWordStatus = async (wordId: string, currentStatus: 'active' | 'completed') => {
+    try {
+      const newStatus = currentStatus === 'active' ? 'completed' : 'active';
+      await updateSpellingWord({
+        id: wordId,
+        status: newStatus,
+      });
+      await loadWords();
+      await loadStatistics();
+    } catch (err: any) {
+      setError(err.message || 'Failed to update word status. Please try again.');
       console.error(err);
     }
   };
@@ -304,19 +358,22 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
   };
 
   const handleGenerateQuestions = async () => {
-    if (filteredWords.length === 0) {
-      setError('Please add some words first before generating questions');
+    // Only use ACTIVE words for quiz generation
+    const activeWords = words.filter(w => w.status === 'active');
+    
+    if (activeWords.length === 0) {
+      setError('Please add some active words first before generating questions');
       return;
     }
 
     try {
       setIsGenerating(true);
       setError('');
-      const wordList = filteredWords.map(w => w.word);
-      const questions = await generateSpellingQuestions(wordList, selectedTuteeId, selectedStudent, filteredWords.length);
+      const wordList = activeWords.map(w => w.word);
+      const questions = await generateSpellingQuestions(wordList, selectedTuteeId, selectedStudent, activeWords.length);
       
       // Save questions as draft first
-      const savedQuestions = await saveGeneratedQuestions(questions, filteredWords, selectedTuteeId, selectedStudent);
+      const savedQuestions = await saveGeneratedQuestions(questions, activeWords, selectedTuteeId, selectedStudent);
       setGeneratedQuestions(savedQuestions);
       setSelectedQuestions(new Set(savedQuestions.map(q => q.id))); // Select all by default
       setShowPreview(true);
@@ -364,12 +421,21 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
   };
 
   const filteredWords = useMemo(() => {
-    if (!searchTerm.trim()) return words;
-    return words.filter(w => 
-      w.word.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      w.hint.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [words, searchTerm]);
+    // Filter by status first
+    let filtered = showCompletedWords 
+      ? words.filter(w => w.status === 'completed')
+      : words.filter(w => w.status === 'active');
+    
+    // Then filter by search term
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(w => 
+        w.word.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        w.hint.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    return filtered;
+  }, [words, searchTerm, showCompletedWords]);
 
   const filteredTutees = useMemo(() => {
     if (!groupSearchTerm.trim()) return tutees;
@@ -508,6 +574,32 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Main Word Management */}
           <div className="lg:col-span-8">
+            {/* Status Toggle */}
+            <div className="flex justify-center mb-4">
+              <div className="inline-flex rounded-xl bg-gray-100 p-1">
+                <button
+                  onClick={() => setShowCompletedWords(false)}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                    !showCompletedWords
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Active Words ({words.filter(w => w.status === 'active').length})
+                </button>
+                <button
+                  onClick={() => setShowCompletedWords(true)}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                    showCompletedWords
+                      ? 'bg-white text-green-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Completed Words ({words.filter(w => w.status === 'completed').length})
+                </button>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between mb-6">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -520,9 +612,71 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                 />
               </div>
               <div className="flex gap-2 ml-4">
+                {/* Export Dropdown */}
+                <div className="relative export-menu-container">
+                  <button
+                    onClick={() => setShowExportMenu(!showExportMenu)}
+                    disabled={words.length === 0}
+                    className="flex items-center gap-2 px-4 py-3 bg-white border-2 border-indigo-200 text-indigo-600 rounded-2xl hover:bg-indigo-50 transition-all font-bold text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="hidden sm:inline">Export</span>
+                  </button>
+                  
+                  {showExportMenu && words.length > 0 && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
+                      <div className="p-2">
+                        <button
+                          onClick={() => {
+                            exportWordsAsCSV(filteredWords, wordStats, selectedStudent);
+                            setShowExportMenu(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-left text-gray-700 hover:bg-indigo-50 rounded-lg transition-all"
+                        >
+                          <FileSpreadsheet className="w-4 h-4 text-green-600" />
+                          <span className="text-sm font-medium">Excel (CSV)</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            exportWordsAsText(filteredWords, wordStats, selectedStudent, true);
+                            setShowExportMenu(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-left text-gray-700 hover:bg-indigo-50 rounded-lg transition-all"
+                        >
+                          <FileText className="w-4 h-4 text-blue-600" />
+                          <span className="text-sm font-medium">Study List (TXT)</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            exportPracticeSheet(filteredWords, selectedStudent);
+                            setShowExportMenu(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-left text-gray-700 hover:bg-indigo-50 rounded-lg transition-all"
+                        >
+                          <Printer className="w-4 h-4 text-purple-600" />
+                          <span className="text-sm font-medium">Practice Sheet</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            exportWordsAsJSON(filteredWords, wordStats, selectedStudent);
+                            setShowExportMenu(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-left text-gray-700 hover:bg-indigo-50 rounded-lg transition-all"
+                        >
+                          <FileJson className="w-4 h-4 text-orange-600" />
+                          <span className="text-sm font-medium">Backup (JSON)</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
                 <button
                   onClick={handleGenerateQuestions}
-                  disabled={isGenerating || words.length === 0}
+                  disabled={isGenerating || words.filter(w => w.status === 'active').length === 0}
                   className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl hover:opacity-90 transition-all font-bold text-sm shadow-md disabled:opacity-50 disabled:grayscale"
                 >
                   {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
@@ -565,7 +719,7 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                   <div className="w-12 sm:w-24 text-center pr-1 sm:pr-2">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Acc.</span>
                   </div>
-                  <div className="w-16 sm:w-24"></div> {/* Actions spacer */}
+                  <div className="w-24 sm:w-32"></div> {/* Actions spacer - increased width */}
                 </div>
                 <div className="max-h-[500px] overflow-y-auto custom-scrollbar divide-y divide-gray-50">
                   {filteredWords.map((word) => {
@@ -576,7 +730,14 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                         className="group flex items-center justify-between p-2.5 sm:p-4 hover:bg-indigo-50/30 transition-all"
                       >
                         <div className="flex-1 min-w-0 pr-2">
-                          <h4 className="text-xs sm:text-base font-bold text-gray-800 tracking-tight truncate">{word.word}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs sm:text-base font-bold text-gray-800 tracking-tight truncate">{word.word}</h4>
+                            {word.status === 'completed' && (
+                              <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[8px] font-bold uppercase tracking-wider">
+                                Done
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[10px] text-gray-400 font-medium truncate md:hidden">{word.hint}</p>
                         </div>
                         
@@ -597,7 +758,22 @@ const SpellingQuizConfig = ({ tutees, initialTuteeId }: SpellingQuizConfigProps)
                           )}
                         </div>
 
-                        <div className="w-16 sm:w-24 flex justify-end gap-1">
+                        <div className="w-24 sm:w-32 flex justify-end gap-1">
+                          <button
+                            onClick={() => handleToggleWordStatus(word.id, word.status)}
+                            className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all shadow-sm border ${
+                              word.status === 'active'
+                                ? 'text-gray-400 hover:text-green-600 hover:bg-white border-transparent hover:border-green-100'
+                                : 'text-gray-400 hover:text-indigo-600 hover:bg-white border-transparent hover:border-indigo-100'
+                            }`}
+                            title={word.status === 'active' ? 'Mark as completed' : 'Mark as active'}
+                          >
+                            {word.status === 'active' ? (
+                              <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            ) : (
+                              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            )}
+                          </button>
                           <button
                             onClick={() => startEdit(word)}
                             className="p-1.5 sm:p-2 text-gray-400 hover:text-indigo-600 hover:bg-white rounded-lg sm:rounded-xl transition-all shadow-sm border border-transparent hover:border-indigo-100"

@@ -29,6 +29,7 @@ import AdminQuickLinks from './tuition/admin/AdminQuickLinks';
 import LearningPointsAdmin from './tuition/admin/LearningPointsAdmin';
 import ProgressReportAdmin from './tuition/admin/ProgressReportAdmin';
 import LandingPageSettings from './tuition/admin/LandingPageSettings';
+import StudentManagement from './tuition/admin/StudentManagement';
 import { notificationService } from '../services/notificationService';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { Bell, BellOff, Loader2 } from 'lucide-react';
@@ -478,6 +479,7 @@ const Tuition = () => {
               <MessagingAdmin tutees={tutees} />
               <NotificationAdmin />
               <SpellingQuizConfig tutees={tutees} />
+              <StudentManagement tutees={tutees} />
               <GPTChatAdmin />
               <LearningPointsAdmin tutees={tutees} />
               <ProgressReportAdmin tutees={tutees} />

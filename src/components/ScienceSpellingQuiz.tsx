@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Sparkles, Award, RefreshCw, Trophy, Users, Keyboard, PenTool, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Sparkles, Award, RefreshCw, Trophy, Users, Keyboard, PenTool, X, AlertCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { fetchActiveQuestions, recordWordAttempt, fetchSpellingWords, SpellingQuestion } from '../services/spellingQuizService';
+import { saveQuizRecord, fetchQuizRecords } from '../services/quizRecordService';
+import { fetchStudentsForTutee } from '../services/tuteeService';
 import { Tutee } from '../types/tuition';
 
 interface ScienceSpellingQuizProps {
@@ -93,11 +95,33 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
   const [allStrokes, setAllStrokes] = useState<any[]>([]);
   const [isRecognizing, setIsRecognizing] = useState(false);
   const [wordIdMap, setWordIdMap] = useState<Map<string, string>>(new Map()); // Map answer -> wordId for statistics tracking
+  const [quizStartTime, setQuizStartTime] = useState<Date | null>(null);
+  const [questionsAttempted, setQuestionsAttempted] = useState<any[]>([]);
+  const [studentNames, setStudentNames] = useState<string[]>([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(true);
 
-  const studentNames = useMemo(() => {
-    if (tutee.id === 'primary-school') return ['Rayne', 'Jeffrey'];
-    return [tutee.name];
-  }, [tutee]);
+  // Fetch students for this tutee
+  useEffect(() => {
+    const loadStudents = async () => {
+      try {
+        setIsLoadingStudents(true);
+        const students = await fetchStudentsForTutee(tutee.id);
+        const names = students.map(s => {
+          // Capitalize first letter for display
+          return s.studentName.charAt(0).toUpperCase() + s.studentName.slice(1);
+        });
+        setStudentNames(names);
+      } catch (error) {
+        console.error('Error loading students:', error);
+        // Fallback to tutee name if no students found
+        setStudentNames([tutee.name]);
+      } finally {
+        setIsLoadingStudents(false);
+      }
+    };
+
+    loadStudents();
+  }, [tutee.id, tutee.name]);
 
   // Prevent accidental page refresh/leave during active quiz
   useEffect(() => {
@@ -124,17 +148,40 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem(`spellingRecords_${tutee.id}`);
-    if (saved) {
-      setRecords(JSON.parse(saved));
-    } else {
-      // Initialize empty records for each student
-      const initialRecords: Record<string, any[]> = {};
-      studentNames.forEach(name => {
-        initialRecords[name.toLowerCase()] = [];
-      });
-      setRecords(initialRecords);
-    }
+    const loadRecords = async () => {
+      try {
+        // Fetch records from Supabase for this tutee
+        const supabaseRecords = await fetchQuizRecords(tutee.id);
+        
+        // Group records by student name
+        const groupedRecords: Record<string, any[]> = {};
+        studentNames.forEach(name => {
+          const studentKey = name.toLowerCase();
+          const filteredRecords = supabaseRecords.filter(r => r.studentName?.toLowerCase() === studentKey);
+          
+          groupedRecords[studentKey] = filteredRecords.map(r => ({
+            date: r.createdAt ? new Date(r.createdAt).toLocaleString() : '',
+            timestamp: r.createdAt || '',
+            score: r.score,
+            total: r.totalQuestions,
+            percentage: r.percentage,
+            timeSpent: r.timeSpent
+          }));
+        });
+        
+        setRecords(groupedRecords);
+      } catch (error) {
+        console.error('Error loading quiz records:', error);
+        // Fallback to empty records
+        const initialRecords: Record<string, any[]> = {};
+        studentNames.forEach(name => {
+          initialRecords[name.toLowerCase()] = [];
+        });
+        setRecords(initialRecords);
+      }
+    };
+    
+    loadRecords();
   }, [tutee.id, studentNames]);
 
   // Timer effect - countdown and auto-submit (30s total per question, not per attempt)
@@ -373,6 +420,8 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
   const selectStudent = async (studentName: string) => {
     const studentKey = studentName.toLowerCase();
     setSelectedStudent(studentKey);
+    setQuizStartTime(new Date()); // Start tracking time
+    setQuestionsAttempted([]); // Reset questions attempted
     
     try {
       // Try to load active questions from database
@@ -482,6 +531,17 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
 
   const nextQuestion = () => {
     setTimerActive(false); // Stop current timer
+    
+    // Track this question before moving on
+    const questionData = {
+      question: questions[currentQ].sentence,
+      answer: questions[currentQ].answer,
+      userAnswer: userAnswer,
+      isCorrect: userAnswer.trim().toLowerCase() === questions[currentQ].answer.trim().toLowerCase(),
+      attemptCount: attempts + 1
+    };
+    setQuestionsAttempted(prev => [...prev, questionData]);
+    
     if (currentQ < questions.length - 1) {
       setCurrentQ(currentQ + 1);
       setUserAnswer('');
@@ -493,19 +553,53 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
       setTimerActive(true); // Start timer for next question
       clearCanvas(); // Clear handwriting canvas and strokes
     } else if (selectedStudent) {
+      // Quiz completed! Calculate time and save
+      const endTime = new Date();
+      const timeSpentSeconds = quizStartTime ? Math.floor((endTime.getTime() - quizStartTime.getTime()) / 1000) : undefined;
       const percentage = Math.round((score / questions.length) * 100);
+      
+      // Track the final question
+      const finalQuestionData = {
+        question: questions[currentQ].sentence,
+        answer: questions[currentQ].answer,
+        userAnswer: userAnswer,
+        isCorrect: userAnswer.trim().toLowerCase() === questions[currentQ].answer.trim().toLowerCase(),
+        attemptCount: attempts + 1
+      };
+      const allQuestionsAttempted = [...questionsAttempted, finalQuestionData];
+      
+      // Update local state
       const newRecords = { ...records };
       const studentKey = selectedStudent;
       if (!newRecords[studentKey]) newRecords[studentKey] = [];
-      newRecords[studentKey].push({
-        date: new Date().toLocaleString(),
-        timestamp: new Date().toISOString(),
+      const newRecord = {
+        date: endTime.toLocaleString(),
+        timestamp: endTime.toISOString(),
         score: score,
         total: questions.length,
-        percentage: percentage
-      });
+        percentage: percentage,
+        timeSpent: timeSpentSeconds
+      };
+      newRecords[studentKey].push(newRecord);
       setRecords(newRecords);
-      localStorage.setItem(`spellingRecords_${tutee.id}`, JSON.stringify(newRecords));
+      
+      // Save to Supabase with full data
+      saveQuizRecord({
+        tuteeId: tutee.id,
+        studentName: selectedStudent,
+        score: score,
+        totalQuestions: questions.length,
+        percentage: percentage,
+        timeSpent: timeSpentSeconds,
+        startTime: quizStartTime?.toISOString(),
+        endTime: endTime.toISOString(),
+        questionsAttempted: allQuestionsAttempted
+      }).then(() => {
+        console.log('Quiz record saved to Supabase successfully!');
+      }).catch((error) => {
+        console.error('Failed to save quiz record to Supabase:', error);
+      });
+      
       setCompleted(true);
     }
   };
@@ -535,17 +629,44 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
   const focusBorderPrimary = `focus:border-${primaryColor}-500`;
   const hoverBgPrimary = `hover:bg-${primaryColor}-700`;
 
+  // Show loading state while fetching students
+  if (isLoadingStudents) {
+    return (
+      <div className={`min-h-screen bg-gradient-to-br from-${primaryColor}-100 to-${secondaryColor}-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset`}>
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-5 sm:p-6 md:p-8 max-w-md w-full text-center mx-2">
+          <RefreshCw className={`w-16 h-16 ${textPrimary} mx-auto mb-4 animate-spin`} />
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Loading Students...</h2>
+          <p className="text-gray-600">Please wait while we fetch the student list.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!selectedStudent || questions.length === 0) {
     if (selectedStudent && questions.length === 0) {
       return (
         <div className={`min-h-screen bg-gradient-to-br from-${primaryColor}-100 to-${secondaryColor}-100 p-4 sm:p-6 md:p-8 flex items-center justify-center safe-area-inset`}>
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-5 sm:p-6 md:p-8 max-w-md w-full text-center mx-2">
-            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${textPrimary.replace('text-', 'border-')} mx-auto mb-4`}></div>
-            <p className="text-gray-600">Preparing your quiz...</p>
-            <p className="text-xs text-gray-400 mt-2">If this takes too long, ensure words are added in the config.</p>
+            <AlertCircle className={`w-16 h-16 ${textPrimary} mx-auto mb-4`} />
+            <h2 className="text-xl font-bold text-gray-800 mb-2">No Quiz Questions Available</h2>
+            <p className="text-gray-600 mb-4">Words have been added, but quiz questions haven't been generated yet.</p>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 text-left">
+              <p className="text-sm font-bold text-blue-800 mb-2">📝 To generate questions:</p>
+              <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+                <li>Go to Admin → Spelling Quiz Manager</li>
+                <li>Select {selectedStudent.charAt(0).toUpperCase() + selectedStudent.slice(1)}</li>
+                <li>Click the "AI Questions" button</li>
+                <li>Review and confirm the generated questions</li>
+              </ol>
+            </div>
+            
             <button 
-              onClick={() => setSelectedStudent(null)}
-              className={`${textPrimary} font-bold text-sm`}
+              onClick={() => {
+                setSelectedStudent(null);
+                if (onBack) onBack();
+              }}
+              className={`w-full px-6 py-3 bg-gradient-to-r from-${primaryColor}-600 to-${secondaryColor}-600 text-white rounded-xl font-bold hover:opacity-90 transition-all`}
             >
               Go Back
             </button>
@@ -667,9 +788,15 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
       <div className="bg-white rounded-[2rem] sm:rounded-2xl shadow-xl sm:shadow-2xl p-4 sm:p-6 md:p-8 max-w-2xl w-full mx-2">
         <div className="flex flex-row justify-between items-center gap-3 mb-4 sm:mb-6">
             <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-              {/* Circular Timer - Left Side */}
+              {/* Circular Timer - Left Side (Clickable to add 15 seconds) */}
               {timerActive && !(showFeedback && (feedbackMsg.includes('Correct') || attempts >= 3)) && (
-                <div className="relative w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 flex-shrink-0">
+                <button
+                  onClick={() => {
+                    setTimeLeft(prev => prev + 15);
+                  }}
+                  className="relative w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 flex-shrink-0 cursor-pointer hover:scale-110 active:scale-95 transition-transform group"
+                  title="Click to add 15 seconds"
+                >
                   <svg className="transform -rotate-90 w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16" viewBox="0 0 64 64">
                     <circle
                       cx="32"
@@ -697,7 +824,7 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
                       strokeLinecap="round"
                     />
                   </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <span className={`text-xs sm:text-base md:text-lg font-bold ${
                       timeLeft > 20 ? 'text-green-600' :
                       timeLeft > 10 ? 'text-yellow-600' :
@@ -706,7 +833,11 @@ const ScienceSpellingQuiz = ({ tutee, onBack }: ScienceSpellingQuizProps) => {
                       {timeLeft}
                     </span>
                   </div>
-                </div>
+                  {/* Hover indicator */}
+                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    <span className="text-[8px] sm:text-[10px] text-gray-500 font-bold">+15s</span>
+                  </div>
+                </button>
               )}
               <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                 <Sparkles className={`w-4 h-4 sm:w-6 sm:h-6 flex-shrink-0 ${textPrimary}`} />

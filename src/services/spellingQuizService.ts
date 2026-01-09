@@ -6,6 +6,7 @@ export interface SpellingWord {
   hint: string;
   tuteeId: string;
   studentName?: string;
+  status: 'active' | 'completed';
   createdAt: string;
   updatedAt: string;
 }
@@ -15,6 +16,7 @@ export interface CreateSpellingWordInput {
   hint: string;
   tuteeId: string;
   studentName?: string;
+  status?: 'active' | 'completed';
 }
 
 export interface UpdateSpellingWordInput {
@@ -23,6 +25,7 @@ export interface UpdateSpellingWordInput {
   hint?: string;
   tuteeId?: string;
   studentName?: string;
+  status?: 'active' | 'completed';
 }
 
 export interface SpellingQuestion {
@@ -55,9 +58,13 @@ export interface CreateSpellingQuestionInput {
 }
 
 /**
- * Fetch all spelling words
+ * Fetch all spelling words (optionally filter by status)
  */
-export const fetchSpellingWords = async (tuteeId?: string, studentName?: string): Promise<SpellingWord[]> => {
+export const fetchSpellingWords = async (
+  tuteeId?: string, 
+  studentName?: string, 
+  includeCompleted: boolean = true
+): Promise<SpellingWord[]> => {
   try {
     let query = supabase
       .from('spelling_words')
@@ -70,6 +77,9 @@ export const fetchSpellingWords = async (tuteeId?: string, studentName?: string)
     if (studentName) {
       query = query.eq('student_name', studentName);
     }
+    if (!includeCompleted) {
+      query = query.eq('status', 'active');
+    }
 
     const { data, error } = await query;
 
@@ -81,6 +91,7 @@ export const fetchSpellingWords = async (tuteeId?: string, studentName?: string)
       hint: item.hint,
       tuteeId: item.tutee_id,
       studentName: item.student_name,
+      status: item.status || 'active',
       createdAt: item.created_at,
       updatedAt: item.updated_at,
     }));
@@ -104,6 +115,7 @@ export const createSpellingWord = async (
         hint: input.hint.trim(),
         tutee_id: input.tuteeId,
         student_name: input.studentName,
+        status: input.status || 'active',
       })
       .select()
       .single();
@@ -116,6 +128,7 @@ export const createSpellingWord = async (
       hint: data.hint,
       tuteeId: data.tutee_id,
       studentName: data.student_name,
+      status: data.status || 'active',
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     };
@@ -137,6 +150,7 @@ export const updateSpellingWord = async (
     if (input.hint !== undefined) updateData.hint = input.hint.trim();
     if (input.tuteeId !== undefined) updateData.tutee_id = input.tuteeId;
     if (input.studentName !== undefined) updateData.student_name = input.studentName;
+    if (input.status !== undefined) updateData.status = input.status;
     updateData.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase
@@ -154,6 +168,7 @@ export const updateSpellingWord = async (
       hint: data.hint,
       tuteeId: data.tutee_id,
       studentName: data.student_name,
+      status: data.status || 'active',
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     };
@@ -301,14 +316,20 @@ The sentences should be clear, age-appropriate, and educational.`;
 
     const userPrompt = `Generate ${count} different fill-in-the-blank spelling questions for a Singapore primary school science quiz.
 
-CRITICAL: You MUST ONLY use words from this specific list: ${words.join(', ')}
-DO NOT generate questions for any other words. Each question's "answer" MUST be exactly one of the words from the list above.
+CRITICAL RULES:
+1. You MUST ONLY use words from this specific list: ${words.join(', ')}
+2. DO NOT generate questions for any other words
+3. Generate EXACTLY ONE question per word (no duplicates!)
+4. Each question's "answer" MUST be exactly one of the words from the list above
+5. Use as many words from the list as possible, up to ${count} questions
+6. NEVER include the answer word itself in the question sentence - this is a spelling test!
 
 For each word, create a sentence where the word fits naturally in the blank. Make sure:
 1. The sentence is about science concepts appropriate for primary school
 2. The blank is represented by "__________" (8 underscores)
 3. Each sentence is different and educational
 4. The sentences are clear and age-appropriate
+5. DO NOT use the answer word anywhere in the question sentence (not even different forms of the word)
 
 Return ONLY a valid JSON array in this exact format:
 [
@@ -325,7 +346,7 @@ Do not include any text before or after the JSON array. Return only the JSON arr
     const response = await callChatGPT({
       message: userPrompt,
       systemPrompt,
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o-mini', // Reliable and cost-effective model
       temperature: 0.8, // Some creativity but not too random
     });
 
@@ -350,16 +371,84 @@ Do not include any text before or after the JSON array. Return only the JSON arr
       throw new Error('ChatGPT did not return a valid array');
     }
 
-    // Validate each question has required fields
+    console.log(`📝 AI generated ${questions.length} questions (requested ${count})`);
+
+    // Validate each question has required fields and doesn't contain the answer
     questions = questions.filter((q) => {
-      return q.sentence && q.answer && q.hint;
+      if (!q.sentence || !q.answer || !q.hint) return false;
+      
+      // Check if the answer word appears in the question sentence (case-insensitive)
+      const sentenceWords = q.sentence.toLowerCase().split(/\s+/);
+      const answerWord = q.answer.toLowerCase().trim();
+      
+      // Only filter if:
+      // 1. Exact match (e.g., "absorb" in sentence, answer is "absorb")
+      // 2. Sentence word is clearly a form of the answer (e.g., "absorbing" vs "absorb")
+      //    BUT only if the word is at least 4 chars and they share significant overlap
+      const answerContained = sentenceWords.some(word => {
+        // Remove punctuation for comparison
+        const cleanWord = word.replace(/[.,!?;:'"()]/g, '');
+        
+        // Exact match - always filter
+        if (cleanWord === answerWord) return true;
+        
+        // If sentence word starts with answer (e.g., "absorbing" contains "absorb")
+        // Only filter if answer is at least 4 chars (avoid false positives like "in", "is", "to")
+        if (answerWord.length >= 4 && cleanWord.startsWith(answerWord)) {
+          return true;
+        }
+        
+        // If answer starts with sentence word (e.g., answer "absorb" contains "abs")
+        // Only filter if both are substantial words (>= 4 chars) to avoid tiny words
+        if (cleanWord.length >= 4 && answerWord.length >= 4 && answerWord.startsWith(cleanWord)) {
+          // Additional check: they must share at least 60% similarity
+          const similarity = cleanWord.length / answerWord.length;
+          return similarity >= 0.6;
+        }
+        
+        return false;
+      });
+      
+      if (answerContained) {
+        console.warn(`Filtered out question because it contains the answer: "${q.sentence}" (answer: ${q.answer})`);
+        return false;
+      }
+      
+      return true;
     });
 
-    if (questions.length === 0) {
+    console.log(`✅ After validation: ${questions.length} questions remain`);
+
+    // Remove duplicate questions (same answer)
+    const seenAnswers = new Set<string>();
+    const uniqueQuestions: SpellingQuestion[] = [];
+    const duplicates: string[] = [];
+    
+    for (const q of questions) {
+      const normalizedAnswer = q.answer.toLowerCase().trim();
+      if (!seenAnswers.has(normalizedAnswer)) {
+        seenAnswers.add(normalizedAnswer);
+        uniqueQuestions.push(q);
+      } else {
+        duplicates.push(normalizedAnswer);
+      }
+    }
+
+    if (duplicates.length > 0) {
+      console.warn(`⚠️ Removed ${duplicates.length} duplicate(s): ${duplicates.join(', ')}`);
+    }
+
+    console.log(`🎯 Final count: ${uniqueQuestions.length} unique questions`);
+
+    if (uniqueQuestions.length === 0) {
       throw new Error('No valid questions were generated');
     }
 
-    return questions.slice(0, count); // Return up to requested count
+    if (uniqueQuestions.length < count) {
+      console.warn(`⚠️ Generated ${uniqueQuestions.length} questions but requested ${count}. Missing ${count - uniqueQuestions.length} question(s).`);
+    }
+
+    return uniqueQuestions.slice(0, count); // Return up to requested count
   } catch (error) {
     console.error('Error generating spelling questions:', error);
     throw error;
@@ -387,7 +476,7 @@ Example: {"Skeleton": "The framework of bones that supports our body"}`;
     const response = await callChatGPT({
       message: userPrompt,
       systemPrompt,
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o-mini', // Reliable and cost-effective model
       temperature: 0.5,
     });
 

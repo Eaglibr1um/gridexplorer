@@ -330,5 +330,135 @@ export const deleteTutee = async (id: string): Promise<void> => {
   }
 };
 
+/**
+ * Student Management Functions
+ */
 
+export interface TuteeStudent {
+  id: string;
+  tuteeId: string;
+  studentName: string;
+  displayOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateStudentInput {
+  tuteeId: string;
+  studentName: string;
+  displayOrder?: number;
+}
+
+export interface UpdateStudentInput {
+  id: string;
+  studentName?: string;
+  displayOrder?: number;
+}
+
+/**
+ * Fetch all students for a tutee
+ */
+export const fetchStudentsForTutee = async (tuteeId: string): Promise<TuteeStudent[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('tutee_students')
+      .select('*')
+      .eq('tutee_id', tuteeId)
+      .order('display_order', { ascending: true });
+
+    if (error) throw error;
+
+    return (data || []).map((item) => ({
+      id: item.id,
+      tuteeId: item.tutee_id,
+      studentName: item.student_name,
+      displayOrder: item.display_order,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at,
+    }));
+  } catch (error) {
+    console.error('Error fetching students for tutee:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new student for a tutee
+ */
+export const createStudent = async (input: CreateStudentInput): Promise<TuteeStudent> => {
+  try {
+    const { data, error } = await supabase
+      .from('tutee_students')
+      .insert({
+        tutee_id: input.tuteeId,
+        student_name: input.studentName,
+        display_order: input.displayOrder || 0,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return {
+      id: data.id,
+      tuteeId: data.tutee_id,
+      studentName: data.student_name,
+      displayOrder: data.display_order,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+  } catch (error) {
+    console.error('Error creating student:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a student
+ */
+export const updateStudent = async (input: UpdateStudentInput): Promise<TuteeStudent> => {
+  try {
+    const updateData: any = {};
+    if (input.studentName !== undefined) updateData.student_name = input.studentName;
+    if (input.displayOrder !== undefined) updateData.display_order = input.displayOrder;
+
+    const { data, error } = await supabase
+      .from('tutee_students')
+      .update(updateData)
+      .eq('id', input.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return {
+      id: data.id,
+      tuteeId: data.tutee_id,
+      studentName: data.student_name,
+      displayOrder: data.display_order,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+  } catch (error) {
+    console.error('Error updating student:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a student
+ */
+export const deleteStudent = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('tutee_students')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    throw error;
+  }
+};
 
