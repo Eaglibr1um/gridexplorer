@@ -195,17 +195,40 @@ export const hasTasksWithCount = (entry: DailyEntryWithTasks): boolean => {
   return entry.taskEntries.some(te => te.count > 0);
 };
 
-// Calculate streak (consecutive days with tasks)
+// Helper to check if entry counts toward streak (tasks with count > 0 OR mood set)
+export const countsTowardStreak = (entry: DailyEntryWithTasks): boolean => {
+  const hasTasks = entry.taskEntries.some(te => te.count > 0);
+  const hasMood = entry.moodEmoji !== null && entry.moodEmoji !== undefined && entry.moodEmoji !== '';
+  return hasTasks || hasMood;
+};
+
+// Calculate streak (consecutive days with tasks count > 0 OR mood emoji set)
 export const calculateStreak = async (): Promise<{ current: number; longest: number }> => {
+  // Get all daily entries with their task entries
   const { data, error } = await supabase
     .from('work_progress_daily_entries')
-    .select('entry_date')
+    .select(`
+      entry_date,
+      mood_emoji,
+      work_progress_task_entries(count)
+    `)
     .order('entry_date', { ascending: false });
 
   if (error || !data || data.length === 0) return { current: 0, longest: 0 };
 
+  // Filter to only include days that have:
+  // 1. At least one task with count > 0, OR
+  // 2. A mood emoji set (for days without work but with mood logging)
+  const validEntries = data.filter(entry => {
+    const hasTasks = entry.work_progress_task_entries?.some((te: { count: number }) => te.count > 0);
+    const hasMood = entry.mood_emoji !== null && entry.mood_emoji !== '';
+    return hasTasks || hasMood;
+  });
+
+  if (validEntries.length === 0) return { current: 0, longest: 0 };
+
   // Get unique dates and sort descending
-  const uniqueDates = Array.from(new Set(data.map(entry => entry.entry_date)))
+  const uniqueDates = Array.from(new Set(validEntries.map(entry => entry.entry_date)))
     .sort((a, b) => b.localeCompare(a)); // Sort dates as strings (YYYY-MM-DD format)
 
   if (uniqueDates.length === 0) return { current: 0, longest: 0 };

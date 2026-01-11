@@ -34,7 +34,7 @@ import {
   unsubscribeWorkProgressNotifications,
   isWorkProgressNotificationsEnabled,
   calculateStreak,
-  hasTasksWithCount,
+  countsTowardStreak,
   type WorkProgressSection,
   type WorkProgressTask,
   type DailyEntryWithTasks
@@ -80,6 +80,7 @@ const WorkProgressTracker = () => {
   const [editingTask, setEditingTask] = useState<WorkProgressTask | null>(null);
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'section' | 'task'; id: string; name: string } | null>(null);
+  const [removeTaskFromTodayConfirm, setRemoveTaskFromTodayConfirm] = useState<{ taskId: string; taskName: string } | null>(null);
   
   // Form states
   const [sectionName, setSectionName] = useState('');
@@ -130,13 +131,6 @@ const WorkProgressTracker = () => {
     };
     checkSubscription();
   }, []); // Only run once on mount
-
-  // Load entry when date changes
-  useEffect(() => {
-    if (selectedDate) {
-      loadDailyEntry(selectedDate);
-    }
-  }, [selectedDate]);
 
   const loadData = async () => {
     try {
@@ -198,31 +192,39 @@ const WorkProgressTracker = () => {
     }
   };
 
-  const loadDailyEntry = async (date: string) => {
+  // Load daily entry - skipNotificationCheck for task count updates to avoid UI flashing
+  const loadDailyEntry = useCallback(async (date: string, skipNotificationCheck = false) => {
     try {
       const entry = await getDailyEntry(date);
       setCurrentEntry(entry);
       if (entry) {
         setNotes(entry.notes || '');
         setSelectedEmoji(entry.moodEmoji || '');
-        setNotificationsEnabled(entry.notificationsEnabled || false);
       } else {
         setNotes('');
         setSelectedEmoji('');
-        setNotificationsEnabled(false);
       }
-      // Check notification status
-      const isEnabled = await isWorkProgressNotificationsEnabled();
-      setNotificationsEnabled(isEnabled);
+      // Only check notification status on initial load or explicit refresh
+      if (!skipNotificationCheck) {
+        const isEnabled = await isWorkProgressNotificationsEnabled();
+        setNotificationsEnabled(isEnabled);
+      }
     } catch (error) {
       console.error('Error loading daily entry:', error);
     }
-  };
+  }, []);
+
+  // Load entry when date changes
+  useEffect(() => {
+    if (selectedDate) {
+      loadDailyEntry(selectedDate, false); // Check notifications when date changes
+    }
+  }, [selectedDate, loadDailyEntry]);
 
   const handleSaveNotes = async () => {
     try {
       await createOrUpdateDailyEntry(selectedDate, { notes });
-      await loadDailyEntry(selectedDate);
+      await loadDailyEntry(selectedDate, true); // Skip notification check
       await loadData(); // Reload to update streak
       setShowNotesModal(false);
     } catch (error) {
@@ -244,7 +246,7 @@ const WorkProgressTracker = () => {
       // Visual feedback before saving
       setSelectedEmoji(emoji);
       await createOrUpdateDailyEntry(selectedDate, { moodEmoji: emoji });
-      await loadDailyEntry(selectedDate);
+      await loadDailyEntry(selectedDate, true); // Skip notification check
       // Delay close for better UX
       setTimeout(() => {
         setShowEmojiModal(false);
@@ -348,47 +350,80 @@ const WorkProgressTracker = () => {
     }
   };
 
-  const handleTaskCountChange = async (taskId: string, delta: number) => {
+  const handleTaskCountChange = useCallback(async (taskId: string, delta: number) => {
+    const taskEntry = currentEntry?.taskEntries.find(te => te.taskId === taskId);
+    const currentCount = taskEntry?.count || 0;
+    const newCount = Math.max(0, currentCount + delta);
+    
+    // Optimistic update - update UI immediately
+    setCurrentEntry(prev => {
+      if (!prev) return prev;
+      const existingEntryIndex = prev.taskEntries.findIndex(te => te.taskId === taskId);
+      if (existingEntryIndex >= 0) {
+        const updatedEntries = [...prev.taskEntries];
+        updatedEntries[existingEntryIndex] = { ...updatedEntries[existingEntryIndex], count: newCount };
+        return { ...prev, taskEntries: updatedEntries };
+      } else {
+        return { ...prev, taskEntries: [...prev.taskEntries, { taskId, count: newCount }] };
+      }
+    });
+    
+    // Trigger animation immediately for responsiveness
+    const element = document.querySelector(`[data-task-id="${taskId}"]`);
+    if (element) {
+      element.classList.add('task-count-pulse');
+      setTimeout(() => element.classList.remove('task-count-pulse'), 300);
+    }
+    
     try {
       const entryId = currentEntry?.id;
       if (!entryId) {
         // Create entry first
         const newEntry = await createOrUpdateDailyEntry(selectedDate, {});
-        const currentCount = 0;
-        await updateTaskEntryCount(newEntry.id, taskId, currentCount + delta);
+        await updateTaskEntryCount(newEntry.id, taskId, newCount);
+        // Reload to get the new entry ID, but skip notification check
+        await loadDailyEntry(selectedDate, true);
       } else {
-        const taskEntry = currentEntry?.taskEntries.find(te => te.taskId === taskId);
-        const currentCount = taskEntry?.count || 0;
-        await updateTaskEntryCount(entryId, taskId, currentCount + delta);
-      }
-      await loadDailyEntry(selectedDate);
-      
-      // Trigger animation
-      const element = document.querySelector(`[data-task-id="${taskId}"]`);
-      if (element) {
-        element.classList.add('task-count-pulse');
-        setTimeout(() => element.classList.remove('task-count-pulse'), 300);
+        await updateTaskEntryCount(entryId, taskId, newCount);
+        // No need to reload - we already updated optimistically
       }
     } catch (error) {
       console.error('Error updating task count:', error);
+      // Revert on error - reload the true state
+      await loadDailyEntry(selectedDate, true);
     }
-  };
+  }, [currentEntry, selectedDate, loadDailyEntry]);
 
-  const handleTaskCountDirectEdit = async (taskId: string, newCount: number) => {
+  const handleTaskCountDirectEdit = useCallback(async (taskId: string, newCount: number) => {
+    const count = Math.max(0, Math.floor(newCount)); // Ensure non-negative integer
+    
+    // Optimistic update
+    setCurrentEntry(prev => {
+      if (!prev) return prev;
+      const existingEntryIndex = prev.taskEntries.findIndex(te => te.taskId === taskId);
+      if (existingEntryIndex >= 0) {
+        const updatedEntries = [...prev.taskEntries];
+        updatedEntries[existingEntryIndex] = { ...updatedEntries[existingEntryIndex], count };
+        return { ...prev, taskEntries: updatedEntries };
+      } else {
+        return { ...prev, taskEntries: [...prev.taskEntries, { taskId, count }] };
+      }
+    });
+    
     try {
-      const count = Math.max(0, Math.floor(newCount)); // Ensure non-negative integer
       const entryId = currentEntry?.id;
       if (!entryId) {
         const newEntry = await createOrUpdateDailyEntry(selectedDate, {});
         await updateTaskEntryCount(newEntry.id, taskId, count);
+        await loadDailyEntry(selectedDate, true);
       } else {
         await updateTaskEntryCount(entryId, taskId, count);
       }
-      await loadDailyEntry(selectedDate);
     } catch (error) {
       console.error('Error updating task count:', error);
+      await loadDailyEntry(selectedDate, true);
     }
-  };
+  }, [currentEntry, selectedDate, loadDailyEntry]);
 
   const handleCreateSection = async () => {
     if (!sectionName.trim()) return;
@@ -524,7 +559,7 @@ const WorkProgressTracker = () => {
     if (!date) return false;
     const dateStr = formatDate(date);
     const entry = monthEntries.find(e => e.entryDate === dateStr);
-    return entry ? hasTasksWithCount(entry) : false;
+    return entry ? countsTowardStreak(entry) : false;
   };
 
   const getTasksBySection = (sectionId: string) => {
@@ -591,22 +626,29 @@ const WorkProgressTracker = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 pb-safe">
       <style>{`
         @keyframes task-pulse {
-          0%, 100% { 
+          0% { 
             transform: scale(1); 
-            box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.4);
+            box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.5);
           }
-          50% { 
-            transform: scale(1.15); 
-            box-shadow: 0 0 0 10px rgba(147, 51, 234, 0);
+          40% { 
+            transform: scale(1.08); 
+            box-shadow: 0 0 0 6px rgba(147, 51, 234, 0.2);
+          }
+          100% { 
+            transform: scale(1); 
+            box-shadow: 0 0 0 12px rgba(147, 51, 234, 0);
           }
         }
         .task-count-pulse {
-          animation: task-pulse 0.3s ease-in-out;
+          animation: task-pulse 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button {
           -webkit-appearance: none;
           margin: 0;
+        }
+        input[type="number"] {
+          -moz-appearance: textfield;
         }
         @keyframes emoji-wiggle {
           0%, 100% { transform: rotate(0deg); }
@@ -615,6 +657,22 @@ const WorkProgressTracker = () => {
         }
         .emoji-hover:hover {
           animation: emoji-wiggle 0.5s ease-in-out;
+        }
+        /* Smooth button feedback */
+        .count-btn {
+          transition: transform 0.1s ease-out, box-shadow 0.15s ease-out;
+        }
+        .count-btn:active {
+          transform: scale(0.92) !important;
+        }
+        /* Smooth value change visual feedback */
+        @keyframes value-pop {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+          100% { transform: scale(1); }
+        }
+        .value-changed {
+          animation: value-pop 0.2s ease-out;
         }
       `}</style>
       {/* Header */}
@@ -1082,7 +1140,7 @@ const WorkProgressTracker = () => {
                           <p className="text-sm text-gray-500">{section?.name}</p>
                         </div>
                         <button
-                          onClick={() => handleTaskCountDirectEdit(task.id, 0)}
+                          onClick={() => setRemoveTaskFromTodayConfirm({ taskId: task.id, taskName: task.name })}
                           className="p-2 hover:bg-red-100 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                           title="Remove from today"
                         >
@@ -1093,7 +1151,7 @@ const WorkProgressTracker = () => {
                         <button
                           onClick={() => handleTaskCountChange(task.id, -1)}
                           disabled={getTaskCount(task.id) === 0}
-                          className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-100 to-red-200 text-red-600 font-black text-2xl hover:from-red-200 hover:to-red-300 active:scale-90 transition-all flex items-center justify-center hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="count-btn w-12 h-12 rounded-xl bg-gradient-to-br from-red-100 to-red-200 text-red-600 font-black text-2xl hover:from-red-200 hover:to-red-300 flex items-center justify-center hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           −
                         </button>
@@ -1102,12 +1160,12 @@ const WorkProgressTracker = () => {
                           value={getTaskCount(task.id)}
                           onChange={(e) => handleTaskCountDirectEdit(task.id, parseInt(e.target.value) || 0)}
                           data-task-id={task.id}
-                          className="w-20 h-14 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl text-center font-black text-3xl text-purple-900 shadow-inner border-2 border-transparent focus:border-purple-500 focus:outline-none focus:shadow-lg transition-all"
+                          className="w-20 h-14 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl text-center font-black text-3xl text-purple-900 shadow-inner border-2 border-transparent focus:border-purple-500 focus:outline-none focus:shadow-lg transition-colors"
                           min="0"
                         />
                         <button
                           onClick={() => handleTaskCountChange(task.id, 1)}
-                          className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-100 to-green-200 text-green-600 font-black text-2xl hover:from-green-200 hover:to-green-300 active:scale-90 transition-all flex items-center justify-center hover:shadow-lg"
+                          className="count-btn w-12 h-12 rounded-xl bg-gradient-to-br from-green-100 to-green-200 text-green-600 font-black text-2xl hover:from-green-200 hover:to-green-300 flex items-center justify-center hover:shadow-lg"
                         >
                           +
                         </button>
@@ -1546,6 +1604,26 @@ const WorkProgressTracker = () => {
         confirmText="Delete"
         cancelText="Cancel"
         type="danger"
+      />
+
+      {/* Remove Task from Today Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={!!removeTaskFromTodayConfirm}
+        onClose={() => setRemoveTaskFromTodayConfirm(null)}
+        onConfirm={async () => {
+          if (removeTaskFromTodayConfirm) {
+            await handleTaskCountDirectEdit(removeTaskFromTodayConfirm.taskId, 0);
+            // Reload streak after removing task (may affect streak count)
+            const newStreak = await calculateStreak();
+            setStreak(newStreak);
+            setRemoveTaskFromTodayConfirm(null);
+          }
+        }}
+        title="Remove Task from Today"
+        message={`Remove "${removeTaskFromTodayConfirm?.taskName}" from today's tasks? You can add it back later.`}
+        confirmText="Remove"
+        cancelText="Keep"
+        type="warning"
       />
     </div>
   );
