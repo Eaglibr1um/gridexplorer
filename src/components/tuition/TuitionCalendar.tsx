@@ -49,6 +49,11 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
   const [isDeletingRequest, setIsDeletingRequest] = useState(false);
   const [showBookingRequest, setShowBookingRequest] = useState(false);
   const [editingRequest, setEditingRequest] = useState<BookingRequest | null>(null);
+  const [requestInitialData, setRequestInitialData] = useState<{
+    startTime?: string;
+    endTime?: string;
+    notes?: string;
+  }>({});
   const [tuteeOptions, setTuteeOptions] = useState<SelectOption[]>([
     { value: '', label: 'All Tutees' }
   ]);
@@ -696,6 +701,24 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
                                       <CalendarPlus className="w-6 h-6" />
                                     </button>
                                   )}
+                                  {!isAdmin && !slot.isAvailable && !isOtherTuteeSlot && tutee && isOwnSlot && !isExamOrTest && (
+                                    <button
+                                      onClick={() => {
+                                        setEditingRequest(null);
+                                        setRequestInitialData({
+                                          startTime: slot.startTime,
+                                          endTime: slot.endTime,
+                                          notes: `Requesting time change for confirmed session on ${slot.date} at ${slot.startTime}`,
+                                        });
+                                        setShowBookingRequest(true);
+                                      }}
+                                      className="p-4 rounded-2xl shadow-lg transition-all active:scale-90 transform hover:scale-105 bg-amber-500 text-white"
+                                      aria-label="Request Change"
+                                      title="Request a change for this session"
+                                    >
+                                      <Clock className="w-6 h-6" />
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -1021,6 +1044,9 @@ const TuitionCalendar = ({ isAdmin = false, tutee = null, onBookingRequestSucces
           selectedDate={editingRequest ? parseISO(editingRequest.requestedDate) : selectedDate}
           tutee={tutee}
           existingRequest={editingRequest}
+          initialStartTime={requestInitialData.startTime}
+          initialEndTime={requestInitialData.endTime}
+          initialNotes={requestInitialData.notes}
           onDateChange={(date) => {
             // Update selected date if editing
             if (editingRequest) {

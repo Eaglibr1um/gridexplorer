@@ -37,6 +37,19 @@ export const convertReversibleArrow = (text: string): string => {
 };
 
 /**
+ * Convert ^text^ format to superscript
+ * Uses ^text^ format to clearly delimit superscript text
+ * Examples: cm^3^, x^2^, 10^-5^
+ */
+export const convertSuperscripts = (text: string): string => {
+  // Match patterns like ^3^, ^2^, ^-1^, etc.
+  return text.replace(/\^([0-9+\-=()]+)\^/g, (match, content) => {
+    // Convert all characters in the content to superscripts
+    return content.split('').map((char: string) => superscriptMap[char] || char).join('');
+  });
+};
+
+/**
  * Convert charge notation: +, -, 2+, 3-, etc. to superscripts
  */
 export const convertCharges = (text: string): string => {
@@ -63,7 +76,10 @@ export const convertStates = (text: string): string => {
  */
 export const convertUnits = (text: string): string => {
   // Convert degree symbols
+  // Support both degC and number+C format (e.g., "25C" -> "25°C")
   return text
+    .replace(/(\d+)\s*C(?![a-z])/g, '$1°C') // Match numbers followed by C (not Ca, Cl, etc.)
+    .replace(/(\d+)\s*F(?![a-z])/g, '$1°F') // Match numbers followed by F (not Fe, Fl, etc.)
     .replace(/degC/gi, '°C')
     .replace(/degF/gi, '°F')
     .replace(/degK/gi, 'K')
@@ -105,6 +121,7 @@ export const convertChemistryNotation = (text: string): string => {
   
   // Apply conversions in order
   result = convertSubscripts(result);
+  result = convertSuperscripts(result);
   result = convertReversibleArrow(result);
   result = convertGreekLetters(result);
   result = convertUnits(result);

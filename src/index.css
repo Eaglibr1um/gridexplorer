@@ -331,16 +331,16 @@
 }
 
 /* Better mobile scrolling */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   html {
     overflow-x: hidden;
-    scrollbar-gutter: auto;
+    scrollbar-gutter: stable;
   }
   
   body {
     -webkit-overflow-scrolling: touch;
     overflow-x: hidden;
-    scrollbar-gutter: auto;
+    scrollbar-gutter: stable;
   }
   
   #root {
@@ -348,7 +348,7 @@
     overflow-x: hidden;
   }
 
-  /* Hide scrollbar completely on mobile - uses overlay scrollbars */
+  /* Hide scrollbar completely on mobile/tablet - uses overlay scrollbars */
   ::-webkit-scrollbar {
     width: 0px;
     height: 0px;

@@ -13,6 +13,9 @@ interface BookingRequestModalProps {
   tutee: Tutee;
   existingRequest?: BookingRequest | null; // For editing
   onDateChange?: (date: Date) => void; // Optional callback when date changes
+  initialStartTime?: string;
+  initialEndTime?: string;
+  initialNotes?: string;
 }
 
 const BookingRequestModal = ({
@@ -23,11 +26,14 @@ const BookingRequestModal = ({
   tutee,
   existingRequest = null,
   onDateChange,
+  initialStartTime,
+  initialEndTime,
+  initialNotes,
 }: BookingRequestModalProps) => {
   const [currentDate, setCurrentDate] = useState(selectedDate);
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('10:00');
-  const [notes, setNotes] = useState('');
+  const [startTime, setStartTime] = useState(initialStartTime || '09:00');
+  const [endTime, setEndTime] = useState(initialEndTime || '10:00');
+  const [notes, setNotes] = useState(initialNotes || '');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -57,18 +63,24 @@ const BookingRequestModal = ({
       setNotes(existingRequest.tuteeNotes || '');
     } else {
       setCurrentDate(selectedDate);
-      // Use current time for today, or default times for future dates
-      const isToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-      if (isToday) {
-        setStartTime(getCurrentTime());
-        setEndTime(getOneHourLater());
+      // Use initial values if provided, otherwise defaults
+      if (initialStartTime) {
+        setStartTime(initialStartTime);
       } else {
-        setStartTime('09:00');
-        setEndTime('10:00');
+        const isToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+        setStartTime(isToday ? getCurrentTime() : '09:00');
       }
-      setNotes('');
+
+      if (initialEndTime) {
+        setEndTime(initialEndTime);
+      } else {
+        const isToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+        setEndTime(isToday ? getOneHourLater() : '10:00');
+      }
+
+      setNotes(initialNotes || '');
     }
-  }, [existingRequest, selectedDate, isOpen]);
+  }, [existingRequest, selectedDate, isOpen, initialStartTime, initialEndTime, initialNotes]);
 
   const handleSubmit = async () => {
     // Validate

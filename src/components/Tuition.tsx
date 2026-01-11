@@ -30,6 +30,7 @@ import LearningPointsAdmin from './tuition/admin/LearningPointsAdmin';
 import ProgressReportAdmin from './tuition/admin/ProgressReportAdmin';
 import LandingPageSettings from './tuition/admin/LandingPageSettings';
 import StudentManagement from './tuition/admin/StudentManagement';
+import AdminTuitionCalendar from './tuition/admin/AdminTuitionCalendar';
 import { notificationService } from '../services/notificationService';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { Bell, BellOff, Loader2 } from 'lucide-react';
@@ -467,6 +468,7 @@ const Tuition = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:gap-6">
+              <AdminTuitionCalendar />
               <BookingRequestsAdmin />
               <FeedbackAdmin />
               <EarningsAdmin 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, BookOpen, Plus, Trash2, Edit2, Save, Sparkles, CheckCircle2, Calendar, Tag, Clock, RotateCcw, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Plus, Trash2, Edit2, Save, Sparkles, CheckCircle2, Calendar, Tag, Clock, RotateCcw, X, Loader2, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Tutee } from '../../types/tuition';
 import {
   fetchLearningPoints,
@@ -43,6 +43,7 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
     tags: [] as string[],
   });
   const [tagInput, setTagInput] = useState('');
+  const [showTags, setShowTags] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [reviewModal, setReviewModal] = useState<{
@@ -57,6 +58,11 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
   
   // Spaced Repetition System - must be declared before useMemo hooks
   const [reviewData, setReviewData] = useState<Record<string, { lastReviewed: string; reviewCount: number }>>({});
+  const [showTips, setShowTips] = useState(false);
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const loadPoints = async () => {
     try {
@@ -513,6 +519,10 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
     return sum + session.bulletPoints.length;
   }, 0);
 
+  const totalReviewsCompleted = useMemo(() => {
+    return Object.values(reviewData).reduce((sum, review) => sum + review.reviewCount, 0);
+  }, [reviewData]);
+
   const saveReviewData = async (sessionDate: string, reviewInfo: { lastReviewed: string; reviewCount: number; reviewHistory?: any[] }) => {
     try {
       // Update local state immediately
@@ -565,7 +575,7 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
     
     if (!review) {
       // Never reviewed - due immediately
-      return { isDue: true, nextReview: null, daysUntil: 0, lastReviewed: null };
+      return { isDue: true, nextReview: null, daysUntil: 0, daysOverdue: 0, lastReviewed: null };
     }
 
     const nextReview = getNextReviewDate(review.reviewCount, review.lastReviewed);
@@ -575,10 +585,15 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
       isDue: daysUntil <= 0,
       nextReview,
       daysUntil: Math.max(0, daysUntil),
+      daysOverdue: daysUntil < 0 ? Math.abs(daysUntil) : 0,
       reviewCount: review.reviewCount,
       lastReviewed: review.lastReviewed,
     };
   };
+
+  const dueReviewsCount = useMemo(() => {
+    return mergedSessions.filter(session => getReviewStatus(session.sessionDate).isDue).length;
+  }, [mergedSessions, reviewData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const markAsReviewed = async (sessionDate: string, history?: any[]) => {
     const sessionKey = sessionDate;
@@ -589,6 +604,61 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
       reviewHistory: history,
     };
     await saveReviewData(sessionKey, reviewInfo);
+  };
+
+  // Calendar utilities
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startDayOfWeek = firstDay.getDay(); // 0 = Sunday
+    
+    return { daysInMonth, startDayOfWeek, year, month };
+  };
+
+  const getDateString = (year: number, month: number, day: number) => {
+    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+
+  const hasLearningPoint = (dateStr: string) => {
+    return mergedSessions.some(s => s.sessionDate === dateStr);
+  };
+
+  const hasReview = (dateStr: string) => {
+    return Object.entries(reviewData).some(([_, review]) => {
+      const reviewDate = review.lastReviewed.split('T')[0];
+      return reviewDate === dateStr;
+    });
+  };
+
+  const goToPreviousMonth = () => {
+    setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1));
+  };
+
+  const goToNextMonth = () => {
+    setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1));
+  };
+
+  const goToToday = () => {
+    setCalendarDate(new Date());
+  };
+
+  const getSessionsForDate = (dateStr: string) => {
+    return mergedSessions.filter(s => s.sessionDate === dateStr);
+  };
+
+  const getReviewsForDate = (dateStr: string) => {
+    return Object.entries(reviewData)
+      .filter(([_, review]) => {
+        const reviewDate = review.lastReviewed.split('T')[0];
+        return reviewDate === dateStr;
+      })
+      .map(([sessionDate, review]) => ({
+        sessionDate,
+        ...review,
+      }));
   };
 
   return (
@@ -610,20 +680,25 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
                 <BookOpen className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
+                <div className="flex items-center gap-2 mb-0.5 sm:mb-1 flex-wrap">
                   <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight truncate">
                     Vault
                   </h1>
                   <span className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg sm:rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-gradient-to-r ${gradientClass} text-white shadow-sm flex-shrink-0`}>
                     Points
                   </span>
+                  {dueReviewsCount > 0 && (
+                    <span className="px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg sm:rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-yellow-500 text-white shadow-md shadow-yellow-200 animate-pulse flex-shrink-0">
+                      {dueReviewsCount} Due
+                    </span>
+                  )}
                 </div>
                 <p className="text-gray-600 text-xs sm:text-lg font-medium truncate">{tutee.name}'s Knowledge Base</p>
               </div>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-4 sm:mt-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mt-4 sm:mt-8">
               <div className={`bg-white/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/50 shadow-sm`}>
                 <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5 sm:mb-1">Sessions</p>
                 <p className="text-xl sm:text-3xl font-black text-gray-800 tracking-tighter">{uniqueSessionDates.size}</p>
@@ -632,8 +707,368 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
                 <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5 sm:mb-1">Points</p>
                 <p className="text-xl sm:text-3xl font-black text-gray-800 tracking-tighter">{totalLearningPoints}</p>
               </div>
+              <div className={`bg-white/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/50 shadow-sm col-span-2 sm:col-span-1`}>
+                <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5 sm:mb-1">Reviews Completed</p>
+                <p className="text-xl sm:text-3xl font-black text-gray-800 tracking-tighter">{totalReviewsCompleted}</p>
+              </div>
             </div>
           </div>
+        </div>
+
+        {/* Overview Section: Calendar + Review Schedule */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Calendar View */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] sm:rounded-[2.5rem] shadow-xl p-5 sm:p-8 border border-white/40">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 bg-gradient-to-br ${gradientClass} rounded-xl shadow-md`}>
+                <Calendar className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg sm:text-xl font-black text-gray-800 tracking-tight">Activity</h2>
+                <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Track your progress</p>
+              </div>
+            </div>
+            <button
+              onClick={goToToday}
+              className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-indigo-100 transition-all active:scale-95"
+            >
+              Today
+            </button>
+          </div>
+
+          {/* Calendar Header */}
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={goToPreviousMonth}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-all active:scale-95"
+              aria-label="Previous month"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            <h3 className="text-base sm:text-lg font-black text-gray-800">
+              {format(calendarDate, 'MMMM yyyy')}
+            </h3>
+            <button
+              onClick={goToNextMonth}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-all active:scale-95"
+              aria-label="Next month"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="bg-white/40 rounded-2xl p-3 sm:p-4 border border-white/50">
+            {/* Day labels */}
+            <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                <div key={i} className="text-center text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar days */}
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
+              {(() => {
+                const { daysInMonth, startDayOfWeek, year, month } = getDaysInMonth(calendarDate);
+                const days = [];
+                
+                // Empty cells before first day
+                for (let i = 0; i < startDayOfWeek; i++) {
+                  days.push(
+                    <div key={`empty-${i}`} className="aspect-square" />
+                  );
+                }
+                
+                // Days of the month
+                for (let day = 1; day <= daysInMonth; day++) {
+                  const dateStr = getDateString(year, month, day);
+                  const hasPoint = hasLearningPoint(dateStr);
+                  const hasReviewMark = hasReview(dateStr);
+                  const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
+                  const isClickable = hasPoint || hasReviewMark;
+                  
+                  days.push(
+                    <button
+                      key={day}
+                      onClick={() => isClickable && setSelectedDate(dateStr)}
+                      disabled={!isClickable}
+                      className={`aspect-square rounded-lg sm:rounded-xl flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-bold transition-all ${
+                        isToday
+                          ? `bg-gradient-to-br ${gradientClass} text-white shadow-md`
+                          : hasPoint || hasReviewMark
+                          ? 'bg-white/60 text-gray-700 hover:bg-white/80 cursor-pointer active:scale-95'
+                          : 'text-gray-300 hover:bg-white/30 cursor-default'
+                      }`}
+                    >
+                      <span>{day}</span>
+                      <div className="flex gap-0.5">
+                        {hasPoint && (
+                          <div className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${
+                            isToday ? 'bg-white' : 'bg-indigo-400'
+                          }`} />
+                        )}
+                        {hasReviewMark && (
+                          <div className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${
+                            isToday ? 'bg-white' : 'bg-green-400'
+                          }`} />
+                        )}
+                      </div>
+                    </button>
+                  );
+                }
+                
+                return days;
+              })()}
+            </div>
+
+            {/* Legend */}
+            <div className="flex flex-wrap gap-3 sm:gap-4 mt-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-indigo-400" />
+                <span className="text-[9px] sm:text-[10px] font-bold text-gray-500">Learning Point</span>
+              </div>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-green-400" />
+                <span className="text-[9px] sm:text-[10px] font-bold text-gray-500">Review</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Unified Review Hub */}
+        {mergedSessions.length > 0 && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] sm:rounded-[2.5rem] shadow-xl p-5 sm:p-8 border border-white/40">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 bg-gradient-to-br ${gradientClass} rounded-xl shadow-md`}>
+                  <RotateCcw className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-black text-gray-800 tracking-tight">Review Hub</h2>
+                  <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    📚 Intervals: 1, 3, 7, 14, 30, 60, 90 days
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {(() => {
+              const dueItems = mergedSessions.filter(s => getReviewStatus(s.sessionDate).isDue);
+              const upcomingItems = mergedSessions
+                .filter(s => !getReviewStatus(s.sessionDate).isDue && getReviewStatus(s.sessionDate).reviewCount !== undefined)
+                .sort((a, b) => {
+                  const aStatus = getReviewStatus(a.sessionDate);
+                  const bStatus = getReviewStatus(b.sessionDate);
+                  if (!aStatus.nextReview || !bStatus.nextReview) return 0;
+                  return aStatus.nextReview.getTime() - bStatus.nextReview.getTime();
+                });
+              const completedItems = mergedSessions.filter(s => {
+                const status = getReviewStatus(s.sessionDate);
+                return status.reviewCount !== undefined && status.reviewCount > 0 && !status.isDue;
+              });
+
+              return (
+                <div className="space-y-6">
+                  {/* DUE NOW Section */}
+                  {dueItems.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm sm:text-base font-black text-gray-800 tracking-tight flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-yellow-500 animate-pulse" />
+                          DUE NOW ({dueItems.length})
+                        </h3>
+                      </div>
+                      <div className="space-y-3">
+                        {dueItems
+                          .sort((a, b) => {
+                            const aStatus = getReviewStatus(a.sessionDate);
+                            const bStatus = getReviewStatus(b.sessionDate);
+                            return (bStatus.daysOverdue || 0) - (aStatus.daysOverdue || 0);
+                          })
+                          .map((session, index) => {
+                            const status = getReviewStatus(session.sessionDate);
+                            return (
+                              <div
+                                key={session.sessionDate}
+                                className="p-4 sm:p-6 bg-gradient-to-br from-yellow-50 to-orange-50/50 border-2 border-yellow-200 rounded-2xl sm:rounded-3xl shadow-sm animate-fade-in-up flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6"
+                                style={{ animationDelay: `${index * 50}ms` }}
+                              >
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2 flex-wrap">
+                                    <span className="font-black text-gray-800 text-base sm:text-lg tracking-tight">
+                                      {format(parseISO(session.sessionDate), 'EEE, MMM d')}
+                                    </span>
+                                    {status.reviewCount !== undefined && (
+                                      <span className="px-2 py-0.5 bg-white/60 text-[8px] font-black text-yellow-700 uppercase tracking-widest rounded-full border border-yellow-200 shadow-sm">
+                                        Review #{status.reviewCount + 1}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] sm:text-xs font-bold text-yellow-700 uppercase tracking-widest opacity-80">
+                                    {status.reviewCount === 0 ? (
+                                      'First review - strengthen memory!'
+                                    ) : status.daysOverdue === 0 ? (
+                                      'Due today - review now!'
+                                    ) : status.daysOverdue === 1 ? (
+                                      '⏰ 1 day overdue'
+                                    ) : (
+                                      `⏰ ${status.daysOverdue} days overdue`
+                                    )}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setReviewModal({
+                                      isOpen: true,
+                                      sessionDate: session.sessionDate,
+                                      learningPoints: session.bulletPoints,
+                                    });
+                                  }}
+                                  className={`w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r ${gradientClass} text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 sm:gap-3`}
+                                >
+                                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                                  <span>Start Review</span>
+                                </button>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* UPCOMING Section */}
+                  {upcomingItems.length > 0 && (
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => setShowAllUpcoming(!showAllUpcoming)}
+                        className="w-full flex items-center justify-between p-3 bg-blue-50/50 hover:bg-blue-50 rounded-xl transition-all active:scale-[0.99]"
+                      >
+                        <h3 className="text-sm sm:text-base font-black text-gray-800 tracking-tight flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-blue-400" />
+                          UPCOMING ({upcomingItems.length})
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-gray-500">
+                            {showAllUpcoming ? 'Show Less' : 'View All'}
+                          </span>
+                          <div className={`transition-transform ${showAllUpcoming ? 'rotate-180' : ''}`}>
+                            ▼
+                          </div>
+                        </div>
+                      </button>
+                      <div className="bg-white/40 rounded-2xl p-3 border border-white/50">
+                        <div className="grid gap-2">
+                          {(showAllUpcoming ? upcomingItems : upcomingItems.slice(0, 6)).map(session => {
+                            const status = getReviewStatus(session.sessionDate);
+                            return (
+                              <div
+                                key={session.sessionDate}
+                                className="flex items-center justify-between p-3 rounded-xl bg-gray-50/50 border border-gray-100 hover:bg-gray-50 transition-all"
+                              >
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-bold text-gray-700 truncate">
+                                      {format(parseISO(session.sessionDate), 'MMM d, yyyy')}
+                                    </p>
+                                    <p className="text-[9px] text-gray-500 font-medium truncate">
+                                      {session.bulletPoints.length} point{session.bulletPoints.length !== 1 ? 's' : ''}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  {status.reviewCount !== undefined && (
+                                    <span className="px-2 py-0.5 bg-white/60 rounded-full text-[8px] font-black text-gray-500 uppercase tracking-wider">
+                                      R{status.reviewCount}
+                                    </span>
+                                  )}
+                                  {status.nextReview && (
+                                    <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black uppercase tracking-wider border border-blue-100">
+                                      {format(status.nextReview, 'MMM d')}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* COMPLETED Section */}
+                  {completedItems.length > 0 && (
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => setShowCompleted(!showCompleted)}
+                        className="w-full flex items-center justify-between p-3 bg-green-50/50 hover:bg-green-50 rounded-xl transition-all active:scale-[0.99]"
+                      >
+                        <h3 className="text-sm sm:text-base font-black text-gray-800 tracking-tight flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-green-400" />
+                          COMPLETED ({completedItems.length})
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-gray-500">
+                            {showCompleted ? 'Hide' : 'View History'}
+                          </span>
+                          <div className={`transition-transform ${showCompleted ? 'rotate-180' : ''}`}>
+                            ▼
+                          </div>
+                        </div>
+                      </button>
+                      {showCompleted && (
+                        <div className="bg-white/40 rounded-2xl p-3 border border-white/50">
+                          <div className="grid gap-2">
+                            {completedItems.slice(0, 10).map(session => {
+                              const status = getReviewStatus(session.sessionDate);
+                              return (
+                                <div
+                                  key={session.sessionDate}
+                                  className="flex items-center justify-between p-2 rounded-lg bg-gray-50/30 border border-gray-100"
+                                >
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <CheckCircle2 className="w-3 h-3 text-green-500 flex-shrink-0" />
+                                    <p className="text-xs font-medium text-gray-600 truncate">
+                                      {format(parseISO(session.sessionDate), 'MMM d')}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className="px-2 py-0.5 bg-green-100 rounded-full text-[8px] font-black text-green-700 uppercase tracking-wider">
+                                      {status.reviewCount}x
+                                    </span>
+                                    {status.lastReviewed && (
+                                      <span className="text-[9px] text-gray-400 font-medium">
+                                        Last: {format(parseISO(status.lastReviewed), 'MMM d')}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* All Caught Up State */}
+                  {dueItems.length === 0 && upcomingItems.length === 0 && completedItems.length === 0 && (
+                    <div className="text-center py-12 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100">
+                      <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-gray-50">
+                        <CheckCircle2 className="w-10 h-10 text-green-400" />
+                      </div>
+                      <p className="text-xl font-black text-gray-400 uppercase tracking-tight">All Caught Up!</p>
+                      <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mt-2">No reviews scheduled yet</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        )}
         </div>
 
         {/* Alerts & Feedback */}
@@ -695,13 +1130,72 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
                   <Sparkles className="w-3.5 h-3.5" />
                   Insights & Notes *
                 </label>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                  <div className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-black uppercase tracking-tighter w-fit">
-                    Multiline Paste Supported
-                  </div>
-                  <div className="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-[9px] font-black uppercase tracking-tighter w-fit">
-                    Tip: Use /H2O/ for subscripts
-                  </div>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowTips(!showTips)}
+                    onMouseEnter={() => setShowTips(true)}
+                    onMouseLeave={() => setShowTips(false)}
+                    className="px-3 py-1.5 bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:from-indigo-100 hover:to-purple-100 transition-all border border-indigo-100 shadow-sm"
+                  >
+                    <Info className="w-3 h-3" />
+                    Tips
+                  </button>
+                  {showTips && (
+                      <div 
+                        className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border-2 border-indigo-100 p-4 z-50 animate-fade-in"
+                        onMouseEnter={() => setShowTips(true)}
+                        onMouseLeave={() => setShowTips(false)}
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-start gap-2">
+                            <div className="w-5 h-5 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <Sparkles className="w-3 h-3 text-indigo-600" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-gray-800">Multiline Paste</p>
+                              <p className="text-[10px] text-gray-500 mt-0.5">Paste multiple lines at once - they'll auto-split into separate points</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <div className="w-5 h-5 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <span className="text-[10px] font-black text-purple-600">H₂</span>
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-gray-800">Subscripts</p>
+                              <p className="text-[10px] text-gray-500 mt-0.5">Use <code className="px-1 py-0.5 bg-gray-100 rounded text-[9px] font-mono">/H2O/</code> for H₂O</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <div className="w-5 h-5 rounded-lg bg-pink-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <span className="text-[10px] font-black text-pink-600">cm³</span>
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-gray-800">Superscripts</p>
+                              <p className="text-[10px] text-gray-500 mt-0.5">Use <code className="px-1 py-0.5 bg-gray-100 rounded text-[9px] font-mono">cm^3^</code> for cm³</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <div className="w-5 h-5 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <span className="text-[10px] font-black text-orange-600">°C</span>
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-gray-800">Temperature</p>
+                              <p className="text-[10px] text-gray-500 mt-0.5">Use <code className="px-1 py-0.5 bg-gray-100 rounded text-[9px] font-mono">25C</code> for 25°C</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <div className="w-5 h-5 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <span className="text-[10px] font-black text-green-600">⇌</span>
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-gray-800">Chemistry Symbols</p>
+                              <p className="text-[10px] text-gray-500 mt-0.5">Use <code className="px-1 py-0.5 bg-gray-100 rounded text-[9px] font-mono">&lt;-&gt;</code> for ⇌, auto Greek letters (delta → Δ)</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                  )}
                 </div>
               </div>
               <div className="space-y-4">
@@ -763,48 +1257,57 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
 
             {/* Tags */}
             <div>
-              <label className="block text-[10px] font-black text-gray-400 mb-3 uppercase tracking-widest ml-1 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowTags(!showTags)}
+                className="w-full text-left block text-[10px] font-black text-gray-400 mb-3 uppercase tracking-widest ml-1 flex items-center gap-2 hover:text-gray-600 transition-colors"
+              >
                 <Tag className="w-3.5 h-3.5" />
                 Category Tags
-              </label>
-              <div className="flex gap-2 mb-4">
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addTag();
-                    }
-                  }}
-                  placeholder="Topic (e.g. Physics)"
-                  className="flex-1 min-w-0 px-3 sm:px-6 py-2.5 sm:py-4 bg-gray-50/50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-xl sm:rounded-2xl outline-none transition-all font-bold text-gray-800 shadow-inner text-xs sm:text-base"
-                />
-                <button
-                  onClick={addTag}
-                  className="px-4 sm:px-8 py-2.5 sm:py-4 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-xs shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all flex-shrink-0"
-                >
-                  Add
-                </button>
-              </div>
-              {formData.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {formData.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-gradient-to-r ${gradientClass} text-white flex items-center gap-2 sm:gap-3 shadow-sm`}
+                <span className="text-[8px] text-gray-400 ml-auto mr-1">(Click to {showTags ? 'hide' : 'show'})</span>
+              </button>
+              {showTags && (
+                <>
+                  <div className="flex gap-2 mb-4 animate-fade-in">
+                    <input
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addTag();
+                        }
+                      }}
+                      placeholder="Topic (e.g. Physics)"
+                      className="flex-1 min-w-0 px-3 sm:px-6 py-2.5 sm:py-4 bg-gray-50/50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-xl sm:rounded-2xl outline-none transition-all font-bold text-gray-800 shadow-inner text-xs sm:text-base"
+                    />
+                    <button
+                      onClick={addTag}
+                      className="px-4 sm:px-8 py-2.5 sm:py-4 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-xs shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all flex-shrink-0"
                     >
-                      {tag}
-                      <button
-                        onClick={() => removeTag(tag)}
-                        className="hover:bg-white/20 rounded-lg p-0.5 sm:p-1"
-                      >
-                        <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
+                      Add
+                    </button>
+                  </div>
+                  {formData.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 animate-fade-in">
+                      {formData.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-gradient-to-r ${gradientClass} text-white flex items-center gap-2 sm:gap-3 shadow-sm`}
+                        >
+                          {tag}
+                          <button
+                            onClick={() => removeTag(tag)}
+                            className="hover:bg-white/20 rounded-lg p-0.5 sm:p-1"
+                          >
+                            <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -828,72 +1331,6 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
             </button>
           </div>
         </div>
-
-        {/* Spaced Repetition Review Section */}
-        {mergedSessions.length > 0 && (
-          <div className="bg-white/80 backdrop-blur-sm rounded-[2.5rem] shadow-xl p-6 sm:p-10 mb-8 border border-white/40 overflow-hidden">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-2xl font-black text-gray-800 tracking-tight leading-tight">Memory Refresh</h2>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Review items due today</p>
-              </div>
-              <div className="p-3 bg-yellow-50 rounded-2xl">
-                <RotateCcw className="w-6 h-6 text-yellow-600 animate-spin-slow" />
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              {mergedSessions
-                .filter(session => getReviewStatus(session.sessionDate).isDue)
-                .map((session, index) => {
-                  const status = getReviewStatus(session.sessionDate);
-                  return (
-                    <div
-                      key={session.sessionDate}
-                      className="p-4 sm:p-6 bg-gradient-to-br from-yellow-50 to-orange-50/50 border-2 border-yellow-100 rounded-2xl sm:rounded-3xl shadow-sm animate-fade-in-up flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6"
-                      style={{ animationDelay: `${index * 100}ms` }}
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2 flex-wrap">
-                          <span className="font-black text-gray-800 text-base sm:text-lg tracking-tight">
-                            {format(parseISO(session.sessionDate), 'EEE, MMM d')}
-                          </span>
-                          {status.reviewCount !== undefined && (
-                            <span className="px-2 py-0.5 bg-white/60 text-[8px] font-black text-yellow-700 uppercase tracking-widest rounded-full border border-yellow-200 shadow-sm">
-                              Cycle {status.reviewCount}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[10px] sm:text-xs font-bold text-yellow-700 uppercase tracking-widest opacity-80">Strengthen your neural pathways!</p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setReviewModal({
-                            isOpen: true,
-                            sessionDate: session.sessionDate,
-                            learningPoints: session.bulletPoints,
-                          });
-                        }}
-                        className={`w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r ${gradientClass} text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 sm:gap-3`}
-                      >
-                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                        <span>Start Review</span>
-                      </button>
-                    </div>
-                  );
-                })}
-              {mergedSessions.filter(s => getReviewStatus(s.sessionDate).isDue).length === 0 && (
-                <div className="text-center py-12 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100">
-                  <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-gray-50">
-                    <CheckCircle2 className="w-10 h-10 text-green-400" />
-                  </div>
-                  <p className="text-xl font-black text-gray-400 uppercase tracking-tight">All Caught Up!</p>
-                  <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mt-2">Your memory is sharp today</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Previous Learning Points */}
         <div className="bg-white/80 backdrop-blur-sm rounded-[2.5rem] shadow-xl p-6 sm:p-10 border border-white/40">
@@ -943,7 +1380,12 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
                           </span>
                           {reviewStatus.isDue && (
                             <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-yellow-500 text-white rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest shadow-lg shadow-yellow-100 animate-pulse">
-                              Urgent Review
+                              Review Due
+                            </span>
+                          )}
+                          {!reviewStatus.isDue && reviewStatus.nextReview && (
+                            <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-blue-50 text-blue-600 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest border border-blue-200">
+                              Next: {format(reviewStatus.nextReview, 'MMM d')}
                             </span>
                           )}
                         </div>
@@ -1015,6 +1457,131 @@ const LearningPointsPage = ({ tutee, onBack }: LearningPointsPageProps) => {
           )}
         </div>
       </div>
+
+      {/* Date Details Modal */}
+      {selectedDate && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in"
+          onClick={() => setSelectedDate(null)}
+        >
+          <div 
+            className="bg-white rounded-[2rem] shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto animate-scale-in-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 p-6 rounded-t-[2rem] z-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-black text-gray-800 tracking-tight">
+                    {format(parseISO(selectedDate), 'EEEE, MMMM d, yyyy')}
+                  </h3>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                    Activity Summary
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedDate(null)}
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-all active:scale-95"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Learning Points Created */}
+              {getSessionsForDate(selectedDate).length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-3 h-3 rounded-full bg-indigo-400" />
+                    <h4 className="text-sm font-black text-gray-700 uppercase tracking-widest">
+                      Learning Points Created
+                    </h4>
+                  </div>
+                  <div className="space-y-4">
+                    {getSessionsForDate(selectedDate).map((session) => (
+                      <div
+                        key={session.sessionDate}
+                        className="bg-indigo-50/50 rounded-2xl p-4 border border-indigo-100"
+                      >
+                        <div className="space-y-2">
+                          {session.bulletPoints.map((point, idx) => (
+                            <div key={idx} className="flex items-start gap-2">
+                              <div className={`flex-shrink-0 w-5 h-5 rounded-lg bg-gradient-to-br ${gradientClass} flex items-center justify-center mt-0.5`}>
+                                <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                              </div>
+                              <p className="text-sm text-gray-700 font-medium flex-1">
+                                {convertChemistryNotation(point)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                        {session.tags && session.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-indigo-100">
+                            {session.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="px-2 py-1 bg-white/60 rounded-lg text-[9px] font-black uppercase tracking-widest text-indigo-600"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Reviews Completed */}
+              {getReviewsForDate(selectedDate).length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-3 h-3 rounded-full bg-green-400" />
+                    <h4 className="text-sm font-black text-gray-700 uppercase tracking-widest">
+                      Reviews Completed
+                    </h4>
+                  </div>
+                  <div className="space-y-3">
+                    {getReviewsForDate(selectedDate).map((review) => {
+                      const session = mergedSessions.find(s => s.sessionDate === review.sessionDate);
+                      return (
+                        <div
+                          key={review.sessionDate}
+                          className="bg-green-50/50 rounded-2xl p-4 border border-green-100"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-bold text-gray-700">
+                              Session from {format(parseISO(review.sessionDate), 'MMM d, yyyy')}
+                            </p>
+                            <span className="px-2 py-1 bg-white/60 rounded-lg text-[9px] font-black uppercase tracking-widest text-green-600">
+                              Review #{review.reviewCount}
+                            </span>
+                          </div>
+                          {session && (
+                            <p className="text-xs text-gray-500 font-medium">
+                              {session.bulletPoints.length} point{session.bulletPoints.length !== 1 ? 's' : ''} reviewed
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {getSessionsForDate(selectedDate).length === 0 && getReviewsForDate(selectedDate).length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">
+                    No activity on this date
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation */}
       <ConfirmationModal

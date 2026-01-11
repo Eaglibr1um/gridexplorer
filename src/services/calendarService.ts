@@ -301,3 +301,65 @@ export const cancelBooking = async (id: string): Promise<AvailableDate> => {
   });
 };
 
+/**
+ * Create a confirmed tuition session directly by admin
+ * Does not trigger notifications
+ */
+export const addConfirmedSessionDirectly = async (
+  input: CreateAvailableDateInput & { tuteeId: string }
+): Promise<void> => {
+  try {
+    // 1. Create available date record marked as NOT available and booked by the tutee
+    const { data: slotData, error: slotError } = await supabase
+      .from('available_dates')
+      .insert({
+        date: input.date,
+        start_time: input.startTime,
+        end_time: input.endTime,
+        is_available: false,
+        booked_by: input.tuteeId,
+        tutee_id: input.tuteeId,
+        notes: input.notes || null,
+        event_type: input.eventType || 'time_slot',
+      })
+      .select()
+      .single();
+
+    if (slotError) throw slotError;
+
+    // 2. Create tuition session record
+    // Get earnings settings to calculate amount
+    const { data: settings } = await supabase
+      .from('tuition_earnings_settings')
+      .select('fee_per_hour')
+      .eq('tutee_id', input.tuteeId)
+      .single();
+
+    const feePerHour = settings ? parseFloat(settings.fee_per_hour) : 140.0;
+
+    // Calculate duration and amount
+    const [startHour, startMin] = input.startTime.split(':').map(Number);
+    const [endHour, endMin] = input.endTime.split(':').map(Number);
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    const durationHours = (endMinutes - startMinutes) / 60;
+    const amount = durationHours * feePerHour;
+
+    const { error: sessionError } = await supabase
+      .from('tuition_sessions')
+      .insert({
+        tutee_id: input.tuteeId,
+        session_date: input.date,
+        start_time: input.startTime,
+        end_time: input.endTime,
+        duration_hours: Math.round(durationHours * 100) / 100,
+        amount: Math.round(amount * 100) / 100,
+        available_date_id: slotData.id,
+      });
+
+    if (sessionError) throw sessionError;
+  } catch (error) {
+    console.error('Error creating confirmed session:', error);
+    throw error;
+  }
+};
