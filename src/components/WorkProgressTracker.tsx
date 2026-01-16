@@ -1238,16 +1238,35 @@ const WorkProgressTracker = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Section</label>
-            <select
-              value={selectedSectionId || ''}
-              onChange={(e) => setSelectedSectionId(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 text-lg"
-            >
-              <option value="">Select a section</option>
-              {sections.map(section => (
-                <option key={section.id} value={section.id}>{section.name}</option>
-              ))}
-            </select>
+            {sections.length < 5 ? (
+              <div className="flex flex-wrap gap-2">
+                {sections.map(section => (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => setSelectedSectionId(section.id)}
+                    className={`px-4 py-2.5 rounded-xl font-semibold transition-all ${
+                      selectedSectionId === section.id
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {section.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <select
+                value={selectedSectionId || ''}
+                onChange={(e) => setSelectedSectionId(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 text-lg"
+              >
+                <option value="">Select a section</option>
+                {sections.map(section => (
+                  <option key={section.id} value={section.id}>{section.name}</option>
+                ))}
+              </select>
+            )}
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Task Name</label>
@@ -1445,7 +1464,7 @@ const WorkProgressTracker = () => {
             <h3 className="text-lg font-bold text-gray-900 mb-3">All Tasks</h3>
             <div className="max-h-96 overflow-y-auto space-y-3">
               {sections.map(section => {
-                const sectionTasks = getTasksBySection(section.id);
+                const sectionTasks = getTasksBySection(section.id).sort((a, b) => a.name.localeCompare(b.name));
                 if (sectionTasks.length === 0) return null;
                 
                 return (
@@ -1516,15 +1535,16 @@ const WorkProgressTracker = () => {
         size="lg"
       >
         <div className="space-y-4">
-          <p className="text-gray-600 text-sm">Select tasks you want to track today</p>
           
           <div className="max-h-96 overflow-y-auto space-y-4">
             {sections.map(section => {
-              const sectionTasks = getTasksBySection(section.id).filter(task => {
-                // Don't show tasks that already have count > 0 today
-                const taskEntry = currentEntry?.taskEntries.find(te => te.taskId === task.id);
-                return !taskEntry || taskEntry.count === 0;
-              });
+              const sectionTasks = getTasksBySection(section.id)
+                .filter(task => {
+                  // Don't show tasks that already have count > 0 today
+                  const taskEntry = currentEntry?.taskEntries.find(te => te.taskId === task.id);
+                  return !taskEntry || taskEntry.count === 0;
+                })
+                .sort((a, b) => a.name.localeCompare(b.name));
               
               if (sectionTasks.length === 0) return null;
               
